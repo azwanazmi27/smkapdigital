@@ -44,7 +44,13 @@ export async function POST(request: Request) {
     const room = clean(body.room, 100), applicantName = clean(body.applicantName, 120), email = clean(body.email, 160).toLowerCase();
     const startDate = clean(body.startDate, 10), startTime = clean(body.startTime, 5), endDate = clean(body.endDate, 10), endTime = clean(body.endTime, 5), purpose = clean(body.purpose, 100);
     const participants = Number(body.participants);
-    if (!rooms.has(room) || !purposes.has(purpose) || !applicantName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{2}:\d{2}$/.test(startTime) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || !/^\d{2}:\d{2}$/.test(endTime) || !Number.isInteger(participants) || participants < 1 || participants > 1000) return Response.json({ error: "Maklumat tempahan tidak lengkap atau tidak sah." }, { status: 400 });
+    if (!rooms.has(room)) return Response.json({ error: "Sila pilih bilik atau ruang yang hendak ditempah." }, { status: 400 });
+    if (!applicantName) return Response.json({ error: "Sila masukkan nama pemohon." }, { status: 400 });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ error: "Sila masukkan alamat e-mel yang sah." }, { status: 400 });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) return Response.json({ error: "Sila lengkapkan tarikh mula dan tarikh tamat." }, { status: 400 });
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return Response.json({ error: "Sila lengkapkan masa mula dan masa tamat." }, { status: 400 });
+    if (!purposes.has(purpose)) return Response.json({ error: "Sila pilih tujuan penggunaan." }, { status: 400 });
+    if (!Number.isInteger(participants) || participants < 1 || participants > 1000) return Response.json({ error: "Bilangan peserta mestilah antara 1 hingga 1,000 orang." }, { status: 400 });
     const start = new Date(`${startDate}T${startTime}:00+08:00`), end = new Date(`${endDate}T${endTime}:00+08:00`);
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Masa tamat mestilah selepas masa mula." }, { status: 400 });
     const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, startDate, startTime, endDate, endTime, purpose, participants });
