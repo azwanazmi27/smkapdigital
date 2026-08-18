@@ -171,8 +171,11 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
 function OprGenerator({ notify, close }: { notify: (message: string) => void; close: () => void }) {
   const [enhancing, setEnhancing] = useState(false);
   const [sending, setSending] = useState(false);
+  const [rendering, setRendering] = useState(false);
   const [driveUrl, setDriveUrl] = useState("");
   const [preview, setPreview] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState("");
+  const [pdfBase64, setPdfBase64] = useState("");
   const [details, setDetails] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
@@ -210,23 +213,102 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
 
   const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole);
   const safeName = (value: string) => value.normalize("NFKD").replace(/[^a-zA-Z0-9 -]/g, "").replace(/\s+/g, " ").trim() || "OPR";
-  const pdfEscape = (value: string) => value.replace(/[^\x20-\x7E]/g, (character) => ({ "’": "'", "·": "-", "–": "-", "—": "-" }[character] || " ")).replace(/([\\()])/g, "\\$1");
-  const wrap = (value: string, width = 86) => { const words = value.trim().split(/\s+/); const lines: string[] = []; let line = ""; for (const word of words) { const next = line ? `${line} ${word}` : word; if (next.length > width && line) { lines.push(line); line = word; } else line = next; } if (line) lines.push(line); return lines; };
-  const makePdf = () => {
-    const lines = ["SMK AGAMA PAHANG, MUADZAM SHAH", "ONE PAGE REPORT", "", form.title, "", `Bidang: ${form.category}`, `Tarikh: ${form.date}`, `Tempat: ${form.venue}`, `Anjuran: ${form.organiser || "-"}`, "", "PELAKSANAAN PROGRAM", ...wrap(details), "", "OBJEKTIF", ...wrap(form.objective || "Belum dinyatakan."), "", "HASIL / IMPAK", ...wrap(form.outcome || "Belum dinyatakan."), "", `Disediakan: ${form.preparedBy} (${form.preparedRole})`, `Disahkan: ${verifiedName} (${verifiedRole})`, "", `Dokumentasi: ${photoFiles.length} gambar disimpan bersama PDF ini di dalam folder.`];
-    let stream = "BT\n/F1 11 Tf\n50 790 Td\n14 TL\n"; lines.slice(0, 50).forEach((line, index) => { stream += `${index ? "T*\n" : ""}(${pdfEscape(line)}) Tj\n`; }); stream += "ET";
-    const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>", `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
-    let pdf = "%PDF-1.4\n"; const offsets = [0]; objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; }); const xref = pdf.length; pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => String(offset).padStart(10, "0") + " 00000 n ").join("\n")}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`; return btoa(pdf);
+  const fileToDataUrl = (file: Blob) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
+  const fileToBase64 = async (file: Blob) => (await fileToDataUrl(file)).split(",")[1] || "";
+  const makePdf = async () => {
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+    pdf.setProperties({ title: form.title, subject: "One Page Report SMK Agama Pahang", author: form.preparedBy, creator: "Portal Rasmi SMKAP" });
+    const navy = [17, 31, 52] as const, maroon = [116, 37, 52] as const, gold = [203, 164, 82] as const;
+    const muted = [92, 103, 116] as const, pale = [244, 246, 248] as const;
+    const x = 12, pageWidth = 210, contentWidth = 186;
+    pdf.setFillColor(...navy); pdf.rect(0, 0, pageWidth, 39, "F");
+    pdf.setFillColor(...maroon); pdf.rect(0, 36.5, pageWidth, 2.5, "F");
+    pdf.setFillColor(...gold); pdf.rect(0, 39, pageWidth, 1.1, "F");
+    try {
+      const logoData = await fileToDataUrl(await (await fetch("/logo-smkap.png")).blob());
+      pdf.addImage(logoData, "PNG", 12, 8, 58, 14.5, undefined, "FAST");
+    } catch {}
+    pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
+    pdf.text("SMK AGAMA PAHANG", 76, 14);
+    pdf.setFontSize(9); pdf.setFont("helvetica", "normal"); pdf.text("MUADZAM SHAH, PAHANG", 76, 20);
+    pdf.setTextColor(...gold); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8.5); pdf.text("ONE PAGE REPORT (OPR)", 76, 28);
+    pdf.setFontSize(7); pdf.setTextColor(220, 226, 233); pdf.text(`DIJANA: ${new Date().toLocaleDateString("ms-MY")}`, 198, 11, { align: "right" });
+    pdf.text(`RUJUKAN: OPR/${form.category.replace(/[^A-Za-z]/g, "").slice(0, 6).toUpperCase()}/${form.date.replace(/-/g, "")}`, 198, 16, { align: "right" });
+
+    pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(15);
+    const titleLines = pdf.splitTextToSize(form.title.toUpperCase(), contentWidth);
+    pdf.text(titleLines.slice(0, 2), x, 49);
+    const titleBottom = 49 + Math.min(titleLines.length, 2) * 6;
+
+    const metaY = titleBottom + 2, boxW = 45, gap = 2;
+    const meta = [["BIDANG", form.category], ["TARIKH", form.date], ["TEMPAT", form.venue], ["ANJURAN", form.organiser || "-"]];
+    meta.forEach(([label, value], index) => {
+      const bx = x + index * (boxW + gap);
+      pdf.setFillColor(...pale); pdf.roundedRect(bx, metaY, boxW, 17, 2, 2, "F");
+      pdf.setTextColor(...maroon); pdf.setFontSize(6.8); pdf.setFont("helvetica", "bold"); pdf.text(label, bx + 3, metaY + 5);
+      pdf.setTextColor(...navy); pdf.setFontSize(8.2); pdf.text(pdf.splitTextToSize(value, boxW - 6).slice(0, 2), bx + 3, metaY + 10);
+    });
+
+    const section = (heading: string, value: string, sx: number, sy: number, sw: number, sh: number) => {
+      pdf.setDrawColor(220, 225, 230); pdf.setFillColor(255, 255, 255); pdf.roundedRect(sx, sy, sw, sh, 2, 2, "FD");
+      pdf.setFillColor(...maroon); pdf.roundedRect(sx, sy, sw, 8, 2, 2, "F"); pdf.rect(sx, sy + 5, sw, 3, "F");
+      pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(7.5); pdf.text(heading, sx + 3, sy + 5.3);
+      pdf.setTextColor(48, 56, 66); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.2);
+      const lines = pdf.splitTextToSize(value || "Belum dinyatakan.", sw - 6);
+      pdf.text(lines.slice(0, Math.max(2, Math.floor((sh - 12) / 4.1))), sx + 3, sy + 13, { lineHeightFactor: 1.25 });
+    };
+    const contentY = metaY + 21;
+    section("PELAKSANAAN PROGRAM", details, x, contentY, contentWidth, 45);
+    section("OBJEKTIF", form.objective, x, contentY + 49, 91, 32);
+    section("HASIL / IMPAK", form.outcome, x + 95, contentY + 49, 91, 32);
+
+    const photoY = contentY + 85, photoH = 62;
+    pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); pdf.text("DOKUMENTASI PROGRAM", x, photoY);
+    pdf.setDrawColor(220, 225, 230); pdf.setFillColor(...pale); pdf.roundedRect(x, photoY + 3, contentWidth, photoH, 2, 2, "FD");
+    if (photoFiles.length) {
+      const shown = photoFiles.slice(0, 4), cols = shown.length === 1 ? 1 : 2, rows = Math.ceil(shown.length / cols);
+      const cellW = (contentWidth - 6 - (cols - 1) * 3) / cols, cellH = (photoH - 6 - (rows - 1) * 3) / rows;
+      for (let index = 0; index < shown.length; index++) {
+        const data = await fileToDataUrl(shown[index]); const px = x + 3 + (index % cols) * (cellW + 3); const py = photoY + 6 + Math.floor(index / cols) * (cellH + 3);
+        const props = pdf.getImageProperties(data); const ratio = Math.min(cellW / props.width, cellH / props.height);
+        const iw = props.width * ratio, ih = props.height * ratio;
+        pdf.addImage(data, shown[index].type === "image/png" ? "PNG" : "JPEG", px + (cellW - iw) / 2, py + (cellH - ih) / 2, iw, ih, undefined, "FAST");
+      }
+    } else {
+      pdf.setTextColor(...muted); pdf.setFont("helvetica", "italic"); pdf.setFontSize(8); pdf.text("Tiada gambar program dilampirkan.", pageWidth / 2, photoY + 35, { align: "center" });
+    }
+
+    const signY = photoY + photoH + 9, signW = 90;
+    [["DISEDIAKAN OLEH", form.preparedBy, form.preparedRole], ["DISAHKAN OLEH", verifiedName, verifiedRole]].forEach(([label, name, role], index) => {
+      const sx = x + index * 96; pdf.setDrawColor(220, 225, 230); pdf.roundedRect(sx, signY, signW, 25, 2, 2, "S");
+      pdf.setTextColor(...maroon); pdf.setFont("helvetica", "bold"); pdf.setFontSize(6.8); pdf.text(label, sx + 4, signY + 6);
+      pdf.setTextColor(...navy); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(name, signW - 8).slice(0, 2), sx + 4, signY + 12);
+      pdf.setTextColor(...muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.text(pdf.splitTextToSize(role, signW - 8).slice(0, 2), sx + 4, signY + 20);
+    });
+    pdf.setFillColor(...navy); pdf.rect(0, 289, pageWidth, 8, "F"); pdf.setTextColor(255, 255, 255); pdf.setFontSize(6.5);
+    pdf.text("Portal Rasmi SMK Agama Pahang | Dokumen dijana secara digital", 12, 294);
+    pdf.text("MUADZAM SHAH", 198, 294, { align: "right" });
+    const blob = pdf.output("blob");
+    return { base64: await fileToBase64(blob), url: URL.createObjectURL(blob) };
   };
-  const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1] || ""); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
-  const sendToDrive = async () => { setSending(true); setDriveUrl(""); try { const base = `${form.date}-${safeName(form.title)}`; const files = [{ name: `${base}.pdf`, mimeType: "application/pdf", base64: makePdf() }]; for (let index = 0; index < photoFiles.length; index++) files.push({ name: `${base}-gambar-${index + 1}.${photoFiles[index].type === "image/png" ? "png" : "jpg"}`, mimeType: photoFiles[index].type || "image/jpeg", base64: await fileToBase64(photoFiles[index]) }); const response = await fetch("/api/drive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: form.category, files }) }); const result = await response.json() as { error?: string; files?: Array<{ url: string }> }; if (!response.ok || !result.files?.[0]) throw new Error(result.error || "Penghantaran tidak berjaya"); setDriveUrl(result.files[0].url); notify("OPR berjaya disimpan ke Google Drive sekolah"); } catch (error) { notify(error instanceof Error ? error.message : "OPR tidak dapat dihantar"); } finally { setSending(false); } };
+  const preparePreview = async () => {
+    setRendering(true);
+    try {
+      const generated = await makePdf();
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfBase64(generated.base64); setPdfPreviewUrl(generated.url); setPreview(true); setDriveUrl("");
+    } catch { notify("Pratonton PDF tidak dapat dijana"); }
+    finally { setRendering(false); }
+  };
+  const sendToDrive = async () => { if (!pdfBase64 || !pdfPreviewUrl) return notify("Sila jana dan semak pratonton PDF dahulu"); setSending(true); setDriveUrl(""); try { const base = `${form.date}-${safeName(form.title)}`; const files = [{ name: `${base}.pdf`, mimeType: "application/pdf", base64: pdfBase64 }]; for (let index = 0; index < photoFiles.length; index++) files.push({ name: `${base}-gambar-${index + 1}.${photoFiles[index].type === "image/png" ? "png" : "jpg"}`, mimeType: photoFiles[index].type || "image/jpeg", base64: await fileToBase64(photoFiles[index]) }); const response = await fetch("/api/drive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: form.category, files }) }); const result = await response.json() as { error?: string; files?: Array<{ url: string }> }; if (!response.ok || !result.files?.[0]) throw new Error(result.error || "Penghantaran tidak berjaya"); setDriveUrl(result.files[0].url); notify("OPR berjaya disimpan ke Google Drive sekolah"); } catch (error) { notify(error instanceof Error ? error.message : "OPR tidak dapat dihantar"); } finally { setSending(false); } };
   return <div className="opr-generator">
     <span className="modal-overline">PENJANA OPR RASMI SMKAP</span>
     <h2 id="folder-title">Cipta OPR baharu</h2>
     <p>Isi maklumat program, kemaskan penulisan dan semak laporan sebelum disimpan.</p>
     <div className="generator-steps" aria-label="Aliran penciptaan OPR"><b>1</b><span>Maklumat</span><i></i><b>2</b><span>Perincian</span><i></i><b>3</b><span>Semakan</span></div>
 
-    {!preview ? <form className="generator-form" onSubmit={(event) => { event.preventDefault(); if (complete) setPreview(true); }}>
+    {!preview ? <form className="generator-form" onSubmit={(event) => { event.preventDefault(); if (complete) void preparePreview(); }}>
       <div className="generator-row">
         <label>Tajuk program<input value={form.title} onChange={(e) => setField("title", e.target.value)} placeholder="Contoh: Program Ihya' Ramadan" required /></label>
         <label>Bidang<select value={form.category} onChange={(e) => setField("category", e.target.value)}><option>Pengurusan</option><option>Kurikulum</option><option>HEM</option><option>Kokurikulum</option><option>Tingkatan Enam · Kurikulum</option><option>Tingkatan Enam · HEM</option><option>Tingkatan Enam · Kokurikulum</option><option>Lain-lain</option></select></label>
@@ -245,18 +327,14 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       <label className="photo-drop">Gambar program<input type="file" accept="image/jpeg,image/png" multiple onChange={(event) => { const files = Array.from(event.target.files || []).slice(0, 6); setPhotoFiles(files); setPhotos(files.map((file) => URL.createObjectURL(file))); if ((event.target.files?.length || 0) > 6) notify("Maksimum 6 gambar dipilih"); }} /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG · maksimum 6 MB setiap satu</small></label>
       {photos.length > 0 && <div className="photo-preview-strip">{photos.map((src, index) => <div key={src}><img src={src} alt={`Pratonton gambar program ${index + 1}`} /><button type="button" onClick={() => { setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index)); setPhotoFiles((current) => current.filter((_, photoIndex) => photoIndex !== index)); }} aria-label={`Buang gambar ${index + 1}`}>×</button></div>)}</div>}
       <fieldset className="signatory-fields"><legend>Penyedia dan pengesah OPR</legend><div className="generator-row"><label>Nama penyedia<input value={form.preparedBy} onChange={(e) => setField("preparedBy", e.target.value)} placeholder="Nama penuh penyedia" required /></label><label>Jawatan penyedia<input value={form.preparedRole} onChange={(e) => setField("preparedRole", e.target.value)} placeholder="Contoh: Guru Mata Pelajaran" required /></label></div><label>Pilih pengesah<select value={form.verifier} onChange={(e) => setField("verifier", e.target.value)}>{verifiers.map(([name, role]) => <option key={name} value={`${name}|${role}`}>{name} — {role}</option>)}<option value="manual">Isi pengesah secara manual</option></select></label>{form.verifier === "manual" && <div className="generator-row manual-verifier"><label>Nama pengesah<input value={form.manualVerifier} onChange={(e) => setField("manualVerifier", e.target.value)} placeholder="Nama penuh pengesah" required /></label><label>Jawatan pengesah<input value={form.manualVerifierRole} onChange={(e) => setField("manualVerifierRole", e.target.value)} placeholder="Jawatan pengesah" required /></label></div>}</fieldset>
-      <div className="generator-actions"><button type="button" onClick={close}>Kembali</button><button className="save" disabled={!complete}>Semak OPR <span>→</span></button></div>
-    </form> : <article className="opr-preview">
-      <div className="preview-school"><strong>SMK AGAMA PAHANG</strong><small>MUADZAM SHAH</small></div>
-      <span>ONE PAGE REPORT</span><h3>{form.title}</h3>
-      <div className="preview-meta"><div><small>Bidang</small><strong>{form.category}</strong></div><div><small>Tarikh</small><strong>{form.date}</strong></div><div><small>Tempat</small><strong>{form.venue}</strong></div><div><small>Anjuran</small><strong>{form.organiser || "—"}</strong></div></div>
-      <section><h4>Pelaksanaan program</h4><p>{details}</p></section>
-      <div className="preview-columns"><section><h4>Objektif</h4><p>{form.objective || "Belum dinyatakan."}</p></section><section><h4>Hasil / impak</h4><p>{form.outcome || "Belum dinyatakan."}</p></section></div>
-      {photos.length > 0 && <section className="opr-photo-section"><h4>Dokumentasi program</h4><div className={`opr-photo-grid photos-${Math.min(photos.length, 4)}`}>{photos.map((src, index) => <img key={src} src={src} alt={`Dokumentasi program ${index + 1}`} />)}</div></section>}
-      <div className="preview-signatures"><div><small>DISEDIAKAN OLEH</small><strong>{form.preparedBy}</strong><span>{form.preparedRole}</span></div><div><small>DISAHKAN OLEH</small><strong>{verifiedName}</strong><span>{verifiedRole}</span></div></div>
+      <div className="generator-actions"><button type="button" onClick={close}>Kembali</button><button className="save" disabled={!complete || rendering}>{rendering ? "Menjana PDF..." : "Pratonton PDF"} <span>→</span></button></div>
+    </form> : <article className="opr-preview pdf-review">
+      <div className="pdf-review-head"><div><span>PRATONTON PDF SEBENAR</span><h3>Semak sebelum simpan</h3><p>Pastikan tajuk, kandungan, gambar serta nama penyedia dan pengesah adalah betul.</p></div><a href={pdfPreviewUrl} download={`${form.date}-${safeName(form.title)}.pdf`}>Muat turun semakan</a></div>
+      <div className="pdf-preview-stage">{pdfPreviewUrl ? <iframe src={pdfPreviewUrl} title="Pratonton PDF OPR rasmi" /> : <p>Pratonton sedang disediakan...</p>}</div>
       <div className="drive-destination"><span>◈</span><div><strong>Destinasi Google Drive</strong><small>Folder {form.category} · OPR Disahkan</small></div></div>
       {driveUrl && <p className="drive-success">✓ OPR telah difailkan. <a href={driveUrl} target="_blank" rel="noreferrer">Buka PDF di Google Drive</a></p>}
-      <div className="generator-actions"><button onClick={() => setPreview(false)} disabled={sending}>Ubah maklumat</button><button className="save" onClick={sendToDrive} disabled={sending || Boolean(driveUrl)}>{sending ? "Menghantar..." : driveUrl ? "Sudah dihantar" : "Hantar ke Google Drive"}</button></div>
+      <div className="preview-confirmation"><span>✓</span><p><strong>Sudah semak pratonton?</strong><small>Selepas disimpan, PDF akan dimasukkan ke folder bidang yang dipilih.</small></p></div>
+      <div className="generator-actions"><button onClick={() => { setPreview(false); setPdfBase64(""); if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(""); }} disabled={sending}>Ubah maklumat</button><button className="save" onClick={sendToDrive} disabled={sending || Boolean(driveUrl) || !pdfBase64}>{sending ? "Menyimpan..." : driveUrl ? "Sudah disimpan" : "Simpan ke Google Drive"}</button></div>
     </article>}
   </div>;
 }
