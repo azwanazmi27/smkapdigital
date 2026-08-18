@@ -225,16 +225,20 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     const { jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
     pdf.setProperties({ title: form.title, subject: "One Page Report SMK Agama Pahang", author: form.preparedBy, creator: "Portal Rasmi SMKAP" });
-    const navy = [22, 54, 82] as const, headerBlue = [190, 220, 239] as const, maroon = [116, 37, 52] as const, gold = [183, 137, 48] as const;
-    const muted = [92, 103, 116] as const, pale = [244, 246, 248] as const;
+    const navy = [22, 54, 82] as const, headerBlue = [201, 230, 247] as const, glassBlue = [231, 245, 253] as const;
+    const maroon = [45, 119, 165] as const, gold = [82, 157, 199] as const;
+    const muted = [78, 105, 124] as const, pale = [239, 247, 252] as const;
     const x = 12, pageWidth = 210, contentWidth = 186;
-    pdf.setFillColor(...headerBlue); pdf.rect(0, 0, pageWidth, 39, "F");
-    pdf.setFillColor(...maroon); pdf.rect(0, 36.5, pageWidth, 2.5, "F");
-    pdf.setFillColor(...gold); pdf.rect(0, 39, pageWidth, 1.1, "F");
-    pdf.setFillColor(255, 255, 255); pdf.roundedRect(8, 5.5, 64, 21, 2, 2, "F");
+    pdf.setFillColor(...headerBlue); pdf.rect(0, 0, pageWidth, 40, "F");
+    pdf.setFillColor(...glassBlue); pdf.circle(187, 3, 28, "F"); pdf.circle(158, 1, 17, "F");
+    pdf.setFillColor(218, 238, 250); pdf.roundedRect(3, 3, 204, 33, 7, 7, "F");
+    pdf.setFillColor(235, 247, 253); pdf.circle(198, 31, 26, "F");
+    pdf.setDrawColor(153, 199, 225); pdf.roundedRect(3, 3, 204, 33, 7, 7, "S");
+    pdf.setFillColor(...maroon); pdf.rect(0, 38, pageWidth, 1.4, "F");
+    pdf.setFillColor(124, 184, 216); pdf.rect(0, 39.4, pageWidth, 0.6, "F");
     try {
       const logoData = await fileToDataUrl(await (await fetch("/logo-smkap.png")).blob());
-      pdf.addImage(logoData, "PNG", 10, 8.5, 60, 15, undefined, "FAST");
+      pdf.addImage(logoData, "PNG", 8, 8, 63, 17, undefined, "FAST");
     } catch {}
     pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
     pdf.text("SMK AGAMA PAHANG", 76, 14);
@@ -296,7 +300,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       pdf.setTextColor(...navy); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(name, signW - 8).slice(0, 2), sx + 4, signY + 12);
       pdf.setTextColor(...muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.text(pdf.splitTextToSize(role, signW - 8).slice(0, 2), sx + 4, signY + 20);
     });
-    pdf.setFillColor(...navy); pdf.rect(0, 289, pageWidth, 8, "F"); pdf.setTextColor(255, 255, 255); pdf.setFontSize(6.5);
+    pdf.setFillColor(...maroon); pdf.rect(0, 289, pageWidth, 8, "F"); pdf.setTextColor(255, 255, 255); pdf.setFontSize(6.5);
     pdf.text("Portal Rasmi SMK Agama Pahang | Dokumen dijana secara digital", 12, 294);
     pdf.text("SMKAP", 198, 294, { align: "right" });
     const blob = pdf.output("blob");
