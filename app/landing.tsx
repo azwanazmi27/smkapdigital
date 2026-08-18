@@ -170,9 +170,12 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
 
 function OprGenerator({ notify, close }: { notify: (message: string) => void; close: () => void }) {
   const [enhancing, setEnhancing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [driveUrl, setDriveUrl] = useState("");
   const [preview, setPreview] = useState(false);
   const [details, setDetails] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
     title: "", category: "Kurikulum", date: "", venue: "", organiser: "", objective: "", outcome: "",
     preparedBy: "", preparedRole: "", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
@@ -206,6 +209,17 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   };
 
   const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole);
+  const safeName = (value: string) => value.normalize("NFKD").replace(/[^a-zA-Z0-9 -]/g, "").replace(/\s+/g, " ").trim() || "OPR";
+  const pdfEscape = (value: string) => value.replace(/[^\x20-\x7E]/g, (character) => ({ "’": "'", "·": "-", "–": "-", "—": "-" }[character] || " ")).replace(/([\\()])/g, "\\$1");
+  const wrap = (value: string, width = 86) => { const words = value.trim().split(/\s+/); const lines: string[] = []; let line = ""; for (const word of words) { const next = line ? `${line} ${word}` : word; if (next.length > width && line) { lines.push(line); line = word; } else line = next; } if (line) lines.push(line); return lines; };
+  const makePdf = () => {
+    const lines = ["SMK AGAMA PAHANG, MUADZAM SHAH", "ONE PAGE REPORT", "", form.title, "", `Bidang: ${form.category}`, `Tarikh: ${form.date}`, `Tempat: ${form.venue}`, `Anjuran: ${form.organiser || "-"}`, "", "PELAKSANAAN PROGRAM", ...wrap(details), "", "OBJEKTIF", ...wrap(form.objective || "Belum dinyatakan."), "", "HASIL / IMPAK", ...wrap(form.outcome || "Belum dinyatakan."), "", `Disediakan: ${form.preparedBy} (${form.preparedRole})`, `Disahkan: ${verifiedName} (${verifiedRole})`, "", `Dokumentasi: ${photoFiles.length} gambar disimpan bersama PDF ini di dalam folder.`];
+    let stream = "BT\n/F1 11 Tf\n50 790 Td\n14 TL\n"; lines.slice(0, 50).forEach((line, index) => { stream += `${index ? "T*\n" : ""}(${pdfEscape(line)}) Tj\n`; }); stream += "ET";
+    const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>", `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
+    let pdf = "%PDF-1.4\n"; const offsets = [0]; objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; }); const xref = pdf.length; pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => String(offset).padStart(10, "0") + " 00000 n ").join("\n")}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`; return btoa(pdf);
+  };
+  const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1] || ""); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
+  const sendToDrive = async () => { setSending(true); setDriveUrl(""); try { const base = `${form.date}-${safeName(form.title)}`; const files = [{ name: `${base}.pdf`, mimeType: "application/pdf", base64: makePdf() }]; for (let index = 0; index < photoFiles.length; index++) files.push({ name: `${base}-gambar-${index + 1}.${photoFiles[index].type === "image/png" ? "png" : "jpg"}`, mimeType: photoFiles[index].type || "image/jpeg", base64: await fileToBase64(photoFiles[index]) }); const response = await fetch("/api/drive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: form.category, files }) }); const result = await response.json() as { error?: string; files?: Array<{ url: string }> }; if (!response.ok || !result.files?.[0]) throw new Error(result.error || "Penghantaran tidak berjaya"); setDriveUrl(result.files[0].url); notify("OPR berjaya disimpan ke Google Drive sekolah"); } catch (error) { notify(error instanceof Error ? error.message : "OPR tidak dapat dihantar"); } finally { setSending(false); } };
   return <div className="opr-generator">
     <span className="modal-overline">PENJANA OPR RASMI SMKAP</span>
     <h2 id="folder-title">Cipta OPR baharu</h2>
@@ -228,8 +242,8 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
         <label>Objektif<input value={form.objective} onChange={(e) => setField("objective", e.target.value)} placeholder="Objektif utama program" /></label>
         <label>Hasil / impak<input value={form.outcome} onChange={(e) => setField("outcome", e.target.value)} placeholder="Hasil yang dicapai" /></label>
       </div>
-      <label className="photo-drop">Gambar program<input type="file" accept="image/*" multiple onChange={(event) => { const files = Array.from(event.target.files || []).slice(0, 6); setPhotos(files.map((file) => URL.createObjectURL(file))); if ((event.target.files?.length || 0) > 6) notify("Maksimum 6 gambar dipilih"); }} /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG</small></label>
-      {photos.length > 0 && <div className="photo-preview-strip">{photos.map((src, index) => <div key={src}><img src={src} alt={`Pratonton gambar program ${index + 1}`} /><button type="button" onClick={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))} aria-label={`Buang gambar ${index + 1}`}>×</button></div>)}</div>}
+      <label className="photo-drop">Gambar program<input type="file" accept="image/jpeg,image/png" multiple onChange={(event) => { const files = Array.from(event.target.files || []).slice(0, 6); setPhotoFiles(files); setPhotos(files.map((file) => URL.createObjectURL(file))); if ((event.target.files?.length || 0) > 6) notify("Maksimum 6 gambar dipilih"); }} /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG · maksimum 6 MB setiap satu</small></label>
+      {photos.length > 0 && <div className="photo-preview-strip">{photos.map((src, index) => <div key={src}><img src={src} alt={`Pratonton gambar program ${index + 1}`} /><button type="button" onClick={() => { setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index)); setPhotoFiles((current) => current.filter((_, photoIndex) => photoIndex !== index)); }} aria-label={`Buang gambar ${index + 1}`}>×</button></div>)}</div>}
       <fieldset className="signatory-fields"><legend>Penyedia dan pengesah OPR</legend><div className="generator-row"><label>Nama penyedia<input value={form.preparedBy} onChange={(e) => setField("preparedBy", e.target.value)} placeholder="Nama penuh penyedia" required /></label><label>Jawatan penyedia<input value={form.preparedRole} onChange={(e) => setField("preparedRole", e.target.value)} placeholder="Contoh: Guru Mata Pelajaran" required /></label></div><label>Pilih pengesah<select value={form.verifier} onChange={(e) => setField("verifier", e.target.value)}>{verifiers.map(([name, role]) => <option key={name} value={`${name}|${role}`}>{name} — {role}</option>)}<option value="manual">Isi pengesah secara manual</option></select></label>{form.verifier === "manual" && <div className="generator-row manual-verifier"><label>Nama pengesah<input value={form.manualVerifier} onChange={(e) => setField("manualVerifier", e.target.value)} placeholder="Nama penuh pengesah" required /></label><label>Jawatan pengesah<input value={form.manualVerifierRole} onChange={(e) => setField("manualVerifierRole", e.target.value)} placeholder="Jawatan pengesah" required /></label></div>}</fieldset>
       <div className="generator-actions"><button type="button" onClick={close}>Kembali</button><button className="save" disabled={!complete}>Semak OPR <span>→</span></button></div>
     </form> : <article className="opr-preview">
@@ -240,8 +254,9 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       <div className="preview-columns"><section><h4>Objektif</h4><p>{form.objective || "Belum dinyatakan."}</p></section><section><h4>Hasil / impak</h4><p>{form.outcome || "Belum dinyatakan."}</p></section></div>
       {photos.length > 0 && <section className="opr-photo-section"><h4>Dokumentasi program</h4><div className={`opr-photo-grid photos-${Math.min(photos.length, 4)}`}>{photos.map((src, index) => <img key={src} src={src} alt={`Dokumentasi program ${index + 1}`} />)}</div></section>}
       <div className="preview-signatures"><div><small>DISEDIAKAN OLEH</small><strong>{form.preparedBy}</strong><span>{form.preparedRole}</span></div><div><small>DISAHKAN OLEH</small><strong>{verifiedName}</strong><span>{verifiedRole}</span></div></div>
-      <div className="drive-destination"><span>◈</span><div><strong>Destinasi Google Drive</strong><small>Folder {form.category} · menunggu sambungan akaun sekolah</small></div></div>
-      <div className="generator-actions"><button onClick={() => setPreview(false)}>Ubah maklumat</button><button className="save" onClick={() => notify("OPR sudah lengkap — sambungkan folder Google Drive untuk penghantaran automatik")}>Hantar ke Google Drive</button></div>
+      <div className="drive-destination"><span>◈</span><div><strong>Destinasi Google Drive</strong><small>Folder {form.category} · OPR Disahkan</small></div></div>
+      {driveUrl && <p className="drive-success">✓ OPR telah difailkan. <a href={driveUrl} target="_blank" rel="noreferrer">Buka PDF di Google Drive</a></p>}
+      <div className="generator-actions"><button onClick={() => setPreview(false)} disabled={sending}>Ubah maklumat</button><button className="save" onClick={sendToDrive} disabled={sending || Boolean(driveUrl)}>{sending ? "Menghantar..." : driveUrl ? "Sudah dihantar" : "Hantar ke Google Drive"}</button></div>
     </article>}
   </div>;
 }
