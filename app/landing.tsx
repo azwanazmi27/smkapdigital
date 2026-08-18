@@ -172,20 +172,32 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const [enhancing, setEnhancing] = useState(false);
   const [preview, setPreview] = useState(false);
   const [details, setDetails] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "", category: "Kurikulum", date: "", venue: "", organiser: "", objective: "", outcome: "",
+    preparedBy: "", preparedRole: "", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
   });
+
+  const verifiers = [
+    ["Wan Harun Bin Wan Ali", "Pengetua"],
+    ["Suriha Binti Sadi", "Guru Penolong Kanan Pentadbiran"],
+    ["SHAMSUL HAZLAN BIN MUHAMMAD KAMAL HAKIM", "Guru Penolong Kanan Hal Ehwal Murid"],
+    ["MUHAMAD SHUKRI BIN ABDUL GHANI", "Guru Penolong Kanan Kokurikulum"],
+    ["MOHD FADIL BIN ABDULLAH", "Guru Penolong Kanan Tingkatan Enam"],
+  ] as const;
+  const [verifiedName, verifiedRole] = form.verifier === "manual" ? [form.manualVerifier, form.manualVerifierRole] : form.verifier.split("|");
 
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const enhance = async () => {
     if (!details.trim()) return notify("Masukkan ringkasan program dahulu");
     setEnhancing(true);
     try {
-      const response = await fetch("/api/gemini", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: details, title: form.title, category: form.category }) });
-      const data = await response.json() as { text?: string; error?: string };
-      if (!response.ok || !data.text) throw new Error(data.error || "Gemini tidak dapat memproses permintaan");
-      setDetails(data.text);
-      notify("Ringkasan diperkemas oleh Gemini AI");
+      const response = await fetch("/api/gemini", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: details, title: form.title, category: form.category, objective: form.objective, outcome: form.outcome }) });
+      const data = await response.json() as { details?: string; objective?: string; outcome?: string; error?: string };
+      if (!response.ok || !data.details) throw new Error(data.error || "Gemini tidak dapat memproses permintaan");
+      setDetails(data.details);
+      setForm((current) => ({ ...current, objective: data.objective || current.objective, outcome: data.outcome || current.outcome }));
+      notify("Pelaksanaan, objektif dan hasil diperkemas oleh Gemini AI");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Sambungan Gemini belum tersedia");
     } finally {
@@ -193,7 +205,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     }
   };
 
-  const complete = Boolean(form.title && form.date && form.venue && details);
+  const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole);
   return <div className="opr-generator">
     <span className="modal-overline">PENJANA OPR RASMI SMKAP</span>
     <h2 id="folder-title">Cipta OPR baharu</h2>
@@ -211,12 +223,14 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
         <label>Anjuran<input value={form.organiser} onChange={(e) => setField("organiser", e.target.value)} placeholder="Unit / panitia" /></label>
       </div>
       <label>Ringkasan pelaksanaan<textarea rows={5} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Terangkan aktiviti yang dijalankan, kumpulan sasaran dan perjalanan program..." required /></label>
-      <button type="button" className="generator-ai" onClick={enhance} disabled={enhancing}><span>✦</span>{enhancing ? "Gemini sedang mengemas ayat..." : "Perkemas dengan Gemini AI"}</button>
+      <button type="button" className="generator-ai" onClick={enhance} disabled={enhancing}><span>✦</span><span>{enhancing ? "Gemini sedang menulis..." : "Jana pelaksanaan, objektif & hasil dengan Gemini AI"}<small>AI mengekalkan fakta asal dan mengemaskan ketiga-tiga bahagian</small></span></button>
       <div className="generator-row">
         <label>Objektif<input value={form.objective} onChange={(e) => setField("objective", e.target.value)} placeholder="Objektif utama program" /></label>
         <label>Hasil / impak<input value={form.outcome} onChange={(e) => setField("outcome", e.target.value)} placeholder="Hasil yang dicapai" /></label>
       </div>
-      <label className="photo-drop">Gambar program<input type="file" accept="image/*" multiple /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG</small></label>
+      <label className="photo-drop">Gambar program<input type="file" accept="image/*" multiple onChange={(event) => { const files = Array.from(event.target.files || []).slice(0, 6); setPhotos(files.map((file) => URL.createObjectURL(file))); if ((event.target.files?.length || 0) > 6) notify("Maksimum 6 gambar dipilih"); }} /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG</small></label>
+      {photos.length > 0 && <div className="photo-preview-strip">{photos.map((src, index) => <div key={src}><img src={src} alt={`Pratonton gambar program ${index + 1}`} /><button type="button" onClick={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))} aria-label={`Buang gambar ${index + 1}`}>×</button></div>)}</div>}
+      <fieldset className="signatory-fields"><legend>Penyedia dan pengesah OPR</legend><div className="generator-row"><label>Nama penyedia<input value={form.preparedBy} onChange={(e) => setField("preparedBy", e.target.value)} placeholder="Nama penuh penyedia" required /></label><label>Jawatan penyedia<input value={form.preparedRole} onChange={(e) => setField("preparedRole", e.target.value)} placeholder="Contoh: Guru Mata Pelajaran" required /></label></div><label>Pilih pengesah<select value={form.verifier} onChange={(e) => setField("verifier", e.target.value)}>{verifiers.map(([name, role]) => <option key={name} value={`${name}|${role}`}>{name} — {role}</option>)}<option value="manual">Isi pengesah secara manual</option></select></label>{form.verifier === "manual" && <div className="generator-row manual-verifier"><label>Nama pengesah<input value={form.manualVerifier} onChange={(e) => setField("manualVerifier", e.target.value)} placeholder="Nama penuh pengesah" required /></label><label>Jawatan pengesah<input value={form.manualVerifierRole} onChange={(e) => setField("manualVerifierRole", e.target.value)} placeholder="Jawatan pengesah" required /></label></div>}</fieldset>
       <div className="generator-actions"><button type="button" onClick={close}>Kembali</button><button className="save" disabled={!complete}>Semak OPR <span>→</span></button></div>
     </form> : <article className="opr-preview">
       <div className="preview-school"><strong>SMK AGAMA PAHANG</strong><small>MUADZAM SHAH</small></div>
@@ -224,7 +238,10 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       <div className="preview-meta"><div><small>Bidang</small><strong>{form.category}</strong></div><div><small>Tarikh</small><strong>{form.date}</strong></div><div><small>Tempat</small><strong>{form.venue}</strong></div><div><small>Anjuran</small><strong>{form.organiser || "—"}</strong></div></div>
       <section><h4>Pelaksanaan program</h4><p>{details}</p></section>
       <div className="preview-columns"><section><h4>Objektif</h4><p>{form.objective || "Belum dinyatakan."}</p></section><section><h4>Hasil / impak</h4><p>{form.outcome || "Belum dinyatakan."}</p></section></div>
-      <div className="generator-actions"><button onClick={() => setPreview(false)}>Ubah maklumat</button><button className="save" onClick={() => notify("Draf OPR disediakan — sambungan storan sekolah diperlukan untuk simpan kekal")}>Simpan draf OPR</button></div>
+      {photos.length > 0 && <section className="opr-photo-section"><h4>Dokumentasi program</h4><div className={`opr-photo-grid photos-${Math.min(photos.length, 4)}`}>{photos.map((src, index) => <img key={src} src={src} alt={`Dokumentasi program ${index + 1}`} />)}</div></section>}
+      <div className="preview-signatures"><div><small>DISEDIAKAN OLEH</small><strong>{form.preparedBy}</strong><span>{form.preparedRole}</span></div><div><small>DISAHKAN OLEH</small><strong>{verifiedName}</strong><span>{verifiedRole}</span></div></div>
+      <div className="drive-destination"><span>◈</span><div><strong>Destinasi Google Drive</strong><small>Folder {form.category} · menunggu sambungan akaun sekolah</small></div></div>
+      <div className="generator-actions"><button onClick={() => setPreview(false)}>Ubah maklumat</button><button className="save" onClick={() => notify("OPR sudah lengkap — sambungkan folder Google Drive untuk penghantaran automatik")}>Hantar ke Google Drive</button></div>
     </article>}
   </div>;
 }

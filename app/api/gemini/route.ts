@@ -7,19 +7,27 @@ export async function POST(request: Request) {
       return Response.json({ error: "Gemini AI belum diaktifkan oleh pentadbir." }, { status: 503 });
     }
 
-    const body = await request.json() as { text?: unknown; title?: unknown; category?: unknown };
+    const body = await request.json() as { text?: unknown; title?: unknown; category?: unknown; objective?: unknown; outcome?: unknown };
     const text = typeof body.text === "string" ? body.text.trim().slice(0, 6000) : "";
     const title = typeof body.title === "string" ? body.title.trim().slice(0, 180) : "";
     const category = typeof body.category === "string" ? body.category.trim().slice(0, 100) : "";
+    const objective = typeof body.objective === "string" ? body.objective.trim().slice(0, 1000) : "";
+    const outcome = typeof body.outcome === "string" ? body.outcome.trim().slice(0, 1000) : "";
     if (!text) return Response.json({ error: "Ringkasan program diperlukan." }, { status: 400 });
 
     const prompt = `Anda ialah pembantu penulisan rasmi SMK Agama Pahang, Muadzam Shah.
-Perkemas catatan guru menjadi satu perenggan pelaksanaan One Page Report (OPR) dalam Bahasa Melayu Malaysia yang formal, jelas dan ringkas.
-Kekalkan semua fakta asal. Jangan mereka nama, nombor, tarikh, pencapaian atau aktiviti baharu. Jangan gunakan tajuk, senarai atau markdown.
+Hasilkan tiga bahagian One Page Report (OPR) dalam Bahasa Melayu Malaysia yang formal, jelas dan ringkas:
+1. details: satu perenggan pelaksanaan program.
+2. objective: objektif program dalam satu atau dua ayat.
+3. outcome: hasil atau impak program dalam satu atau dua ayat.
+Kekalkan semua fakta asal. Jangan mereka nama, nombor, tarikh, pencapaian atau aktiviti baharu. Jika objektif atau hasil tidak diberikan, rumuskan secara berhati-hati hanya daripada catatan guru.
+Pulangkan JSON sahaja dengan kekunci details, objective dan outcome. Jangan gunakan markdown.
 
 Tajuk program: ${title || "Tidak dinyatakan"}
 Bidang: ${category || "Tidak dinyatakan"}
-Catatan guru: ${text}`;
+Catatan guru: ${text}
+Objektif asal: ${objective || "Tidak dinyatakan"}
+Hasil asal: ${outcome || "Tidak dinyatakan"}`;
 
     const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
     const response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
@@ -27,7 +35,7 @@ Catatan guru: ${text}`;
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.25, maxOutputTokens: 700 },
+        generationConfig: { temperature: 0.25, maxOutputTokens: 900, responseMimeType: "application/json" },
       }),
     });
 
@@ -42,7 +50,13 @@ Catatan guru: ${text}`;
 
     const enhanced = result.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
     if (!enhanced) return Response.json({ error: "Gemini tidak menghasilkan teks. Cuba sekali lagi." }, { status: 502 });
-    return Response.json({ text: enhanced });
+    const parsed = JSON.parse(enhanced) as { details?: unknown; objective?: unknown; outcome?: unknown };
+    if (typeof parsed.details !== "string") return Response.json({ error: "Format jawapan Gemini tidak lengkap." }, { status: 502 });
+    return Response.json({
+      details: parsed.details.trim(),
+      objective: typeof parsed.objective === "string" ? parsed.objective.trim() : "",
+      outcome: typeof parsed.outcome === "string" ? parsed.outcome.trim() : "",
+    });
   } catch (error) {
     console.error("OPR enhancement error", error);
     return Response.json({ error: "Permintaan AI tidak dapat diselesaikan." }, { status: 500 });
