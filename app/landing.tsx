@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "oprhub" | "oprgenerator" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "oprhub" | "oprgenerator" | "admin" | null;
 type SubItem = { icon: string; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 
 const folders = [
@@ -12,7 +12,7 @@ const folders = [
   { id: "pengunjung", no: "04", icon: "⌁", title: "Pengunjung", text: "Daftar dan dapatkan panduan", count: "3 pilihan", accent: "gold" },
 ] as const;
 
-const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator">, { title: string; intro: string; items: SubItem[] }> = {
+const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "ekunjung">, { title: string; intro: string; items: SubItem[] }> = {
   ibubapa: {
     title: "Ibu Bapa",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
@@ -45,7 +45,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator">, { 
     title: "Pengunjung",
     intro: "Daftar kehadiran dan dapatkan panduan sebelum berurusan di sekolah.",
     items: [
-      { icon: "⌁", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", badge: "QR" },
+      { icon: "⌁", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", folder: "ekunjung", badge: "QR" },
       { icon: "↗", title: "Panduan ke sekolah", text: "Lokasi dan panduan ketibaan" },
       { icon: "☎", title: "Hubungi pejabat", text: "Saluran rasmi urusan pelawat" },
     ],
@@ -72,6 +72,7 @@ export function LandingPortal() {
   const closeCurrentView = () => {
     if (open === "oprgenerator") return setOpen("oprhub");
     if (open === "oprhub") return setOpen("warga");
+    if (open === "ekunjung") return setOpen("pengunjung");
     setOpen(null);
   };
 
@@ -117,7 +118,7 @@ export function LandingPortal() {
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}>⌂ Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Warga Sekolah" : "Tutup"}>×</button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -207,6 +208,50 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
       {["Kategori OPR", "Carta organisasi", "Senarai guru", "Pautan modul"].map((item) => <button key={item} disabled={!enabled} onClick={() => notify(`${item} sedia disunting`)}><span>✎</span><div><strong>{item}</strong><small>Tambah, ubah atau buang</small></div><i>›</i></button>)}
     </div>
   </>;
+}
+
+function VisitorForm({ notify, close }: { notify: (message: string) => void; close: () => void }) {
+  const now = new Date();
+  const [photo, setPhoto] = useState("");
+  const [review, setReview] = useState(false);
+  const [visitMode, setVisitMode] = useState<"in" | "out">("in");
+  const [checkoutName, setCheckoutName] = useState("");
+  const [checkoutTime, setCheckoutTime] = useState(now.toTimeString().slice(0, 5));
+  const [form, setForm] = useState({
+    date: now.toISOString().slice(0, 10), timeIn: now.toTimeString().slice(0, 5), timeOut: "", visitorName: "",
+    organisation: "", purpose: "", staff: "", meetingPlace: "", notes: "",
+  });
+  const setVisitorField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
+  const tidyVisitorField = (field: keyof typeof form) => setForm((current) => ({ ...current, [field]: tidyTitleCase(current[field]) }));
+  const complete = Boolean(form.date && form.timeIn && form.visitorName && form.purpose && form.staff && photo);
+  if (visitMode === "out") return <div className="visitor-form-shell">
+    <span className="modal-overline">E-KUNJUNG SMKAP</span><h2 id="folder-title">Rekod masa keluar</h2><p>Pelawat atau pengawal boleh melengkapkan rekod keluar dengan dua langkah sahaja.</p>
+    <div className="visitor-mode-tabs"><button onClick={() => setVisitMode("in")}>Daftar masuk</button><button className="active">Rekod keluar</button></div>
+    <div className="visitor-checkout-card"><span>↗</span><div><strong>Daftar keluar pelawat</strong><small>Cari nama seperti dalam rekod daftar masuk</small></div></div>
+    <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); notify("Rekod masa keluar sedia. Sambungan pangkalan data akan dibuat selepas ini."); }}>
+      <label>Nama pelawat *<input autoFocus value={checkoutName} onChange={(event) => setCheckoutName(event.target.value)} onBlur={() => setCheckoutName(tidyTitleCase(checkoutName))} placeholder="Cari atau masukkan nama pelawat" required /></label>
+      <label>Masa keluar *<input type="time" value={checkoutTime} onChange={(event) => setCheckoutTime(event.target.value)} required /></label>
+      <div className="visitor-actions"><button type="button" onClick={close}>Kembali</button><button className="visitor-primary" disabled={!checkoutName || !checkoutTime}>Sahkan masa keluar <span>→</span></button></div>
+    </form>
+  </div>;
+  if (review) return <article className="visitor-review">
+    <span className="modal-overline">SEMAKAN E-KUNJUNG</span><h2 id="folder-title">Semak maklumat pelawat</h2><p>Pastikan semua maklumat betul sebelum rekod dihantar.</p>
+    <div className="visitor-review-layout"><img src={photo} alt="Gambar pelawat" /><div>{[["Nama pelawat",form.visitorName],["Tujuan lawatan",form.purpose],["Staf ditemui",form.staff],["Tarikh & masa",`${form.date} · ${form.timeIn}`],...(form.organisation ? [["Organisasi",form.organisation]] : []),...(form.meetingPlace ? [["Tempat perjumpaan",form.meetingPlace]] : []),...(form.timeOut ? [["Masa keluar",form.timeOut]] : []),...(form.notes ? [["Catatan",form.notes]] : [])].map(([label,value]) => <div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div></div>
+    <div className="visitor-actions"><button onClick={() => setReview(false)}>Kembali ubah maklumat</button><button className="visitor-primary" onClick={() => notify("Paparan E-Kunjung siap. Sambungan Google Sheets akan dibuat selepas ini.")}>Sahkan paparan</button></div>
+  </article>;
+  return <div className="visitor-form-shell">
+    <span className="modal-overline">DAFTAR PELAWAT</span><h2 id="folder-title">E-Kunjung SMKAP</h2><p>Daftar dengan pantas. Hanya isi empat perkara utama dan ambil satu gambar.</p>
+    <div className="visitor-mode-tabs"><button className="active">Daftar masuk</button><button onClick={() => setVisitMode("out")}>Rekod keluar</button></div>
+    <div className="visitor-time-strip"><span>◷</span><div><small>Tarikh dan masa masuk</small><strong>{new Intl.DateTimeFormat("ms-MY", { dateStyle: "long" }).format(new Date(`${form.date}T12:00:00`))} · {form.timeIn}</strong></div></div>
+    <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); if (complete) setReview(true); }}>
+      <label>Nama pelawat *<input autoFocus value={form.visitorName} onChange={(event) => setVisitorField("visitorName",event.target.value)} onBlur={() => tidyVisitorField("visitorName")} placeholder="Masukkan nama penuh" required /></label>
+      <label>Tujuan lawatan *<select value={form.purpose} onChange={(event) => setVisitorField("purpose",event.target.value)} required><option value="">Pilih tujuan</option><option>Urusan Rasmi</option><option>Berjumpa Guru / Staf</option><option>Penghantaran Barang</option><option>Mesyuarat / Program</option><option>Urusan Murid</option><option>Lain-lain</option></select></label>
+      <label>Staf yang ingin ditemui *<input value={form.staff} onChange={(event) => setVisitorField("staff",event.target.value)} onBlur={() => tidyVisitorField("staff")} placeholder="Nama guru atau staf" required /></label>
+      <label className="visitor-photo">Gambar pelawat *<input type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) setPhoto(URL.createObjectURL(file)); }} />{photo ? <div><img src={photo} alt="Pratonton gambar pelawat" /><span>Tekan untuk tukar gambar</span></div> : <div><b>⌁</b><strong>Ambil atau pilih satu gambar</strong><span>JPG atau PNG</span></div>}</label>
+      <details className="visitor-optional"><summary><span>＋</span> Maklumat tambahan <small>Jika perlu sahaja</small></summary><div><div className="visitor-row"><label>Organisasi<input value={form.organisation} onChange={(event) => setVisitorField("organisation",event.target.value)} onBlur={() => tidyVisitorField("organisation")} placeholder="Syarikat / jabatan" /></label><label>Tempat perjumpaan<input value={form.meetingPlace} onChange={(event) => setVisitorField("meetingPlace",event.target.value)} onBlur={() => tidyVisitorField("meetingPlace")} placeholder="Pejabat / bilik" /></label></div><label>Catatan<input value={form.notes} onChange={(event) => setVisitorField("notes",event.target.value)} placeholder="Jika ada" /></label></div></details>
+      <div className="visitor-actions"><button type="button" onClick={close}>Kembali</button><button className="visitor-primary" disabled={!complete}>Semak maklumat <span>→</span></button></div>
+    </form>
+  </div>;
 }
 
 const tidyAcronyms = new Set(["AI", "HEM", "ICT", "KPM", "OPR", "PAJSK", "PBD", "PIBG", "SMKAP", "SPM", "STEM", "STPM"]);
