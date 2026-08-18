@@ -6,10 +6,10 @@ type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "ete
 type SubItem = { icon: string; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 
 const folders = [
-  { id: "tentang", no: "01", icon: "⌕", title: "Tentang Sekolah", text: "Kenali SMK Agama Pahang", count: "3 bahagian", accent: "purple" },
-  { id: "warga", no: "02", icon: "◎", title: "Warga Sekolah", text: "Urusan guru dan kakitangan", count: "4 modul", accent: "blue" },
-  { id: "ibubapa", no: "03", icon: "⌂", title: "Ibu Bapa", text: "Maklumat dan urusan penjaga", count: "3 pilihan", accent: "teal" },
-  { id: "pengunjung", no: "04", icon: "⌁", title: "Pengunjung", text: "Daftar dan dapatkan panduan", count: "3 pilihan", accent: "gold" },
+  { id: "tentang", no: "01", icon: "🏫", title: "Tentang Sekolah", text: "Kenali SMK Agama Pahang", count: "3 bahagian", accent: "purple" },
+  { id: "warga", no: "02", icon: "👥", title: "Warga Sekolah", text: "Urusan guru dan kakitangan", count: "4 modul", accent: "blue" },
+  { id: "ibubapa", no: "03", icon: "👪", title: "Ibu Bapa", text: "Maklumat dan urusan penjaga", count: "3 pilihan", accent: "teal" },
+  { id: "pengunjung", no: "04", icon: "📍", title: "Pengunjung", text: "Daftar dan dapatkan panduan", count: "3 pilihan", accent: "gold" },
 ] as const;
 
 const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "ekunjung">, { title: string; intro: string; items: SubItem[] }> = {
@@ -17,50 +17,50 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     title: "Ibu Bapa",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
     items: [
-      { icon: "▤", title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
-      { icon: "□", title: "Takwim sekolah", text: "Tarikh dan aktiviti penting" },
-      { icon: "☎", title: "Hubungi sekolah", text: "09-4523901 · cra8001@moe.edu.my", href: "mailto:cra8001@moe.edu.my" },
+      { icon: "📢", title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
+      { icon: "📅", title: "Takwim sekolah", text: "Tarikh dan aktiviti penting" },
+      { icon: "☎️", title: "Hubungi sekolah", text: "09-4523901 · cra8001@moe.edu.my", href: "mailto:cra8001@moe.edu.my" },
     ],
   },
   warga: {
     title: "Warga Sekolah",
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
-      { icon: "✎", title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
-      { icon: "✓", title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site", badge: "Buka" },
-      { icon: "□", title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan", badge: "Baharu" },
-      { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
+      { icon: "📝", title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
+      { icon: "✅", title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site", badge: "Buka" },
+      { icon: "📆", title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan", badge: "Baharu" },
+      { icon: "🎓", title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
   },
   tentang: {
     title: "Tentang Sekolah",
     intro: "Kenali organisasi, warga dan hala tuju SMK Agama Pahang.",
     items: [
-      { icon: "⌂", title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
-      { icon: "♙", title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
-      { icon: "◉", title: "Senarai guru", text: "Direktori nama dan jawatan" },
+      { icon: "🏛️", title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
+      { icon: "🗂️", title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
+      { icon: "🧑‍🏫", title: "Senarai guru", text: "Direktori nama dan jawatan" },
     ],
   },
   pengunjung: {
     title: "Pengunjung",
     intro: "Daftar kehadiran dan dapatkan panduan sebelum berurusan di sekolah.",
     items: [
-      { icon: "⌁", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", folder: "ekunjung", badge: "QR" },
-      { icon: "↗", title: "Panduan ke sekolah", text: "Jalan Sekolah Agama, 26700 Muadzam Shah", href: "https://www.google.com/maps/search/?api=1&query=SMK+Agama+Pahang%2C+Jalan+Sekolah+Agama%2C+26700+Muadzam+Shah%2C+Pahang", badge: "Peta" },
-      { icon: "☎", title: "Hubungi pejabat", text: "09-4523901 · cra8001@moe.edu.my", href: "tel:+6094523901" },
+      { icon: "📋", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", folder: "ekunjung", badge: "QR" },
+      { icon: "🗺️", title: "Panduan ke sekolah", text: "Jalan Sekolah Agama, 26700 Muadzam Shah", href: "https://www.google.com/maps/search/?api=1&query=SMK+Agama+Pahang%2C+Jalan+Sekolah+Agama%2C+26700+Muadzam+Shah%2C+Pahang", badge: "Peta" },
+      { icon: "☎️", title: "Hubungi pejabat", text: "09-4523901 · cra8001@moe.edu.my", href: "tel:+6094523901" },
     ],
   },
   oprhub: {
     title: "Pusat OPR",
     intro: "Cipta satu OPR, kemudian semak laporan yang difailkan mengikut bidang berkaitan.",
     items: [
-      { icon: "＋", title: "Cipta OPR baharu", text: "Penjana OPR rasmi dalam portal", folder: "oprgenerator", badge: "AI" },
-      { icon: "◈", title: "Pengurusan", text: "Laporan pengurusan", badge: "12" },
-      { icon: "▥", title: "Kurikulum", text: "Laporan akademik", badge: "15" },
-      { icon: "♡", title: "Hal Ehwal Murid", text: "Laporan HEM", badge: "8" },
-      { icon: "✦", title: "Kokurikulum", text: "Laporan aktiviti", badge: "7" },
-      { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum", badge: "5" },
-      { icon: "•••", title: "Lain-lain", text: "Laporan kategori tambahan", badge: "0" },
+      { icon: "➕", title: "Cipta OPR baharu", text: "Penjana OPR rasmi dalam portal", folder: "oprgenerator", badge: "AI" },
+      { icon: "🏢", title: "Pengurusan", text: "Laporan pengurusan", badge: "12" },
+      { icon: "📚", title: "Kurikulum", text: "Laporan akademik", badge: "15" },
+      { icon: "🧑‍🎓", title: "Hal Ehwal Murid", text: "Laporan HEM", badge: "8" },
+      { icon: "🏆", title: "Kokurikulum", text: "Laporan aktiviti", badge: "7" },
+      { icon: "🎓", title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum", badge: "5" },
+      { icon: "📁", title: "Lain-lain", text: "Laporan kategori tambahan", badge: "0" },
     ],
   },
 };
@@ -95,6 +95,7 @@ export function LandingPortal() {
         <div className="intro-label"><i></i> PORTAL SEHENTI WARGA SMKAP</div>
         <h1>Urusan sekolah,<br/><em>lebih mudah.</em></h1>
         <p>Semua perkhidmatan digital sekolah dalam satu tempat. Pilih urusan anda untuk bermula.</p>
+        <figure className="school-visual"><img src="/kampus-smkap.jpg" alt="Pemandangan kampus SMK Agama Pahang di Muadzam Shah" /><figcaption><span>SMKAP</span><div><strong>Kampus ilmu dan tarbiah</strong><small>Muadzam Shah, Pahang</small></div></figcaption></figure>
         <div className="school-name"><span>س</span><div><strong>SMK Agama Pahang</strong><small>Muadzam Shah · Berilmu · Bertakwa</small></div></div>
       </div>
 
