@@ -274,7 +274,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     section("OBJEKTIF", form.objective, x, contentY + 49, 91, 32);
     section("HASIL / IMPAK", form.outcome, x + 95, contentY + 49, 91, 32);
 
-    const photoY = contentY + 85, photoH = 62;
+    const photoY = contentY + 85, photoH = 80;
     pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); pdf.text("DOKUMENTASI PROGRAM", x, photoY);
     pdf.setDrawColor(220, 225, 230); pdf.setFillColor(...pale); pdf.roundedRect(x, photoY + 3, contentWidth, photoH, 2, 2, "FD");
     if (photoFiles.length) {
