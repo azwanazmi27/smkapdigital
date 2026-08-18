@@ -123,7 +123,7 @@ export function LandingPortal() {
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <AttendanceCentre notify={notify} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -137,6 +137,14 @@ export function LandingPortal() {
     </div>}
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
+}
+
+function ReliefIntegratedApp() {
+  const [ready, setReady] = useState(false);
+  return <div className="relief-integrated-shell">
+    {!ready && <div className="relief-integrated-loading"><i></i><strong>Menyediakan E‑Keberadaan & Sistem Relief lengkap…</strong><small>Guru · Tingkatan 6 · Rumusan · Pentadbir · Relief</small></div>}
+    <iframe className={ready ? "ready" : ""} src="/ekeberadaan-app/index.html" title="E-Keberadaan dan Sistem Relief SMKAP" onLoad={() => setReady(true)} allow="clipboard-write; fullscreen" />
+  </div>;
 }
 
 type Teacher = { id: string; name: string; category: "mainstream" | "form6" };

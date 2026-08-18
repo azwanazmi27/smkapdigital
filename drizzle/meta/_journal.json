@@ -8,6 +8,13 @@
       "when": 1787068477584,
       "tag": "0000_quick_skaar",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787070306584,
+      "tag": "0001_gifted_magik",
+      "breakpoints": true
     }
   ]
 }
