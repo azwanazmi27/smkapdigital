@@ -29,7 +29,7 @@ Catatan guru: ${text}
 Objektif asal: ${objective || "Tidak dinyatakan"}
 Hasil asal: ${outcome || "Tidak dinyatakan"}`;
 
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
     const response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
