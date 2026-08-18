@@ -296,3 +296,13 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
   .room-grid article { min-height:150px; }
 }
 @media (prefers-reduced-motion:reduce) { .landing-header,.landing-intro>*,.folder-card,.school-name>span,.portal-label>i { animation:none!important; }.school-visual>img,.folder-card,.room-grid article { transition:none!important; } }
+
+/* Keep native form controls visible on dark surfaces */
+.booking-centre input,.booking-centre select,.visitor-form-shell input,.visitor-form-shell select,.generator-form input,.generator-form select,.signatory-fields input,.signatory-fields select { color-scheme:dark; }
+.booking-centre input[type="date"]::-webkit-calendar-picker-indicator,.booking-centre input[type="time"]::-webkit-calendar-picker-indicator,.visitor-form-shell input[type="date"]::-webkit-calendar-picker-indicator,.visitor-form-shell input[type="time"]::-webkit-calendar-picker-indicator,.generator-form input[type="date"]::-webkit-calendar-picker-indicator,.generator-form input[type="time"]::-webkit-calendar-picker-indicator { opacity:0; cursor:pointer; }
+.booking-centre label:has(>input[type="date"]),.booking-centre label:has(>input[type="time"]),.visitor-form-shell label:has(>input[type="date"]),.visitor-form-shell label:has(>input[type="time"]),.generator-form label:has(>input[type="date"]),.generator-form label:has(>input[type="time"]) { position:relative; }
+.booking-centre label:has(>input[type="date"])::after,.visitor-form-shell label:has(>input[type="date"])::after,.generator-form label:has(>input[type="date"])::after { content:"📅"; }
+.booking-centre label:has(>input[type="time"])::after,.visitor-form-shell label:has(>input[type="time"])::after,.generator-form label:has(>input[type="time"])::after { content:"🕒"; }
+.booking-centre label:has(>input[type])::after,.visitor-form-shell label:has(>input[type])::after,.generator-form label:has(>input[type])::after { position:absolute; right:13px; bottom:13px; z-index:1; pointer-events:none; font-family:Arial,"Apple Color Emoji","Segoe UI Emoji",sans-serif; font-size:16px; line-height:1; }
+.booking-centre input[type="date"],.booking-centre input[type="time"],.visitor-form-shell input[type="date"],.visitor-form-shell input[type="time"],.generator-form input[type="date"],.generator-form input[type="time"] { padding-right:42px; }
+.booking-centre select,.visitor-form-shell select,.generator-form select,.signatory-fields select { accent-color:#75d2c3; }
