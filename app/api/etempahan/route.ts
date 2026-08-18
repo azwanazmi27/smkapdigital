@@ -1,6 +1,6 @@
 type BookingBody = Record<string, unknown>;
 
-const rooms = new Set(["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Mesyuarat", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni", "Bilik Gerakan"]);
+const rooms = new Set(["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"]);
 const purposes = new Set(["PdPC", "Mesyuarat", "Taklimat", "Perjumpaan", "Latihan SPTS", "Program Sekolah", "Lain-lain"]);
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 
@@ -19,18 +19,40 @@ async function callGoogle(payload: Record<string, unknown>) {
   return result;
 }
 
+function normalizeBookings(value: unknown) {
+  return Array.isArray(value) ? value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const row = entry as Record<string, unknown>;
+    const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"];
+    if (!required.every((key) => typeof row[key] === "string") || !rooms.has(String(row.room))) return [];
+    return [{ ...Object.fromEntries(required.map((key) => [key, row[key]])), participants: Number(row.participants) || 0 }];
+  }) : [];
+}
+
+function datesBetween(from: string, to: string, maximum = 62) {
+  const start = new Date(`${from}T12:00:00+08:00`), end = new Date(`${to}T12:00:00+08:00`);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end < start) return [];
+  const dates: string[] = [];
+  for (const cursor = new Date(start); cursor <= end && dates.length < maximum; cursor.setDate(cursor.getDate() + 1)) dates.push(cursor.toISOString().slice(0, 10));
+  return dates;
+}
+
 export async function GET(request: Request) {
   try {
-    const date = new URL(request.url).searchParams.get("date") || "";
+    const params = new URL(request.url).searchParams;
+    const date = params.get("date") || "", from = params.get("from") || "", to = params.get("to") || "";
+    if (from || to) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
+      const dates = datesBetween(from, to);
+      if (!dates.length || dates.length > 61) return Response.json({ error: "Julat senarai mestilah tidak melebihi 61 hari." }, { status: 400 });
+      const results = await Promise.all(dates.map((item) => callGoogle({ action: "etempahan_list", date: item })));
+      const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
+      results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
+      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)) }, { headers: { "Cache-Control": "private, no-store" } });
+    }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
     const result = await callGoogle({ action: "etempahan_list", date });
-    const bookings = Array.isArray(result.bookings) ? result.bookings.flatMap((entry) => {
-      if (!entry || typeof entry !== "object") return [];
-      const row = entry as Record<string, unknown>;
-      const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"];
-      if (!required.every((key) => typeof row[key] === "string") || !rooms.has(String(row.room))) return [];
-      return [{ ...Object.fromEntries(required.map((key) => [key, row[key]])), participants: Number(row.participants) || 0 }];
-    }) : [];
+    const bookings = normalizeBookings(result.bookings);
     return Response.json({ success: true, bookings }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("E-Tempahan list error", error instanceof Error ? error.message : error);
@@ -52,9 +74,9 @@ export async function POST(request: Request) {
     if (!purposes.has(purpose)) return Response.json({ error: "Sila pilih tujuan penggunaan." }, { status: 400 });
     if (!Number.isInteger(participants) || participants < 1 || participants > 1000) return Response.json({ error: "Bilangan peserta mestilah antara 1 hingga 1,000 orang." }, { status: 400 });
     const start = new Date(`${startDate}T${startTime}:00+08:00`), end = new Date(`${endDate}T${endTime}:00+08:00`);
-    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Masa tamat mestilah selepas masa mula." }, { status: 400 });
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Tarikh dan waktu akhir mestilah selepas tarikh dan waktu mula." }, { status: 400 });
     const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, startDate, startTime, endDate, endTime, purpose, participants });
-    return Response.json({ success: true, id: result.id, status: result.status || "Diluluskan" });
+    return Response.json({ success: true, id: result.id, count: 1, status: result.status || "Diluluskan" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat diproses.";
     const conflict = /bertindih|ditempah|conflict/i.test(message);
