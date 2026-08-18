@@ -5,8 +5,8 @@ const purposes = new Set(["PdPC", "Mesyuarat", "Taklimat", "Perjumpaan", "Latiha
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 
 function connection() {
-  const url = process.env.OPR_APPS_SCRIPT_URL;
-  const token = process.env.OPR_APPS_SCRIPT_TOKEN;
+  const url = process.env.ETEMPAHAN_APPS_SCRIPT_URL;
+  const token = process.env.ETEMPAHAN_APPS_SCRIPT_TOKEN;
   if (!url || !token) throw new Error("Sambungan Google Sheet belum dikonfigurasi");
   return { url, token };
 }
