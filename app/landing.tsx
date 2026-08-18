@@ -128,7 +128,7 @@ export function LandingPortal() {
 
 const oprCategories = [
   ["Pengurusan", 12, "#79d4c5"], ["Kurikulum", 15, "#78b9df"], ["HEM", 8, "#dd8d78"],
-  ["Kokurikulum", 7, "#e2ba65"], ["Tingkatan Enam", 5, "#a792d5"], ["Lain-lain", 0, "#8ea3aa"],
+  ["Kokurikulum", 7, "#e2ba65"], ["Tingkatan Enam", 5, "#a792d5"], ["Lain-lain", 1, "#8ea3aa"],
 ] as const;
 
 function OprDashboard({ create, notify }: { create: () => void; notify: (message: string) => void }) {
@@ -141,21 +141,18 @@ function OprDashboard({ create, notify }: { create: () => void; notify: (message
     { title: "Program Orientasi Tingkatan Enam", category: "Tingkatan Enam", organiser: "Unit Tingkatan Enam", owner: "En. Mohd Fadil", date: "5 Ogos 2026", status: "Lengkap" },
     { title: "Gotong-royong Perdana", category: "Lain-lain", organiser: "Kelab Warga SMKAP", owner: "Pn. Aisyah", date: "2 Ogos 2026", status: "Lengkap" },
   ];
-  const visible = filter === "Semua" ? reports : reports.filter((report) => report.category === filter);
+  const visible = filter === "Semua" ? reports.slice(0, 3) : reports.filter((report) => report.category === filter);
   return <div className="opr-dashboard">
-    <div className="opr-dash-head"><div><span className="modal-overline">PUSAT OPR</span><h2 id="folder-title">Dashboard laporan sekolah</h2><p>Pantau, cari dan hasilkan One Page Report dalam satu ruang kerja.</p></div><button className="dash-create" onClick={create}><b>＋</b><span>Cipta OPR<small>dengan Gemini AI</small></span></button></div>
+    <div className="opr-dash-head"><div><span className="modal-overline">PUSAT OPR</span><h2 id="folder-title">Dashboard laporan sekolah</h2><p>Pantau, cari dan hasilkan One Page Report dalam satu ruang kerja.</p></div><button className="dash-create" onClick={create}><b>＋</b><span>Buat OPR Baharu<small>Tekan di sini untuk mula</small></span></button></div>
     <div className="opr-kpis">
-      <article><span>JUMLAH OPR</span><strong>47</strong><small><i>↑ 12%</i> berbanding bulan lalu</small></article>
+      <article><span>JUMLAH OPR</span><strong>48</strong><small><i>↑ 12%</i> berbanding bulan lalu</small></article>
       <article><span>BULAN INI</span><strong>9</strong><small>7 lengkap · 2 draf</small></article>
       <article><span>PALING AKTIF</span><strong className="word">Kurikulum</strong><small>15 laporan dihantar</small></article>
       <article className="ai-kpi"><span>AI GEMINI</span><strong className="word">Sedia</strong><small>Penulisan pintar OPR</small></article>
     </div>
-    <section className="opr-folder-section"><div className="dash-section-title"><div><span>FOLDER BIDANG</span><h3>Pilih folder untuk melihat semua OPR</h3></div><b>{filter === "Semua" ? "Semua laporan" : filter}</b></div><div className="opr-folder-grid"><button className={filter === "Semua" ? "active" : ""} onClick={() => setFilter("Semua")}><span>▤</span><div><strong>Semua OPR</strong><small>47 laporan</small></div></button>{oprCategories.map(([name,count]) => <button key={name} className={filter === name ? "active" : ""} onClick={() => setFilter(name)}><span>▰</span><div><strong>{name}</strong><small>{count} laporan</small></div></button>)}</div></section>
-    <div className="opr-dash-grid">
-      <section className="opr-chart-card"><div className="dash-section-title"><div><span>RINGKASAN BIDANG</span><h3>Agihan semua laporan</h3></div><b>47 OPR</b></div><div className="category-bars">{oprCategories.map(([name,count,color]) => <button key={name} onClick={() => setFilter(name)}><span><i style={{backgroundColor:color}}></i>{name}</span><strong>{count}</strong><em><i style={{width:`${Math.max(4,(count/15)*100)}%`,backgroundColor:color}}></i></em></button>)}</div></section>
-      <section className="opr-progress-card"><div className="dash-section-title"><div><span>SASARAN TAHUNAN</span><h3>Kemajuan 2026</h3></div></div><div className="progress-ring"><div><strong>78%</strong><small>tercapai</small></div></div><p><b>47</b> daripada sasaran <b>60 laporan</b> telah disediakan.</p><button onClick={() => notify("Paparan analitik penuh akan dibuka")}>Lihat analitik <span>→</span></button></section>
-    </div>
-    <section className="recent-opr"><div className="dash-section-title"><div><span>LAPORAN TERKINI</span><h3>Aktiviti baru-baru ini</h3></div><div className="report-filters"><button className={filter === "Semua" ? "active" : ""} onClick={() => setFilter("Semua")}>Semua</button><button onClick={() => notify("Carian laporan dibuka")}>⌕ Cari</button></div></div><div className="report-list">{visible.length ? visible.map((report) => <button key={report.title} onClick={() => notify(`${report.title} dipilih`)}><span className="report-file">▤</span><div><strong>{report.title}</strong><small>{report.organiser} · {report.date} · {report.owner}</small></div><b>{report.category}</b><em className={report.status === "Draf" ? "draft" : ""}><i></i>{report.status}</em><span className="report-arrow">›</span></button>) : <p className="empty-report">Belum ada laporan untuk bidang ini.</p>}</div></section>
+    <section className="opr-folder-section"><div className="dash-section-title"><div><span>FOLDER BIDANG</span><h3>Pilih folder untuk melihat semua OPR</h3></div><b>{filter === "Semua" ? "Semua laporan" : filter}</b></div><div className="opr-folder-grid"><button aria-pressed={filter === "Semua"} className={filter === "Semua" ? "active" : ""} onClick={() => setFilter("Semua")}><span>▤</span><div><strong>Semua OPR</strong><small>48 laporan</small></div></button>{oprCategories.map(([name,count]) => <button key={name} aria-pressed={filter === name} className={filter === name ? "active" : ""} onClick={() => setFilter(name)}><span>▰</span><div><strong>{name}</strong><small>{count} laporan</small></div></button>)}</div></section>
+    <section className="recent-opr"><div className="dash-section-title"><div><span>{filter === "Semua" ? "LAPORAN TERKINI" : `FOLDER ${filter.toUpperCase()}`}</span><h3>{filter === "Semua" ? "3 laporan paling terkini" : `Semua OPR ${filter}`}</h3></div><div className="report-filters"><button className={filter === "Semua" ? "active" : ""} onClick={() => setFilter("Semua")}>Semua</button><button onClick={() => notify("Carian laporan dibuka")}>⌕ Cari</button></div></div><div className="report-list">{visible.length ? visible.map((report) => <button key={report.title} onClick={() => notify(`${report.title} dipilih`)}><span className="report-file">▤</span><div><strong>{report.title}</strong><small>{report.organiser} · {report.date} · {report.owner}</small></div><b>{report.category}</b><em className={report.status === "Draf" ? "draft" : ""}><i></i>{report.status}</em><span className="report-arrow">›</span></button>) : <p className="empty-report">Belum ada OPR dalam folder {filter}.</p>}</div></section>
+    <div className="opr-dash-grid summary-only"><section className="opr-chart-card"><div className="dash-section-title"><div><span>RINGKASAN BIDANG</span><h3>Agihan semua laporan</h3></div><b>48 OPR</b></div><div className="category-bars">{oprCategories.map(([name,count,color]) => <button key={name} onClick={() => setFilter(name)}><span><i style={{backgroundColor:color}}></i>{name}</span><strong>{count}</strong><em><i style={{width:`${Math.max(4,(count/15)*100)}%`,backgroundColor:color}}></i></em></button>)}</div></section></div>
   </div>;
 }
 
