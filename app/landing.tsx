@@ -69,6 +69,12 @@ export function LandingPortal() {
   const [open, setOpen] = useState<Folder>(null);
   const [toast, setToast] = useState("");
 
+  const closeCurrentView = () => {
+    if (open === "oprgenerator") return setOpen("oprhub");
+    if (open === "oprhub") return setOpen("warga");
+    setOpen(null);
+  };
+
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2800);
@@ -107,9 +113,10 @@ export function LandingPortal() {
 
     <footer className="landing-footer"><span>SMK AGAMA PAHANG · MUADZAM SHAH</span><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>? Perlukan bantuan</button></footer>
 
-    {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setOpen(null)}>
+    {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
-        <button className="folder-close" onClick={() => setOpen(null)} aria-label="Tutup">×</button>
+        <button className="portal-home-button" onClick={() => setOpen(null)}>⌂ Portal Utama</button>
+        <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Warga Sekolah" : "Tutup"}>×</button>
         {open === "admin" ? <AdminPanel notify={notify} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
@@ -131,9 +138,13 @@ const oprCategories = [
   ["Kokurikulum", 7, "#e2ba65"], ["Tingkatan Enam", 5, "#a792d5"], ["Lain-lain", 1, "#8ea3aa"],
 ] as const;
 
+type OprReport = { title: string; category: string; organiser: string; owner: string; date: string; status: string };
+
 function OprDashboard({ create, notify }: { create: () => void; notify: (message: string) => void }) {
-  const [filter, setFilter] = useState("Semua");
-  const reports = [
+  const [folderView, setFolderView] = useState<string | null>(null);
+  const [folderSearch, setFolderSearch] = useState("");
+  const [selected, setSelected] = useState<OprReport | null>(null);
+  const reports: OprReport[] = [
     { title: "Mesyuarat Pengurusan Sekolah", category: "Pengurusan", organiser: "Pejabat Sekolah", owner: "Pn. Suriha", date: "18 Ogos 2026", status: "Lengkap" },
     { title: "Program Ihya’ Ramadan", category: "HEM", organiser: "Unit HEM", owner: "Ustazah Noraini", date: "15 Ogos 2026", status: "Lengkap" },
     { title: "Bengkel Teknik Menjawab SPM", category: "Kurikulum", organiser: "Unit Kurikulum", owner: "Pn. Farah", date: "12 Ogos 2026", status: "Lengkap" },
@@ -141,7 +152,24 @@ function OprDashboard({ create, notify }: { create: () => void; notify: (message
     { title: "Program Orientasi Tingkatan Enam", category: "Tingkatan Enam", organiser: "Unit Tingkatan Enam", owner: "En. Mohd Fadil", date: "5 Ogos 2026", status: "Lengkap" },
     { title: "Gotong-royong Perdana", category: "Lain-lain", organiser: "Kelab Warga SMKAP", owner: "Pn. Aisyah", date: "2 Ogos 2026", status: "Lengkap" },
   ];
-  const visible = filter === "Semua" ? reports.slice(0, 3) : reports.filter((report) => report.category === filter);
+  const visible = reports.slice(0, 3);
+  const folderReports = reports.filter((report) => (folderView === "Semua" || report.category === folderView) && `${report.title} ${report.organiser} ${report.owner}`.toLowerCase().includes(folderSearch.toLowerCase()));
+  const openFolder = (name: string) => { setFolderSearch(""); setFolderView(name); };
+  const printReport = (report: OprReport) => {
+    const printWindow = window.open("", "_blank", "width=900,height=1100");
+    if (!printWindow) return notify("Benarkan tetingkap baharu untuk mencetak OPR");
+    printWindow.document.write(`<!doctype html><html lang="ms"><head><title>${report.title}</title><style>body{font-family:Arial,sans-serif;color:#17344a;margin:0;padding:36px;background:#eef6fb}.paper{max-width:760px;margin:auto;background:white;border:1px solid #c9dce8;padding:34px;box-shadow:0 14px 40px #abc3d455}.head{border-radius:14px;background:#d8effb;padding:22px;border-bottom:5px solid #2d77a5}.head small{letter-spacing:.15em;font-weight:700}.head h1{font-size:24px;margin:10px 0 3px}.meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px 0}.meta div,.section{border:1px solid #dbe7ee;border-radius:9px;padding:13px}.meta small,.section h2{display:block;color:#2d77a5;font-size:10px;letter-spacing:.08em}.meta strong{display:block;margin-top:5px;font-size:13px}.section{margin-top:12px}.section h2{margin:0 0 8px}.section p{font-size:13px;line-height:1.65;margin:0}.sign{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}.sign div{min-height:85px;border-top:1px solid #aebfca;padding-top:9px;font-size:12px}@media print{body{background:white;padding:0}.paper{box-shadow:none;border:0}}</style></head><body><main class="paper"><header class="head"><small>SMK AGAMA PAHANG · ONE PAGE REPORT</small><h1>${report.title}</h1><span>${report.category}</span></header><section class="meta"><div><small>TARIKH</small><strong>${report.date}</strong></div><div><small>ANJURAN</small><strong>${report.organiser}</strong></div><div><small>PENYEDIA</small><strong>${report.owner}</strong></div><div><small>STATUS</small><strong>${report.status}</strong></div></section><section class="section"><h2>PELAKSANAAN PROGRAM</h2><p>Program telah dilaksanakan mengikut perancangan oleh ${report.organiser}. Aktiviti diselaraskan dengan teratur dan penglibatan peserta direkodkan bagi tujuan pelaporan sekolah.</p></section><section class="section"><h2>OBJEKTIF</h2><p>Melaksanakan program secara sistematik serta mencapai matlamat yang ditetapkan oleh pihak sekolah.</p></section><section class="section"><h2>HASIL / IMPAK</h2><p>Program berjalan lancar dan memberi manfaat kepada warga sekolah yang terlibat.</p></section><section class="sign"><div>Disediakan oleh<br><strong>${report.owner}</strong></div><div>Disahkan oleh<br><strong>Pihak Pengurusan SMKAP</strong></div></section></main><script>window.addEventListener('load',()=>window.print())<\/script></body></html>`);
+    printWindow.document.close();
+  };
+  if (selected) return <article className="saved-opr-preview" role="document" aria-label={`Pratonton ${selected.title}`}>
+    <button className="saved-preview-close" onClick={() => setSelected(null)} aria-label="Tutup pratonton">×</button>
+    <header><span>SMK AGAMA PAHANG · ONE PAGE REPORT</span><h2>{selected.title}</h2><p>{selected.category}</p></header>
+    <div className="saved-preview-meta"><div><small>Tarikh</small><strong>{selected.date}</strong></div><div><small>Anjuran</small><strong>{selected.organiser}</strong></div><div><small>Penyedia</small><strong>{selected.owner}</strong></div><div><small>Status</small><strong>{selected.status}</strong></div></div>
+    <section><h3>Pelaksanaan program</h3><p>Program telah dilaksanakan mengikut perancangan oleh {selected.organiser}. Aktiviti diselaraskan dengan teratur dan penglibatan peserta direkodkan bagi tujuan pelaporan sekolah.</p></section>
+    <div className="saved-preview-columns"><section><h3>Objektif</h3><p>Melaksanakan program secara sistematik serta mencapai matlamat yang ditetapkan oleh pihak sekolah.</p></section><section><h3>Hasil / impak</h3><p>Program berjalan lancar dan memberi manfaat kepada warga sekolah yang terlibat.</p></section></div>
+    <div className="saved-preview-signatures"><div><small>DISEDIAKAN OLEH</small><strong>{selected.owner}</strong></div><div><small>DISAHKAN OLEH</small><strong>Pihak Pengurusan SMKAP</strong></div></div>
+    <footer><button onClick={() => setSelected(null)}>Tutup pratonton</button><button className="print-opr" onClick={() => printReport(selected)}>▣ Cetak OPR</button></footer>
+  </article>;
   return <div className="opr-dashboard">
     <div className="opr-dash-head"><div><span className="modal-overline">PUSAT OPR</span><h2 id="folder-title">Dashboard laporan sekolah</h2><p>Pantau, cari dan hasilkan One Page Report dalam satu ruang kerja.</p></div><button className="dash-create" onClick={create}><b>＋</b><span>Buat OPR Baharu<small>Tekan di sini untuk mula</small></span></button></div>
     <div className="opr-kpis">
@@ -150,9 +178,16 @@ function OprDashboard({ create, notify }: { create: () => void; notify: (message
       <article><span>PALING AKTIF</span><strong className="word">Kurikulum</strong><small>15 laporan dihantar</small></article>
       <article className="ai-kpi"><span>AI GEMINI</span><strong className="word">Sedia</strong><small>Penulisan pintar OPR</small></article>
     </div>
-    <section className="opr-folder-section"><div className="dash-section-title"><div><span>FOLDER BIDANG</span><h3>Pilih folder untuk melihat semua OPR</h3></div><b>{filter === "Semua" ? "Semua laporan" : filter}</b></div><div className="opr-folder-grid"><button aria-pressed={filter === "Semua"} className={filter === "Semua" ? "active" : ""} onClick={() => setFilter("Semua")}><span>▤</span><div><strong>Semua OPR</strong><small>48 laporan</small></div></button>{oprCategories.map(([name,count]) => <button key={name} aria-pressed={filter === name} className={filter === name ? "active" : ""} onClick={() => setFilter(name)}><span>▰</span><div><strong>{name}</strong><small>{count} laporan</small></div></button>)}</div></section>
-    <section className="recent-opr"><div className="dash-section-title"><div><span>{filter === "Semua" ? "LAPORAN TERKINI" : `FOLDER ${filter.toUpperCase()}`}</span><h3>{filter === "Semua" ? "3 laporan paling terkini" : `Semua OPR ${filter}`}</h3></div><div className="report-filters"><button className={filter === "Semua" ? "active" : ""} onClick={() => setFilter("Semua")}>Semua</button><button onClick={() => notify("Carian laporan dibuka")}>⌕ Cari</button></div></div><div className="report-list">{visible.length ? visible.map((report) => <button key={report.title} onClick={() => notify(`${report.title} dipilih`)}><span className="report-file">▤</span><div><strong>{report.title}</strong><small>{report.organiser} · {report.date} · {report.owner}</small></div><b>{report.category}</b><em className={report.status === "Draf" ? "draft" : ""}><i></i>{report.status}</em><span className="report-arrow">›</span></button>) : <p className="empty-report">Belum ada OPR dalam folder {filter}.</p>}</div></section>
-    <div className="opr-dash-grid summary-only"><section className="opr-chart-card"><div className="dash-section-title"><div><span>RINGKASAN BIDANG</span><h3>Agihan semua laporan</h3></div><b>48 OPR</b></div><div className="category-bars">{oprCategories.map(([name,count,color]) => <button key={name} onClick={() => setFilter(name)}><span><i style={{backgroundColor:color}}></i>{name}</span><strong>{count}</strong><em><i style={{width:`${Math.max(4,(count/15)*100)}%`,backgroundColor:color}}></i></em></button>)}</div></section></div>
+    <section className="opr-folder-section"><div className="dash-section-title"><div><span>FOLDER BIDANG</span><h3>Tekan folder untuk membuka senarai OPR</h3></div><b>Senarai terapung</b></div><div className="opr-folder-grid"><button onClick={() => openFolder("Semua")}><span>▤</span><div><strong>Semua OPR</strong><small>48 laporan</small></div></button>{oprCategories.map(([name,count]) => <button key={name} onClick={() => openFolder(name)}><span>▰</span><div><strong>{name}</strong><small>{count} laporan</small></div></button>)}</div></section>
+    <section className="recent-opr"><div className="dash-section-title"><div><span>LAPORAN TERKINI</span><h3>3 laporan paling terkini</h3><small className="report-help">Tekan nama laporan untuk membuka pratonton.</small></div><div className="report-filters"><button onClick={() => openFolder("Semua")}>Lihat semua</button><button onClick={() => openFolder("Semua")}>⌕ Cari</button></div></div><div className="report-list">{visible.map((report) => <button key={report.title} onClick={() => setSelected(report)}><span className="report-file">▤</span><div><strong>{report.title}</strong><small>{report.organiser} · {report.date} · {report.owner}</small></div><b>{report.category}</b><em className={report.status === "Draf" ? "draft" : ""}><i></i>{report.status}</em><span className="report-arrow">›</span></button>)}</div></section>
+    <div className="opr-dash-grid summary-only"><section className="opr-chart-card"><div className="dash-section-title"><div><span>RINGKASAN BIDANG</span><h3>Agihan semua laporan</h3></div><b>48 OPR</b></div><div className="category-bars">{oprCategories.map(([name,count,color]) => <button key={name} onClick={() => openFolder(name)}><span><i style={{backgroundColor:color}}></i>{name}</span><strong>{count}</strong><em><i style={{width:`${Math.max(4,(count/15)*100)}%`,backgroundColor:color}}></i></em></button>)}</div></section></div>
+    {folderView && <div className="opr-folder-float-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setFolderView(null)}><section className="opr-folder-float" role="dialog" aria-modal="true" aria-label={`Senarai OPR ${folderView}`}>
+      <button className="folder-float-close" onClick={() => setFolderView(null)} aria-label="Tutup senarai folder">×</button>
+      <span className="modal-overline">FOLDER BIDANG</span><h3>{folderView === "Semua" ? "Semua OPR" : `OPR ${folderView}`}</h3><p>Cari dan pilih laporan untuk membuka pratonton.</p>
+      <label className="folder-search"><span>⌕</span><input autoFocus value={folderSearch} onChange={(event) => setFolderSearch(event.target.value)} placeholder="Cari tajuk, unit atau nama penyedia..." /></label>
+      <div className="folder-result-count">{folderReports.length} laporan ditemui</div>
+      <div className="folder-scroll-list">{folderReports.length ? folderReports.map((report) => <button key={report.title} onClick={() => { setFolderView(null); setSelected(report); }}><span className="report-file">▤</span><div><strong>{report.title}</strong><small>{report.organiser} · {report.date} · {report.owner}</small></div><b>{report.status}</b><i>›</i></button>) : <p>Tiada OPR sepadan dengan carian ini.</p>}</div>
+    </section></div>}
   </div>;
 }
 
