@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HeartHandshake, Landmark, Map, MapPin, Monitor, Network, Palette, Phone, Presentation, Settings, ShieldCheck, Trophy, UserRound, Users, Video, X } from "lucide-react";
+import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HeartHandshake, Landmark, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Presentation, Settings, ShieldCheck, Trophy, UserRound, Users, Video, X } from "lucide-react";
 
 type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
@@ -216,7 +216,7 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
 
 const bookingRooms = ["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"];
 const roomIcon = (room: string) => {
-  const Icon = room === "Bilik KKQ" ? BookOpenText : room === "Makmal Sibaweh" ? Presentation : room.includes("Komputer") || room === "Pusat Akses" ? Monitor : room.includes("Dewan") ? Landmark : room.includes("Surau") ? Building2 : room.includes("Sumber") ? BookOpen : room.includes("Seni") ? Palette : room.includes("Media") ? Video : BriefcaseBusiness;
+  const Icon = room === "Bilik KKQ" ? BookOpenText : room === "Makmal Sibaweh" ? Presentation : room.includes("Komputer") || room === "Pusat Akses" ? Monitor : room.includes("Dewan") ? Landmark : room.includes("Surau") ? MoonStar : room.includes("Sumber") ? BookOpen : room.includes("Seni") ? Palette : room.includes("Media") ? Video : BriefcaseBusiness;
   return <Icon aria-hidden="true" />;
 };
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string };
