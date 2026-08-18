@@ -177,7 +177,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
-    title: "", category: "Kurikulum", date: "", venue: "", organiser: "", objective: "", outcome: "",
+    title: "", category: "Kurikulum", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
     preparedBy: "", preparedRole: "", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
   });
 
