@@ -532,3 +532,26 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
   .folder-grid { grid-template-columns:1fr; }
   .folder-card { min-height:132px; }
 }
+
+/* iPad portrait and compact landscape */
+@media (min-width:701px) and (max-width:1000px) {
+  .landing-header { width:min(820px,calc(100% - 40px)); margin-top:18px; }
+  .landing-main { width:min(820px,calc(100% - 40px)); gap:25px; padding:31px 0 25px; }
+  .landing-intro { display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:24px; align-items:end; text-align:left; }
+  .landing-intro .intro-label,.landing-intro h1 { grid-column:1/-1; }
+  .landing-intro h1 { max-width:760px; font-size:clamp(52px,7.2vw,64px); }
+  .landing-intro>p { max-width:33ch; margin:17px 0 0; font-size:17px; }
+  .folder-area { width:100%; max-width:none; padding:18px; }
+  .folder-grid { gap:13px; }
+  .folder-card { min-height:184px; padding:18px; }
+  .folder-icon { width:52px; height:52px; margin-bottom:18px; }
+  .folder-card h2 { font-size:clamp(20px,2.7vw,23px); }
+  .folder-card p { font-size:clamp(14px,1.85vw,16px); }
+  .safe-note { margin-top:15px; }
+  .landing-footer { width:min(820px,calc(100% - 40px)); margin-bottom:18px; }
+}
+@media (min-width:1001px) and (max-width:1180px) {
+  .landing-main { width:calc(100% - 48px); grid-template-columns:.8fr 1.2fr; gap:32px; }
+  .landing-intro h1 { font-size:clamp(50px,5.4vw,64px); }
+  .folder-card { min-height:182px; }
+}
