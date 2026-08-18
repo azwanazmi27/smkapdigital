@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpenText, Building2, ChevronRight, HeartHandshake, MapPin, Presentation, Settings, ShieldCheck, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HeartHandshake, Landmark, Map, MapPin, Monitor, Network, Palette, Phone, Presentation, Settings, ShieldCheck, Trophy, UserRound, Users, Video, X } from "lucide-react";
 
 type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
-type SubItem = { icon: string; title: string; text: string; badge?: string; href?: string; folder?: Folder };
+type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
+
+function GlassIcon({ icon: Icon, size = "md" }: { icon: LucideIcon; size?: "sm" | "md" | "lg" }) {
+  return <span className={`glass-icon glass-icon-${size}`}><Icon aria-hidden="true" /></span>;
+}
 
 const folders = [
   { id: "tentang", no: "01", icon: Building2, title: "Tentang Sekolah", text: "Profil & maklumat sekolah" },
@@ -18,50 +23,50 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     title: "Ibu Bapa / Penjaga",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
     items: [
-      { icon: "📢", title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
-      { icon: "📅", title: "Takwim sekolah", text: "Tarikh dan aktiviti penting" },
-      { icon: "☎️", title: "Hubungi sekolah", text: "09-4523901 · cra8001@moe.edu.my", href: "mailto:cra8001@moe.edu.my" },
+      { icon: Bell, title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
+      { icon: CalendarDays, title: "Takwim sekolah", text: "Tarikh dan aktiviti penting" },
+      { icon: Phone, title: "Hubungi sekolah", text: "09-4523901 · cra8001@moe.edu.my", href: "mailto:cra8001@moe.edu.my" },
     ],
   },
   warga: {
     title: "Guru & Staf",
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
-      { icon: "📝", title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
-      { icon: "✅", title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site" },
-      { icon: "📆", title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
-      { icon: "🎓", title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
+      { icon: FileText, title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
+      { icon: CircleCheck, title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site" },
+      { icon: CalendarRange, title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
+      { icon: GraduationCap, title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
   },
   tentang: {
     title: "Tentang Sekolah",
     intro: "Kenali organisasi, warga dan hala tuju SMK Agama Pahang.",
     items: [
-      { icon: "🏛️", title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
-      { icon: "🗂️", title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
-      { icon: "🧑‍🏫", title: "Senarai guru", text: "Direktori nama dan jawatan" },
+      { icon: Landmark, title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
+      { icon: Network, title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
+      { icon: UserRound, title: "Senarai guru", text: "Direktori nama dan jawatan" },
     ],
   },
   pengunjung: {
     title: "Pelawat",
     intro: "Daftar kehadiran dan dapatkan panduan sebelum berurusan di sekolah.",
     items: [
-      { icon: "📋", title: "E-Kunjung", text: "Imbas dan daftar masuk", folder: "ekunjung" },
-      { icon: "🗺️", title: "Panduan ke sekolah", text: "Jalan Sekolah Agama, 26700 Muadzam Shah", href: "https://www.google.com/maps/search/?api=1&query=SMK+Agama+Pahang%2C+Jalan+Sekolah+Agama%2C+26700+Muadzam+Shah%2C+Pahang" },
-      { icon: "☎️", title: "Hubungi pejabat", text: "09-4523901 · cra8001@moe.edu.my", href: "tel:+6094523901" },
+      { icon: ClipboardList, title: "E-Kunjung", text: "Imbas dan daftar masuk", folder: "ekunjung" },
+      { icon: Map, title: "Panduan ke sekolah", text: "Jalan Sekolah Agama, 26700 Muadzam Shah", href: "https://www.google.com/maps/search/?api=1&query=SMK+Agama+Pahang%2C+Jalan+Sekolah+Agama%2C+26700+Muadzam+Shah%2C+Pahang" },
+      { icon: Phone, title: "Hubungi pejabat", text: "09-4523901 · cra8001@moe.edu.my", href: "tel:+6094523901" },
     ],
   },
   oprhub: {
     title: "Pusat OPR",
     intro: "Cipta satu OPR, kemudian semak laporan yang difailkan mengikut bidang berkaitan.",
     items: [
-      { icon: "➕", title: "Cipta OPR baharu", text: "Penjana OPR rasmi dalam portal", folder: "oprgenerator" },
-      { icon: "🏢", title: "Pengurusan", text: "Laporan pengurusan" },
-      { icon: "📚", title: "Kurikulum", text: "Laporan akademik" },
-      { icon: "🧑‍🎓", title: "Hal Ehwal Murid", text: "Laporan HEM" },
-      { icon: "🏆", title: "Kokurikulum", text: "Laporan aktiviti" },
-      { icon: "🎓", title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum" },
-      { icon: "📁", title: "Lain-lain", text: "Laporan kategori tambahan" },
+      { icon: FilePlus2, title: "Cipta OPR baharu", text: "Penjana OPR rasmi dalam portal", folder: "oprgenerator" },
+      { icon: BriefcaseBusiness, title: "Pengurusan", text: "Laporan pengurusan" },
+      { icon: BookOpen, title: "Kurikulum", text: "Laporan akademik" },
+      { icon: Users, title: "Hal Ehwal Murid", text: "Laporan HEM" },
+      { icon: Trophy, title: "Kokurikulum", text: "Laporan aktiviti" },
+      { icon: GraduationCap, title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum" },
+      { icon: Folder, title: "Lain-lain", text: "Laporan kategori tambahan" },
     ],
   },
 };
@@ -115,14 +120,14 @@ export function LandingPortal() {
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" || open === "etempahan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
-        <button className="portal-home-button" onClick={() => setOpen(null)}>⌂ Portal Utama</button>
-        <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}>×</button>
+        <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
+        <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>
         {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
           <div className="submodule-grid">{folderContent[open].items.map((item) => {
-            const inside = <><span>{item.icon}</span><div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? "↗" : "›"}</i></>;
+            const inside = <><GlassIcon icon={item.icon} /> <div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? <ExternalLink aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}</i></>;
             if (item.href) return <a key={item.title} href={item.href} target="_blank" rel="noreferrer">{inside}</a>;
             return <button key={item.title} onClick={() => item.folder ? setOpen(item.folder) : notify(`${item.title} dipilih`)}>{inside}</button>;
           })}</div>
@@ -210,7 +215,10 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 const bookingRooms = ["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"];
-const roomIcon = (room: string) => room === "Bilik KKQ" ? <BookOpenText aria-hidden="true" /> : room === "Makmal Sibaweh" ? <Presentation aria-hidden="true" /> : room.includes("Komputer") || room === "Pusat Akses" ? "💻" : room.includes("Dewan") ? "🏛️" : room.includes("Surau") ? "🕌" : room.includes("Sumber") ? "📚" : room.includes("Seni") ? "🎨" : room.includes("Media") ? "🎥" : "🪑";
+const roomIcon = (room: string) => {
+  const Icon = room === "Bilik KKQ" ? BookOpenText : room === "Makmal Sibaweh" ? Presentation : room.includes("Komputer") || room === "Pusat Akses" ? Monitor : room.includes("Dewan") ? Landmark : room.includes("Surau") ? Building2 : room.includes("Sumber") ? BookOpen : room.includes("Seni") ? Palette : room.includes("Media") ? Video : BriefcaseBusiness;
+  return <Icon aria-hidden="true" />;
+};
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string };
 
 function BookingCentre({ notify, close }: { notify: (message: string) => void; close: () => void }) {
