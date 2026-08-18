@@ -1,5 +1,5 @@
-import { Portal } from "./portal";
+import { LandingPortal } from "./landing";
 
 export default function Home() {
-  return <Portal />;
+  return <LandingPortal />;
 }
