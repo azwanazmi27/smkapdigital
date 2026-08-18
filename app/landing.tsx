@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HeartHandshake, Landmark, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Presentation, Settings, ShieldCheck, Trophy, UserRound, Users, Video, X } from "lucide-react";
+import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, Clock3, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HeartHandshake, Landmark, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Presentation, Search, Settings, ShieldCheck, Sparkles, Trophy, UserRound, Users, Video, X } from "lucide-react";
 
-type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 
 function GlassIcon({ icon: Icon, size = "md" }: { icon: LucideIcon; size?: "sm" | "md" | "lg" }) {
@@ -33,7 +33,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
       { icon: FileText, title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
-      { icon: CircleCheck, title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief" },
+      { icon: CircleCheck, title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", folder: "ekeberadaan" },
       { icon: CalendarRange, title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
       { icon: GraduationCap, title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
@@ -80,6 +80,7 @@ export function LandingPortal() {
     if (open === "oprhub") return setOpen("warga");
     if (open === "ekunjung") return setOpen("pengunjung");
     if (open === "etempahan") return setOpen("warga");
+    if (open === "ekeberadaan") return setOpen("warga");
     setOpen(null);
   };
 
@@ -119,10 +120,10 @@ export function LandingPortal() {
     <footer className="landing-footer"><span>© 2026 SMK Agama Pahang</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
-      <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" || open === "etempahan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
+      <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <AttendanceCentre notify={notify} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -136,6 +137,59 @@ export function LandingPortal() {
     </div>}
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
+}
+
+type Teacher = { id: string; name: string; category: "mainstream" | "form6" };
+type Absence = { id: string; teacherId: string; teacherName: string; category: string; absenceDate: string; endDate?: string | null; reason: string; duration: "full" | "days" | "partial"; startTime?: string | null; endTime?: string | null; note?: string; reliefStatus?: string };
+
+function AttendanceCentre({ notify }: { notify: (message: string) => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [tab, setTab] = useState<"report" | "list" | "relief">("report");
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [records, setRecords] = useState<Absence[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ category: "mainstream", teacherId: "", absenceDate: today, endDate: today, reason: "", duration: "full", startTime: "", endTime: "", note: "" });
+  const loadData = async () => {
+    setLoading(true); setError("");
+    try {
+      const [teacherResponse, absenceResponse] = await Promise.all([fetch("/api/ekeberadaan?resource=teachers", { cache: "no-store" }), fetch("/api/ekeberadaan?resource=absences", { cache: "no-store" })]);
+      const teacherData = await teacherResponse.json() as { teachers?: Teacher[]; error?: string };
+      const absenceData = await absenceResponse.json() as { records?: Absence[]; error?: string };
+      if (!teacherResponse.ok || !absenceResponse.ok) throw new Error(teacherData.error || absenceData.error || "Data tidak dapat dibaca");
+      setTeachers(teacherData.teachers || []); setRecords(absenceData.records || []);
+    } catch (issue) { setError(issue instanceof Error ? issue.message : "Data tidak dapat dibaca"); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void loadData(); }, []);
+  const availableTeachers = teachers.filter((teacher) => teacher.category === form.category);
+  const selectedTeacher = teachers.find((teacher) => teacher.id === form.teacherId);
+  const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value, ...(field === "category" ? { teacherId: "" } : {}) }));
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); if (!selectedTeacher) return;
+    setSaving(true); setError("");
+    try {
+      const payload = { id: crypto.randomUUID(), teacherId: selectedTeacher.id, teacherName: selectedTeacher.name, category: form.category, absenceDate: form.absenceDate, endDate: form.duration === "days" ? form.endDate : null, reason: form.reason, duration: form.duration, startTime: form.duration === "partial" ? form.startTime : null, endTime: form.duration === "partial" ? form.endTime : null, note: form.note };
+      const response = await fetch("/api/ekeberadaan?resource=absences", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Laporan tidak dapat disimpan");
+      notify("Ketidakhadiran berjaya dilaporkan kepada sistem relief"); setTab("list"); await loadData();
+    } catch (issue) { setError(issue instanceof Error ? issue.message : "Laporan tidak dapat disimpan"); }
+    finally { setSaving(false); }
+  };
+  const visible = records.filter((record) => `${record.teacherName} ${record.reason}`.toLowerCase().includes(search.toLowerCase()));
+  const todayRecords = records.filter((record) => record.absenceDate <= today && (!record.endDate || record.endDate >= today));
+  return <div className="attendance-centre">
+    <div className="attendance-head"><div><span className="modal-overline">E-KEBERADAAN SMKAP</span><h2 id="folder-title">Kehadiran guru & relief</h2><p>Lapor ketidakhadiran sekali. Maklumat terus tersedia untuk urusan guru relief.</p></div><div className="attendance-live"><i></i><span><b>{todayRecords.length}</b><small>Tidak hadir hari ini</small></span></div></div>
+    <nav className="attendance-tabs" aria-label="Bahagian E-Keberadaan"><button className={tab === "report" ? "active" : ""} onClick={() => setTab("report")}><FilePlus2 />Lapor tidak hadir</button><button className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}><ClipboardList />Senarai</button><button className={tab === "relief" ? "active" : ""} onClick={() => setTab("relief")}><Sparkles />Relief</button></nav>
+    {loading ? <div className="attendance-state"><i></i><strong>Sedang memuatkan data sebenar...</strong></div> : error && tab !== "report" ? <div className="attendance-error"><strong>Data belum dapat dipaparkan</strong><span>{error}</span><button onClick={() => void loadData()}>Cuba semula</button></div> : tab === "report" ? <form className="attendance-form" onSubmit={submit}>
+      <section><div className="attendance-section-title"><span>01</span><div><strong>Siapa yang tidak hadir?</strong><small>Pilih kumpulan dan nama guru.</small></div></div><div className="attendance-choice"><button type="button" className={form.category === "mainstream" ? "active" : ""} onClick={() => setField("category", "mainstream")}><Users />Guru Arus Perdana</button><button type="button" className={form.category === "form6" ? "active" : ""} onClick={() => setField("category", "form6")}><GraduationCap />Guru Tingkatan Enam</button></div><label>Nama guru *<select value={form.teacherId} onChange={(event) => setField("teacherId", event.target.value)} required><option value="">Pilih nama guru</option>{availableTeachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.name}</option>)}</select></label></section>
+      <section><div className="attendance-section-title"><span>02</span><div><strong>Butiran ketidakhadiran</strong><small>Tarikh dan tempoh diperlukan untuk relief.</small></div></div><div className="attendance-row"><label>Tarikh mula *<input type="date" value={form.absenceDate} onChange={(event) => setField("absenceDate", event.target.value)} required /></label><label>Sebab *<select value={form.reason} onChange={(event) => setField("reason", event.target.value)} required><option value="">Pilih sebab</option>{["MC", "Cuti Rehat Khas", "Cuti Tanpa Rekod", "Kursus / Mesyuarat", "Urusan Rasmi", "Kecemasan", "Lain-lain"].map((reason) => <option key={reason}>{reason}</option>)}</select></label></div><div className="attendance-duration"><button type="button" className={form.duration === "full" ? "active" : ""} onClick={() => setField("duration", "full")}>Sehari</button><button type="button" className={form.duration === "days" ? "active" : ""} onClick={() => setField("duration", "days")}>Beberapa hari</button><button type="button" className={form.duration === "partial" ? "active" : ""} onClick={() => setField("duration", "partial")}>Waktu tertentu</button></div>{form.duration === "days" && <label>Tarikh akhir *<input type="date" min={form.absenceDate} value={form.endDate} onChange={(event) => setField("endDate", event.target.value)} required /></label>}{form.duration === "partial" && <div className="attendance-row"><label>Waktu mula *<input type="time" value={form.startTime} onChange={(event) => setField("startTime", event.target.value)} required /></label><label>Waktu akhir *<input type="time" value={form.endTime} onChange={(event) => setField("endTime", event.target.value)} required /></label></div>}<label>Catatan <textarea value={form.note} onChange={(event) => setField("note", event.target.value)} placeholder="Maklumat tambahan jika ada" /></label></section>
+      {error && <p className="visitor-error">{error}</p>}<div className="attendance-submit"><span><ShieldCheck />Maklumat digunakan untuk urusan rasmi sekolah.</span><button disabled={saving || !selectedTeacher || !form.reason}>{saving ? <><i className="button-spinner"></i>Menyimpan...</> : <>Hantar kepada sistem relief <ChevronRight /></>}</button></div>
+    </form> : tab === "list" ? <section className="attendance-list"><div className="attendance-list-tools"><div><strong>Rekod ketidakhadiran</strong><small>{records.length} laporan direkodkan</small></div><label><Search /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama atau sebab" /></label></div><div className="attendance-records">{visible.map((record) => <article key={record.id}><span className="attendance-avatar">{record.teacherName.split(" ").slice(0,2).map((word) => word[0]).join("")}</span><div><strong>{record.teacherName}</strong><small>{record.reason} · {new Intl.DateTimeFormat("ms-MY", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${record.absenceDate}T12:00:00`))}{record.endDate ? ` – ${new Intl.DateTimeFormat("ms-MY", { day: "numeric", month: "short" }).format(new Date(`${record.endDate}T12:00:00`))}` : ""}</small></div><b className={record.reliefStatus === "complete" ? "done" : ""}>{record.reliefStatus === "complete" ? "Selesai" : "Perlu relief"}</b></article>)}</div></section> : <section className="relief-panel"><div className="relief-hero"><GlassIcon icon={Sparkles} size="lg" /><div><span>URUSAN RELIEF</span><h3>Ketidakhadiran hari ini sudah diselaraskan</h3><p>Guru yang dilaporkan tidak hadir muncul di sini untuk tindakan penyedia jadual relief.</p></div></div><div className="relief-summary"><article><Users /><span><strong>{todayRecords.length}</strong><small>Guru tidak hadir</small></span></article><article><ClipboardList /><span><strong>{todayRecords.filter((record) => record.reliefStatus === "complete").length}</strong><small>Relief selesai</small></span></article><article><Clock3 /><span><strong>{todayRecords.filter((record) => record.reliefStatus !== "complete").length}</strong><small>Menunggu tindakan</small></span></article></div><div className="relief-inbox"><h3>Senarai tindakan hari ini</h3>{todayRecords.length ? todayRecords.map((record) => <article key={record.id}><CircleCheck /><div><strong>{record.teacherName}</strong><small>{record.reason} · {record.category === "form6" ? "Tingkatan Enam" : "Arus Perdana"}</small></div><b>{record.reliefStatus === "complete" ? "Selesai" : "Sediakan relief"}</b></article>) : <p>Tiada ketidakhadiran untuk tindakan relief hari ini.</p>}</div><p className="relief-note">Penjanaan jadual relief penuh daripada fail jadual aSc akan dipindahkan dalam peringkat seterusnya. Rekod ketidakhadiran dan aliran kerja kini sudah berada dalam portal ini.</p></section>}
+  </div>;
 }
 
 const oprCategories = [
