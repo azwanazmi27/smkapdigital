@@ -33,7 +33,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
       { icon: FileText, title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
-      { icon: CircleCheck, title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site" },
+      { icon: CircleCheck, title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief" },
       { icon: CalendarRange, title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
       { icon: GraduationCap, title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
