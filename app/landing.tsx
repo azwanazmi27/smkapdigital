@@ -142,7 +142,7 @@ export function LandingPortal() {
 function ReliefIntegratedApp() {
   const [ready, setReady] = useState(false);
   const [documentHtml, setDocumentHtml] = useState("");
-  useEffect(() => { void fetch("/ekeberadaan-app/index.html", { cache: "no-store" }).then((response) => response.text()).then(setDocumentHtml); }, []);
+  useEffect(() => { void fetch("/ekeberadaan-app/standalone.html", { cache: "no-store" }).then((response) => response.text()).then(setDocumentHtml); }, []);
   return <div className="relief-integrated-shell">
     {!ready && <div className="relief-integrated-loading"><i></i><strong>Menyediakan E‑Keberadaan & Sistem Relief lengkap…</strong><small>Guru · Tingkatan 6 · Rumusan · Pentadbir · Relief</small></div>}
     {documentHtml && <iframe className={ready ? "ready" : ""} srcDoc={documentHtml} title="E-Keberadaan dan Sistem Relief SMKAP" onLoad={() => window.setTimeout(() => setReady(true), 500)} allow="clipboard-write; fullscreen" />}
