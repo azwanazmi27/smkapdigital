@@ -43,6 +43,63 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
 @media (max-width:410px) { .module-grid { grid-template-columns:1fr; }.module-card { min-height:100px; display:flex; }.module-icon { margin:0; }.opr-summary { grid-template-columns:1fr; justify-items:center; }.category-list { width:100%; }.qr-layout { grid-template-columns:1fr; justify-items:center; text-align:center; }.visitor-stats span { font-size:19px; } }
 @media (prefers-reduced-motion:reduce) { *,*:before,*:after { scroll-behavior:auto!important; animation-duration:.01ms!important; transition-duration:.01ms!important; } }
 
+/* Penjana OPR yang dihoskan bersama portal */
+.generator-modal { width:min(980px,100%); }
+.opr-generator>h2 { margin:8px 50px 8px 0; font-size:32px; letter-spacing:-.03em; }
+.opr-generator>p { margin:0 0 20px; color:#90a6ac; font-size:15px; line-height:1.55; }
+.generator-steps { display:flex; align-items:center; gap:9px; margin-bottom:20px; padding:11px 14px; border:1px solid rgba(139,198,191,.13); border-radius:12px; background:rgba(255,255,255,.025); color:#91a8ad; font-size:10px; font-weight:750; }
+.generator-steps b { width:23px; height:23px; display:grid; place-items:center; border-radius:50%; background:#2b6c68; color:#dff7f2; }
+.generator-steps i { height:1px; flex:1; background:rgba(141,191,189,.18); }
+.generator-form { display:grid; gap:14px; }
+.generator-form label { display:grid; gap:7px; color:#c6d7d6; font-size:12px; font-weight:700; }
+.generator-form input,.generator-form select,.generator-form textarea { width:100%; min-height:45px; padding:11px 13px; color:#eef7f5; border:1px solid rgba(143,194,191,.18); border-radius:10px; background:#0b2230; outline:none; }
+.generator-form textarea { resize:vertical; line-height:1.55; }
+.generator-form input::placeholder,.generator-form textarea::placeholder { color:#607b82; }
+.generator-form input:focus,.generator-form select:focus,.generator-form textarea:focus { border-color:#5bc4b5; box-shadow:0 0 0 3px rgba(91,196,181,.1); }
+.generator-row { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+.generator-three { grid-template-columns:.7fr 1fr 1fr; }
+.generator-ai { min-height:48px; display:flex; align-items:center; justify-content:center; gap:9px; color:#0b2930; border:0; border-radius:11px; background:linear-gradient(90deg,#77d8c9,#80c9df); font-weight:850; }
+.generator-ai:disabled { opacity:.65; }
+.generator-ai span { font-size:18px; }
+.photo-drop { min-height:100px; place-items:center; align-content:center; border:1px dashed rgba(117,200,190,.36); border-radius:12px; background:rgba(69,155,144,.05); cursor:pointer; }
+.photo-drop input { position:absolute; width:1px; height:1px; opacity:0; }
+.photo-drop span { color:#80d3c7; font-size:13px; }
+.photo-drop small { color:#6e878d; font-size:10px; font-weight:500; }
+.generator-actions { display:flex; justify-content:flex-end; gap:10px; padding-top:3px; }
+.generator-actions button { min-height:44px; padding:10px 17px; color:#b7c9ca; border:1px solid rgba(143,194,191,.2); border-radius:10px; background:rgba(255,255,255,.035); font-weight:750; }
+.generator-actions button.save { color:#0a2930; border-color:#75d2c4; background:#78d3c5; }
+.generator-actions button:disabled { cursor:not-allowed; opacity:.4; }
+.opr-preview { color:#243934; padding:26px; border-radius:16px; background:#fffefa; }
+.preview-school { display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:2px solid #245c51; }
+.preview-school strong { font-family:Georgia,serif; font-size:17px; color:#19493f; }
+.preview-school small { color:#687a74; font-weight:800; letter-spacing:.13em; }
+.opr-preview>span { display:block; margin-top:22px; color:#368172; font-size:10px; font-weight:900; letter-spacing:.18em; }
+.opr-preview>h3 { margin:6px 0 18px; font-family:Georgia,serif; font-size:30px; color:#173f35; }
+.preview-meta { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:18px; }
+.preview-meta>div { padding:10px; border-radius:9px; background:#edf4f0; }
+.preview-meta small,.preview-meta strong { display:block; }
+.preview-meta small { margin-bottom:4px; color:#70817b; font-size:9px; text-transform:uppercase; letter-spacing:.08em; }
+.preview-meta strong { font-size:12px; }
+.opr-preview section { padding:13px 15px; border:1px solid #e0e9e3; border-radius:10px; }
+.opr-preview h4 { margin:0 0 7px; color:#286759; font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+.opr-preview p { margin:0; font-size:12px; line-height:1.65; }
+.preview-columns { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+.opr-preview .generator-actions { margin-top:15px; }
+.opr-preview .generator-actions button { color:#315b52; border-color:#cadbd4; background:#f5f8f5; }
+.opr-preview .generator-actions button.save { color:white; background:#286759; }
+
+@media (max-width:700px) {
+  .opr-generator>h2 { font-size:28px; }
+  .opr-generator>p { font-size:14px; }
+  .generator-row,.generator-three,.preview-meta,.preview-columns { grid-template-columns:1fr; }
+  .generator-steps span { display:none; }
+  .opr-preview { padding:18px 14px; }
+  .preview-school { align-items:flex-start; gap:8px; }
+  .preview-school small { font-size:8px; text-align:right; }
+  .opr-preview>h3 { font-size:24px; }
+  .generator-actions { display:grid; grid-template-columns:1fr 1fr; }
+}
+
 /* Premium folder-first landing page */
 .landing-shell { min-height:100svh; position:relative; overflow:hidden; display:flex; flex-direction:column; color:#eef8f5; background:radial-gradient(circle at 88% 12%,rgba(37,112,114,.22),transparent 27%),radial-gradient(circle at 8% 92%,rgba(46,105,88,.16),transparent 28%),#071521; }
 .landing-shell:before,.landing-shell:after { content:""; position:absolute; pointer-events:none; border:1px solid rgba(97,196,183,.13); border-radius:50%; }.landing-shell:before { width:520px; height:520px; right:-280px; top:-300px; box-shadow:0 0 0 54px rgba(97,196,183,.025),0 0 0 108px rgba(97,196,183,.018); }.landing-shell:after { width:330px; height:330px; left:-260px; bottom:-180px; box-shadow:0 0 0 65px rgba(232,180,74,.018); }
