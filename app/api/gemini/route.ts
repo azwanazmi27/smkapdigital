@@ -39,20 +39,15 @@ Hasil asal: ${outcome || "Tidak dinyatakan"}`;
           temperature: 0.2,
           maxOutputTokens: 1200,
           thinkingConfig: { thinkingLevel: "minimal" },
-          responseFormat: {
-            text: {
-              mimeType: "application/json",
-              schema: {
-                type: "object",
-                properties: {
-                  details: { type: "string", description: "Perenggan pelaksanaan program yang formal dan ringkas." },
-                  objective: { type: "string", description: "Objektif program dalam satu atau dua ayat." },
-                  outcome: { type: "string", description: "Hasil atau impak program dalam satu atau dua ayat." },
-                },
-                required: ["details", "objective", "outcome"],
-                additionalProperties: false,
-              },
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              details: { type: "string", description: "Perenggan pelaksanaan program yang formal dan ringkas." },
+              objective: { type: "string", description: "Objektif program dalam satu atau dua ayat." },
+              outcome: { type: "string", description: "Hasil atau impak program dalam satu atau dua ayat." },
             },
+            required: ["details", "objective", "outcome"],
           },
         },
       }),
