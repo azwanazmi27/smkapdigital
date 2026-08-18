@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 
-type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "oprhub" | "admin" | null;
+type SubItem = { icon: string; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 
 const folders = [
   { id: "ibubapa", no: "01", icon: "⌂", title: "Ibu Bapa", text: "Maklumat dan urusan penjaga", count: "3 pilihan", accent: "teal" },
-  { id: "warga", no: "02", icon: "◎", title: "Warga Sekolah", text: "Urusan guru dan kakitangan", count: "5 modul", accent: "blue" },
+  { id: "warga", no: "02", icon: "◎", title: "Warga Sekolah", text: "Urusan guru dan kakitangan", count: "4 modul", accent: "blue" },
   { id: "tentang", no: "03", icon: "⌕", title: "Tentang Sekolah", text: "Kenali SMK Agama Pahang", count: "3 bahagian", accent: "purple" },
   { id: "pengunjung", no: "04", icon: "⌁", title: "Pengunjung", text: "Daftar dan dapatkan panduan", count: "3 pilihan", accent: "gold" },
 ] as const;
 
-const folderContent: Record<Exclude<Folder, null | "admin">, { title: string; intro: string; items: { icon: string; title: string; text: string; badge?: string }[] }> = {
+const folderContent: Record<Exclude<Folder, null | "admin">, { title: string; intro: string; items: SubItem[] }> = {
   ibubapa: {
     title: "Ibu Bapa",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
@@ -25,9 +26,8 @@ const folderContent: Record<Exclude<Folder, null | "admin">, { title: string; in
     title: "Warga Sekolah",
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
-      { icon: "✎", title: "Laporan OPR", text: "Cipta, kemas dengan AI dan semak laporan" },
-      { icon: "✓", title: "E-Keberadaan", text: "Rekod guru tidak hadir", badge: "3" },
-      { icon: "↔", title: "E-Relief", text: "Agih guru ganti secara terus", badge: "8" },
+      { icon: "✎", title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
+      { icon: "✓", title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site", badge: "Buka" },
       { icon: "◎", title: "PLC Guru", text: "Rekod aktiviti pembelajaran profesional" },
       { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
@@ -48,6 +48,18 @@ const folderContent: Record<Exclude<Folder, null | "admin">, { title: string; in
       { icon: "⌁", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", badge: "QR" },
       { icon: "↗", title: "Panduan ke sekolah", text: "Lokasi dan panduan ketibaan" },
       { icon: "☎", title: "Hubungi pejabat", text: "Saluran rasmi urusan pelawat" },
+    ],
+  },
+  oprhub: {
+    title: "Pusat OPR",
+    intro: "Cipta satu OPR, kemudian semak laporan yang difailkan mengikut bidang berkaitan.",
+    items: [
+      { icon: "＋", title: "Cipta OPR baharu", text: "Buka Penjana OPR Pintar", href: "https://penjana-opr-pintar-smkap.noorazwan092.chatgpt.site", badge: "AI" },
+      { icon: "◈", title: "Pengurusan", text: "Laporan pengurusan", badge: "12" },
+      { icon: "▥", title: "Kurikulum", text: "Laporan akademik", badge: "15" },
+      { icon: "♡", title: "Hal Ehwal Murid", text: "Laporan HEM", badge: "8" },
+      { icon: "✦", title: "Kokurikulum", text: "Laporan aktiviti", badge: "7" },
+      { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum", badge: "5" },
     ],
   },
 };
@@ -101,9 +113,11 @@ export function LandingPortal() {
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
-          <div className="submodule-grid">{folderContent[open].items.map((item) => <button key={item.title} onClick={() => notify(`${item.title} dipilih`)}>
-            <span>{item.icon}</span><div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>›</i>
-          </button>)}</div>
+          <div className="submodule-grid">{folderContent[open].items.map((item) => {
+            const inside = <><span>{item.icon}</span><div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? "↗" : "›"}</i></>;
+            if (item.href) return <a key={item.title} href={item.href} target="_blank" rel="noreferrer">{inside}</a>;
+            return <button key={item.title} onClick={() => item.folder ? setOpen(item.folder) : notify(`${item.title} dipilih`)}>{inside}</button>;
+          })}</div>
         </>}
       </section>
     </div>}
