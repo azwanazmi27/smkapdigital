@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "oprhub" | "oprgenerator" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
 type SubItem = { icon: string; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 
 const folders = [
@@ -28,7 +28,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     items: [
       { icon: "✎", title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
       { icon: "✓", title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", href: "https://sistem-relief-smap.noorazwan092.chatgpt.site", badge: "Buka" },
-      { icon: "□", title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah" },
+      { icon: "□", title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan", badge: "Baharu" },
       { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
   },
@@ -73,6 +73,7 @@ export function LandingPortal() {
     if (open === "oprgenerator") return setOpen("oprhub");
     if (open === "oprhub") return setOpen("warga");
     if (open === "ekunjung") return setOpen("pengunjung");
+    if (open === "etempahan") return setOpen("warga");
     setOpen(null);
   };
 
@@ -115,10 +116,10 @@ export function LandingPortal() {
     <footer className="landing-footer"><span>SMK AGAMA PAHANG · MUADZAM SHAH</span><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>? Perlukan bantuan</button></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
-      <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
+      <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" || open === "etempahan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}>⌂ Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Warga Sekolah" : "Tutup"}>×</button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -208,6 +209,70 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
       {["Kategori OPR", "Carta organisasi", "Senarai guru", "Pautan modul"].map((item) => <button key={item} disabled={!enabled} onClick={() => notify(`${item} sedia disunting`)}><span>✎</span><div><strong>{item}</strong><small>Tambah, ubah atau buang</small></div><i>›</i></button>)}
     </div>
   </>;
+}
+
+const bookingRooms = ["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Mesyuarat", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni", "Bilik Gerakan"];
+type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string };
+
+function BookingCentre({ notify, close }: { notify: (message: string) => void; close: () => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [tab, setTab] = useState<"dashboard" | "form">("dashboard");
+  const [date, setDate] = useState(today);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<{ success: boolean; message: string; id?: string } | null>(null);
+  const [form, setForm] = useState({ room: "", applicantName: "", email: "", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
+  const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const loadBookings = async () => {
+    setLoading(true); setError("");
+    try {
+      const response = await fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" });
+      const data = await response.json() as { bookings?: Booking[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
+      setBookings(data.bookings || []);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void loadBookings(); }, [date]);
+  const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan");
+  const roomState = (room: string) => {
+    const active = roomBookings(room);
+    if (!active.length) return { label: "Kosong", tone: "available" };
+    const now = new Date();
+    const inUse = active.some((item) => now >= new Date(`${item.startDate}T${item.startTime}`) && now <= new Date(`${item.endDate}T${item.endTime}`));
+    return inUse ? { label: "Sedang digunakan", tone: "inuse" } : { label: "Ditempah", tone: "booked" };
+  };
+  const submit = async () => {
+    setSaving(true); setError(""); setResult(null);
+    try {
+      const response = await fetch("/api/etempahan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, participants: Number(form.participants) }) });
+      const data = await response.json() as { success?: boolean; id?: string; status?: string; error?: string };
+      if (!response.ok || !data.success) throw new Error(data.error || "Tempahan tidak berjaya");
+      setResult({ success: true, id: data.id, message: "Tempahan diluluskan dan e-mel pengesahan telah dihantar." });
+      notify("Tempahan berjaya diluluskan"); await loadBookings();
+    } catch (reason) { const message = reason instanceof Error ? reason.message : "Tempahan tidak berjaya"; setResult({ success: false, message }); }
+    finally { setSaving(false); }
+  };
+  if (result) return <div className="booking-centre"><span className="modal-overline">E-TEMPAHAN SMKAP</span><div className={`booking-result ${result.success ? "success" : "failed"}`}><span>{result.success ? "✓" : "!"}</span><h2>{result.success ? "TEMPAHAN BERJAYA" : "TEMPAHAN TIDAK BERJAYA"}</h2><p>{result.message}</p>{result.id && <small>Nombor rujukan: {result.id}</small>}<div><button onClick={() => { setResult(null); setTab("dashboard"); }}>Lihat status bilik</button><button className="booking-primary" onClick={() => { setResult(null); setTab("form"); }}>Buat tempahan lain</button></div></div></div>;
+  return <div className="booking-centre">
+    <div className="booking-head"><div><span className="modal-overline">E-TEMPAHAN SMKAP</span><h2 id="folder-title">Tempahan bilik sekolah</h2><p>Semak kekosongan dan buat tempahan dalam beberapa langkah sahaja.</p></div><button onClick={close}>Kembali ke Warga Sekolah</button></div>
+    <div className="booking-tabs"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>Status bilik</button><button className={tab === "form" ? "active" : ""} onClick={() => setTab("form")}>＋ Buat tempahan</button></div>
+    {tab === "dashboard" ? <>
+      <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
+      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>□</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => { setField("room", room); setField("startDate", date); setField("endDate", date); setTab("form"); }}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
+    </> : <form className="booking-form" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+      <div className="booking-note"><span>✓</span><div><strong>Lulus secara automatik jika slot kosong</strong><small>Sistem menyemak pertindihan sebelum menyimpan dan menghantar e-mel keputusan.</small></div></div>
+      <div className="booking-form-grid"><label>Bilik yang ingin ditempah *<select value={form.room} onChange={(event) => setField("room", event.target.value)} required><option value="">Pilih bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><label>Tujuan penggunaan *<select value={form.purpose} onChange={(event) => setField("purpose", event.target.value)} required><option value="">Pilih tujuan</option><option>PdPC</option><option>Mesyuarat</option><option>Taklimat</option><option>Perjumpaan</option><option>Latihan SPTS</option><option>Program Sekolah</option><option>Lain-lain</option></select></label></div>
+      <div className="booking-form-grid"><label>Nama pemohon *<input value={form.applicantName} onChange={(event) => setField("applicantName", event.target.value)} onBlur={() => setField("applicantName", tidyTitleCase(form.applicantName))} placeholder="Akan diisi automatik selepas log masuk Google" required /></label><label>E-mel pengesahan *<input type="email" value={form.email} onChange={(event) => setField("email", event.target.value.trim())} placeholder="nama@moe-dl.edu.my" required /></label></div>
+      <div className="booking-form-grid four"><label>Tarikh mula<input type="date" value={form.startDate} min={today} onChange={(event) => setField("startDate", event.target.value)} required /></label><label>Masa mula<input type="time" value={form.startTime} onChange={(event) => setField("startTime", event.target.value)} required /></label><label>Tarikh tamat<input type="date" value={form.endDate} min={form.startDate} onChange={(event) => setField("endDate", event.target.value)} required /></label><label>Masa tamat<input type="time" value={form.endTime} onChange={(event) => setField("endTime", event.target.value)} required /></label></div>
+      <label>Jumlah peserta *<input type="number" inputMode="numeric" min="1" max="1000" value={form.participants} onChange={(event) => setField("participants", event.target.value)} placeholder="Contoh: 30" required /></label>
+      {error && <p className="visitor-error">{error}</p>}{saving && <div className="visitor-saving-state"><i></i><div><strong>Sedang menyemak kekosongan...</strong><small>Jangan tutup halaman ini.</small></div></div>}
+      <p className="visitor-disclaimer"><span>ⓘ</span> Nama boleh diubah jika tempahan dibuat bagi pihak orang lain. Akaun dan e-mel sebenar akan disimpan untuk tujuan rekod apabila log masuk Google diaktifkan.</p>
+      <div className="visitor-actions"><button type="button" onClick={() => setTab("dashboard")}>Semak status bilik</button><button className="visitor-primary" disabled={saving}>{saving ? <><i className="button-spinner"></i> Menyemak...</> : "Sahkan tempahan →"}</button></div>
+    </form>}
+  </div>;
 }
 
 function VisitorForm({ notify, close }: { notify: (message: string) => void; close: () => void }) {
