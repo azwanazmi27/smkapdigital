@@ -15,14 +15,52 @@ function validMagic(raw: Uint8Array, mimeType: string) {
   return false;
 }
 
+async function authorizedUser() {
+  const user = await getChatGPTUser();
+  if (!user) return null;
+  const allowed = (process.env.OPR_ALLOWED_EMAILS || "")
+    .split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
+  return allowed.includes(user.email.toLowerCase()) ? user : null;
+}
+
+export async function GET() {
+  try {
+    if (!await authorizedUser()) {
+      return Response.json({ error: "Akaun ini belum dibenarkan melihat OPR." }, { status: 403 });
+    }
+    const webAppUrl = process.env.OPR_APPS_SCRIPT_URL;
+    const token = process.env.OPR_APPS_SCRIPT_TOKEN;
+    if (!webAppUrl || !token) {
+      return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
+    }
+    const response = await fetch(webAppUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, action: "list" }),
+      redirect: "follow",
+      cache: "no-store",
+    });
+    const result = await response.json() as { ok?: boolean; files?: unknown; error?: string };
+    if (!response.ok || !result.ok || !Array.isArray(result.files)) throw new Error(result.error || "Senarai Drive tidak tersedia");
+    const files = result.files.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const file = item as Record<string, unknown>;
+      const required = ["id", "name", "category", "createdAt", "updatedAt", "viewUrl", "previewUrl", "downloadUrl"];
+      if (!required.every((key) => typeof file[key] === "string")) return [];
+      if (!allowedCategories.has(file.category as string)) return [];
+      return [{ id: file.id, name: file.name, category: file.category, createdAt: file.createdAt, updatedAt: file.updatedAt, viewUrl: file.viewUrl, previewUrl: file.previewUrl, downloadUrl: file.downloadUrl }];
+    });
+    return Response.json({ success: true, files }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    console.error("Google Drive list error", error instanceof Error ? error.message : error);
+    return Response.json({ error: "Senarai OPR tidak dapat dibaca daripada Google Drive sekarang." }, { status: 502 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const user = await getChatGPTUser();
-    if (!user) return Response.json({ error: "Sila log masuk untuk menghantar OPR." }, { status: 401 });
-
-    const allowed = (process.env.OPR_ALLOWED_EMAILS || "")
-      .split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
-    if (!allowed.includes(user.email.toLowerCase())) {
+    const user = await authorizedUser();
+    if (!user) {
       return Response.json({ error: "Akaun ini belum dibenarkan menghantar OPR." }, { status: 403 });
     }
 
