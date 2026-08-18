@@ -155,11 +155,10 @@ function AttendanceCentre({ notify }: { notify: (message: string) => void }) {
   const loadData = async () => {
     setLoading(true); setError("");
     try {
-      const [teacherResponse, absenceResponse] = await Promise.all([fetch("/api/ekeberadaan?resource=teachers", { cache: "no-store" }), fetch("/api/ekeberadaan?resource=absences", { cache: "no-store" })]);
-      const teacherData = await teacherResponse.json() as { teachers?: Teacher[]; error?: string };
-      const absenceData = await absenceResponse.json() as { records?: Absence[]; error?: string };
-      if (!teacherResponse.ok || !absenceResponse.ok) throw new Error(teacherData.error || absenceData.error || "Data tidak dapat dibaca");
-      setTeachers(teacherData.teachers || []); setRecords(absenceData.records || []);
+      const response = await fetch("/api/ekeberadaan?resource=all", { cache: "no-store" });
+      const data = await response.json() as { teachers?: Teacher[]; records?: Absence[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "Data tidak dapat dibaca");
+      setTeachers(data.teachers || []); setRecords(data.records || []);
     } catch (issue) { setError(issue instanceof Error ? issue.message : "Data tidak dapat dibaca"); }
     finally { setLoading(false); }
   };

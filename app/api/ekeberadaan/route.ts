@@ -20,6 +20,13 @@ async function prepare() {
 export async function GET(request: Request) {
   try {
     await prepare(); const resource = new URL(request.url).searchParams.get("resource");
+    if (resource === "all") {
+      const [teachers, absences] = await env.DB.batch([
+        env.DB.prepare("SELECT id,name,category,created_at AS createdAt FROM teachers ORDER BY category,name"),
+        env.DB.prepare("SELECT id,teacher_id AS teacherId,teacher_name AS teacherName,category,absence_date AS absenceDate,end_date AS endDate,reason,duration,start_time AS startTime,end_time AS endTime,note,relief_status AS reliefStatus,created_at AS createdAt,updated_at AS updatedAt FROM absences ORDER BY absence_date DESC,created_at DESC"),
+      ]);
+      return Response.json({ teachers: teachers.results, records: absences.results }, { headers: { "Cache-Control": "private, no-store" } });
+    }
     if (resource === "teachers") { const result = await env.DB.prepare("SELECT id,name,category,created_at AS createdAt FROM teachers ORDER BY category,name").all(); return Response.json({ teachers: result.results }); }
     if (resource === "absences") { const result = await env.DB.prepare("SELECT id,teacher_id AS teacherId,teacher_name AS teacherName,category,absence_date AS absenceDate,end_date AS endDate,reason,duration,start_time AS startTime,end_time AS endTime,note,relief_status AS reliefStatus,created_at AS createdAt,updated_at AS updatedAt FROM absences ORDER BY absence_date DESC,created_at DESC").all(); return Response.json({ records: result.results }); }
     return Response.json({ error: "Sumber tidak sah" }, { status: 400 });
