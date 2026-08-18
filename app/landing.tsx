@@ -85,7 +85,7 @@ export function LandingPortal() {
   return <main className="landing-shell">
     <div className="landing-noise" aria-hidden="true"></div>
     <header className="landing-header">
-      <div className="official-logo"><img src="/logo-smkap.png" alt="Logo rasmi SMK Agama Pahang" /></div>
+      <div className="official-logo"><span><img src="/logo-smkap.png" alt="Logo rasmi SMK Agama Pahang" /></span><div><strong>SMK Agama Pahang</strong><small>Berilmu · Bertakwa</small></div></div>
       <div className="portal-label"><i></i><span>PORTAL RASMI</span><b>2026</b></div>
       <button className="admin-entry" onClick={() => setOpen("admin")}><span>⚙</span><div><strong>Pentadbir</strong><small>Urus kandungan</small></div></button>
     </header>
@@ -95,8 +95,7 @@ export function LandingPortal() {
         <div className="intro-label"><i></i> PORTAL SEHENTI WARGA SMKAP</div>
         <h1>Urusan sekolah,<br/><em>lebih mudah.</em></h1>
         <p>Semua perkhidmatan digital sekolah dalam satu tempat. Pilih urusan anda untuk bermula.</p>
-        <figure className="school-visual"><img src="/kampus-smkap.jpg" alt="Pemandangan kampus SMK Agama Pahang di Muadzam Shah" /><figcaption><span>SMKAP</span><div><strong>Kampus ilmu dan tarbiah</strong><small>Muadzam Shah, Pahang</small></div></figcaption></figure>
-        <div className="school-name"><span>س</span><div><strong>SMK Agama Pahang</strong><small>Muadzam Shah · Berilmu · Bertakwa</small></div></div>
+        <figure className="school-visual"><img src="/kampus-smkap-panorama.jpeg" alt="Bangunan utama SMK Agama Pahang di Muadzam Shah" /><figcaption><span>SMKAP</span><div><strong>Berilmu · Bertakwa</strong><small>Sekolah Kluster Kecemerlangan</small></div></figcaption></figure>
       </div>
 
       <div className="folder-area">
@@ -213,6 +212,7 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
 }
 
 const bookingRooms = ["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Mesyuarat", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni", "Bilik Gerakan"];
+const roomIcon = (room: string) => room.includes("Komputer") || room === "Pusat Akses" ? "💻" : room.includes("Makmal") ? "🔬" : room.includes("Dewan") ? "🏛️" : room.includes("Surau") ? "🕌" : room.includes("Sumber") ? "📚" : room.includes("Seni") ? "🎨" : room.includes("Media") ? "🎥" : "🪑";
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string };
 
 function BookingCentre({ notify, close }: { notify: (message: string) => void; close: () => void }) {
@@ -262,7 +262,7 @@ function BookingCentre({ notify, close }: { notify: (message: string) => void; c
     <div className="booking-tabs"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>Status bilik</button><button className={tab === "form" ? "active" : ""} onClick={() => setTab("form")}>＋ Buat tempahan</button></div>
     {tab === "dashboard" ? <>
       <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
-      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>□</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => { setField("room", room); setField("startDate", date); setField("endDate", date); setTab("form"); }}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
+      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => { setField("room", room); setField("startDate", date); setField("endDate", date); setTab("form"); }}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
     </> : <form className="booking-form" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
       <div className="booking-note"><span>✓</span><div><strong>Lulus secara automatik jika slot kosong</strong><small>Sistem menyemak pertindihan sebelum menyimpan dan menghantar e-mel keputusan.</small></div></div>
       <div className="booking-form-grid"><label>Bilik yang ingin ditempah *<select value={form.room} onChange={(event) => setField("room", event.target.value)} required><option value="">Pilih bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><label>Tujuan penggunaan *<select value={form.purpose} onChange={(event) => setField("purpose", event.target.value)} required><option value="">Pilih tujuan</option><option>PdPC</option><option>Mesyuarat</option><option>Taklimat</option><option>Perjumpaan</option><option>Latihan SPTS</option><option>Program Sekolah</option><option>Lain-lain</option></select></label></div>
