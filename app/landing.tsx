@@ -19,7 +19,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     items: [
       { icon: "▤", title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
       { icon: "□", title: "Takwim sekolah", text: "Tarikh dan aktiviti penting" },
-      { icon: "☎", title: "Hubungi sekolah", text: "Saluran rasmi untuk pertanyaan" },
+      { icon: "☎", title: "Hubungi sekolah", text: "09-4523901 · cra8001@moe.edu.my", href: "mailto:cra8001@moe.edu.my" },
     ],
   },
   warga: {
@@ -46,8 +46,8 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     intro: "Daftar kehadiran dan dapatkan panduan sebelum berurusan di sekolah.",
     items: [
       { icon: "⌁", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", folder: "ekunjung", badge: "QR" },
-      { icon: "↗", title: "Panduan ke sekolah", text: "Lokasi dan panduan ketibaan" },
-      { icon: "☎", title: "Hubungi pejabat", text: "Saluran rasmi urusan pelawat" },
+      { icon: "↗", title: "Panduan ke sekolah", text: "Jalan Sekolah Agama, 26700 Muadzam Shah", href: "https://www.google.com/maps/search/?api=1&query=SMK+Agama+Pahang%2C+Jalan+Sekolah+Agama%2C+26700+Muadzam+Shah%2C+Pahang", badge: "Peta" },
+      { icon: "☎", title: "Hubungi pejabat", text: "09-4523901 · cra8001@moe.edu.my", href: "tel:+6094523901" },
     ],
   },
   oprhub: {
