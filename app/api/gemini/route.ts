@@ -35,7 +35,26 @@ Hasil asal: ${outcome || "Tidak dinyatakan"}`;
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.25, maxOutputTokens: 900, responseMimeType: "application/json" },
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 1200,
+          thinkingConfig: { thinkingLevel: "minimal" },
+          responseFormat: {
+            text: {
+              mimeType: "application/json",
+              schema: {
+                type: "object",
+                properties: {
+                  details: { type: "string", description: "Perenggan pelaksanaan program yang formal dan ringkas." },
+                  objective: { type: "string", description: "Objektif program dalam satu atau dua ayat." },
+                  outcome: { type: "string", description: "Hasil atau impak program dalam satu atau dua ayat." },
+                },
+                required: ["details", "objective", "outcome"],
+                additionalProperties: false,
+              },
+            },
+          },
+        },
       }),
     });
 

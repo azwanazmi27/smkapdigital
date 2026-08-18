@@ -177,6 +177,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState("");
   const [pdfBase64, setPdfBase64] = useState("");
   const [details, setDetails] = useState("");
+  const [aiMessage, setAiMessage] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
@@ -197,6 +198,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const enhance = async () => {
     if (!details.trim()) return notify("Masukkan ringkasan program dahulu");
+    setAiMessage("");
     setEnhancing(true);
     try {
       const response = await fetch("/api/gemini", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: details, title: form.title, category: form.category, objective: form.objective, outcome: form.outcome }) });
@@ -204,9 +206,12 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       if (!response.ok || !data.details) throw new Error(data.error || "Gemini tidak dapat memproses permintaan");
       setDetails(data.details);
       setForm((current) => ({ ...current, objective: data.objective || current.objective, outcome: data.outcome || current.outcome }));
+      setAiMessage("✓ Kandungan berjaya dijana dan dimasukkan ke dalam borang.");
       notify("Pelaksanaan, objektif dan hasil diperkemas oleh Gemini AI");
     } catch (error) {
-      notify(error instanceof Error ? error.message : "Sambungan Gemini belum tersedia");
+      const message = error instanceof Error ? error.message : "Sambungan Gemini belum tersedia";
+      setAiMessage(`⚠ ${message}`);
+      notify(message);
     } finally {
       setEnhancing(false);
     }
@@ -220,10 +225,10 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     const { jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
     pdf.setProperties({ title: form.title, subject: "One Page Report SMK Agama Pahang", author: form.preparedBy, creator: "Portal Rasmi SMKAP" });
-    const navy = [17, 31, 52] as const, maroon = [116, 37, 52] as const, gold = [203, 164, 82] as const;
+    const navy = [22, 54, 82] as const, headerBlue = [190, 220, 239] as const, maroon = [116, 37, 52] as const, gold = [183, 137, 48] as const;
     const muted = [92, 103, 116] as const, pale = [244, 246, 248] as const;
     const x = 12, pageWidth = 210, contentWidth = 186;
-    pdf.setFillColor(...navy); pdf.rect(0, 0, pageWidth, 39, "F");
+    pdf.setFillColor(...headerBlue); pdf.rect(0, 0, pageWidth, 39, "F");
     pdf.setFillColor(...maroon); pdf.rect(0, 36.5, pageWidth, 2.5, "F");
     pdf.setFillColor(...gold); pdf.rect(0, 39, pageWidth, 1.1, "F");
     pdf.setFillColor(255, 255, 255); pdf.roundedRect(8, 5.5, 64, 21, 2, 2, "F");
@@ -231,11 +236,11 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       const logoData = await fileToDataUrl(await (await fetch("/logo-smkap.png")).blob());
       pdf.addImage(logoData, "PNG", 10, 8.5, 60, 15, undefined, "FAST");
     } catch {}
-    pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
+    pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
     pdf.text("SMK AGAMA PAHANG", 76, 14);
     pdf.setFontSize(9); pdf.setFont("helvetica", "normal"); pdf.text("MUADZAM SHAH, PAHANG", 76, 20);
     pdf.setTextColor(...gold); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8.5); pdf.text("ONE PAGE REPORT (OPR)", 76, 28);
-    pdf.setFontSize(7); pdf.setTextColor(220, 226, 233); pdf.text(`DIJANA: ${new Date().toLocaleDateString("ms-MY")}`, 198, 11, { align: "right" });
+    pdf.setFontSize(7); pdf.setTextColor(58, 91, 116); pdf.text(`DIJANA: ${new Date().toLocaleDateString("ms-MY")}`, 198, 11, { align: "right" });
     pdf.text(`RUJUKAN: OPR/${form.category.replace(/[^A-Za-z]/g, "").slice(0, 6).toUpperCase()}/${form.date.replace(/-/g, "")}`, 198, 16, { align: "right" });
 
     pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(15);
@@ -326,6 +331,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       </div>
       <label>Ringkasan pelaksanaan<textarea rows={5} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Terangkan aktiviti yang dijalankan, kumpulan sasaran dan perjalanan program..." required /></label>
       <button type="button" className="generator-ai" onClick={enhance} disabled={enhancing}><span>✦</span><span>{enhancing ? "Gemini sedang menulis..." : "Jana pelaksanaan, objektif & hasil dengan Gemini AI"}<small>AI mengekalkan fakta asal dan mengemaskan ketiga-tiga bahagian</small></span></button>
+      {aiMessage && <p className={`ai-status ${aiMessage.startsWith("✓") ? "success" : "error"}`} role="status">{aiMessage}</p>}
       <div className="generator-row">
         <label>Objektif<input value={form.objective} onChange={(e) => setField("objective", e.target.value)} placeholder="Objektif utama program" /></label>
         <label>Hasil / impak<input value={form.outcome} onChange={(e) => setField("outcome", e.target.value)} placeholder="Hasil yang dicapai" /></label>
