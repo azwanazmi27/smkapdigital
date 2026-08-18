@@ -2,52 +2,52 @@
 
 import { useState } from "react";
 
-type Folder = "opr" | "harian" | "pengurusan" | "tingkatan6" | "admin" | null;
+type Folder = "laporan" | "sekolah" | "cari" | "plc" | "admin" | null;
 
 const folders = [
-  { id: "opr", no: "01", icon: "▤", title: "Laporan OPR", text: "Cipta, kemas dengan AI dan semak laporan", count: "5 bidang", accent: "teal" },
-  { id: "harian", no: "02", icon: "↔", title: "Urusan harian", text: "Keberadaan, relief dan daftar pelawat", count: "3 modul", accent: "blue" },
-  { id: "pengurusan", no: "03", icon: "⌕", title: "Maklumat sekolah", text: "Carta organisasi dan direktori guru", count: "2 bahagian", accent: "purple" },
-  { id: "tingkatan6", no: "04", icon: "◎", title: "Tingkatan Enam", text: "Urusan khas warga Tingkatan Enam", count: "3 bidang", accent: "gold" },
+  { id: "laporan", no: "01", icon: "✎", title: "Hantar laporan", text: "Saya mahu isi laporan OPR", count: "6 pilihan", accent: "teal" },
+  { id: "sekolah", no: "02", icon: "↔", title: "Urusan sekolah", text: "Saya mahu buat urusan harian", count: "4 pilihan", accent: "blue" },
+  { id: "cari", no: "03", icon: "⌕", title: "Cari & semak", text: "Saya mahu cari maklumat", count: "3 pilihan", accent: "purple" },
+  { id: "plc", no: "04", icon: "◎", title: "PLC guru", text: "Saya mahu rekod aktiviti PLC", count: "1 aplikasi", accent: "gold" },
 ] as const;
 
 const folderContent: Record<Exclude<Folder, null | "admin">, { title: string; intro: string; items: { icon: string; title: string; text: string; badge?: string }[] }> = {
-  opr: {
-    title: "Laporan OPR",
-    intro: "Pilih bidang laporan. Kategori baharu boleh ditambah oleh pentadbir.",
+  laporan: {
+    title: "Hantar laporan",
+    intro: "Pilih bidang OPR. Penulisan boleh diperkemas oleh AI sebelum disimpan ke Google Drive sekolah.",
     items: [
       { icon: "◈", title: "Pengurusan", text: "12 laporan", badge: "12" },
       { icon: "▥", title: "Kurikulum", text: "15 laporan", badge: "15" },
       { icon: "♡", title: "Hal Ehwal Murid", text: "8 laporan", badge: "8" },
       { icon: "✦", title: "Kokurikulum", text: "7 laporan", badge: "7" },
+      { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum", badge: "5" },
       { icon: "＋", title: "Cipta OPR baharu", text: "AI bantu kemaskan penulisan" },
     ],
   },
-  harian: {
-    title: "Urusan harian",
-    intro: "Tiga urusan rutin sekolah dalam satu aliran yang mudah.",
+  sekolah: {
+    title: "Urusan sekolah",
+    intro: "Urusan rutin warga sekolah dalam satu aliran yang mudah.",
     items: [
       { icon: "✓", title: "E-Keberadaan", text: "Rekod guru tidak hadir", badge: "3" },
       { icon: "↔", title: "E-Relief", text: "Agih guru ganti secara terus", badge: "8" },
       { icon: "⌁", title: "E-Kunjung", text: "QR daftar masuk pelawat", badge: "12" },
+      { icon: "?", title: "Bantuan & panduan", text: "Panduan penggunaan portal" },
     ],
   },
-  pengurusan: {
-    title: "Maklumat sekolah",
-    intro: "Maklumat rasmi untuk warga sekolah tanpa paparan data sensitif.",
+  cari: {
+    title: "Cari & semak",
+    intro: "Cari maklumat rasmi sekolah tanpa paparan data sensitif.",
     items: [
       { icon: "♙", title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
       { icon: "◉", title: "Senarai guru", text: "Direktori nama dan jawatan" },
       { icon: "⌂", title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
     ],
   },
-  tingkatan6: {
-    title: "Tingkatan Enam",
-    intro: "Ruang khusus bagi pengurusan dan laporan Tingkatan Enam.",
+  plc: {
+    title: "PLC guru",
+    intro: "Ruang khusus untuk merekod aktiviti Komuniti Pembelajaran Profesional guru.",
     items: [
-      { icon: "▥", title: "Kurikulum", text: "Program dan laporan akademik" },
-      { icon: "♡", title: "Hal Ehwal Murid", text: "Kebajikan dan sahsiah murid" },
-      { icon: "✦", title: "Kokurikulum", text: "Aktiviti dan pencapaian" },
+      { icon: "◎", title: "E-PLC", text: "Rekod, semak dan simpan aktiviti PLC" },
     ],
   },
 };
