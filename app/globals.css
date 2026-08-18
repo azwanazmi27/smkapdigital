@@ -319,6 +319,7 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
   --home-radius:18px;
   background:radial-gradient(circle at 86% 7%,rgba(67,151,153,.1),transparent 28%),radial-gradient(circle at 7% 88%,rgba(54,130,116,.07),transparent 29%),linear-gradient(145deg,#051a23,#082832 65%,#061e27);
 }
+.landing-shell>.landing-main { margin-left:auto; min-height:0; }
 .landing-shell:before { opacity:.42; }
 .landing-shell:after { opacity:.3; }
 .landing-header,.folder-area,.folder-card {
@@ -421,6 +422,7 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
   --glass-border-soft:rgba(255,255,255,.075);
   --glass-border-card:rgba(255,255,255,.11);
   --glass-border-floating:rgba(255,255,255,.17);
+  margin-left:0;
 }
 .folder-area {
   border-color:var(--glass-border-soft);
