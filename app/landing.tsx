@@ -213,33 +213,83 @@ function AdminPanel({ notify }: { notify: (message: string) => void }) {
 function VisitorForm({ notify, close }: { notify: (message: string) => void; close: () => void }) {
   const now = new Date();
   const [photo, setPhoto] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [review, setReview] = useState(false);
   const [visitMode, setVisitMode] = useState<"in" | "out">("in");
   const [checkoutName, setCheckoutName] = useState("");
+  const [checkoutId, setCheckoutId] = useState("");
   const [checkoutTime, setCheckoutTime] = useState(now.toTimeString().slice(0, 5));
   const [checkoutDone, setCheckoutDone] = useState(false);
+  const [activeRecords, setActiveRecords] = useState<Array<{ id: string; date: string; timeIn: string; name: string; vehicleNo: string }>>([]);
+  const [loadingActive, setLoadingActive] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [savedRecord, setSavedRecord] = useState<{ id: string; status: string } | null>(null);
   const [form, setForm] = useState({
     date: now.toISOString().slice(0, 10), timeIn: now.toTimeString().slice(0, 5), timeOut: "", visitorName: "",
     phone: "", vehicleNo: "", organisation: "", purpose: "", staff: "", meetingPlace: "", notes: "",
   });
   const setVisitorField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const tidyVisitorField = (field: keyof typeof form) => setForm((current) => ({ ...current, [field]: tidyTitleCase(current[field]) }));
-  const complete = Boolean(form.date && form.timeIn && form.visitorName && form.phone && form.purpose && form.staff && photo);
+  const complete = Boolean(form.date && form.timeIn && form.visitorName && form.phone && form.purpose && form.staff && photoFile);
+  useEffect(() => {
+    if (visitMode !== "out" || checkoutDone) return;
+    setLoadingActive(true); setSaveError("");
+    void fetch("/api/ekunjung", { cache: "no-store" }).then(async (response) => {
+      const result = await response.json() as { records?: typeof activeRecords; error?: string };
+      if (!response.ok) throw new Error(result.error || "Senarai pelawat tidak tersedia");
+      setActiveRecords(result.records || []);
+    }).catch((error) => setSaveError(error instanceof Error ? error.message : "Senarai pelawat tidak tersedia")).finally(() => setLoadingActive(false));
+  }, [visitMode, checkoutDone]);
+  const photoPayload = async (file: File) => {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas"); canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", .82));
+    if (!blob) throw new Error("Gambar tidak dapat diproses");
+    const dataUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error("Gambar tidak dapat dibaca")); reader.readAsDataURL(blob); });
+    return { mimeType: "image/jpeg", base64: dataUrl.split(",")[1] || "" };
+  };
+  const saveVisit = async () => {
+    if (!photoFile) return;
+    setSaving(true); setSaveError("");
+    try {
+      const response = await fetch("/api/ekunjung", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, photo: await photoPayload(photoFile) }) });
+      const result = await response.json() as { id?: string; status?: string; error?: string };
+      if (!response.ok || !result.id) throw new Error(result.error || "Rekod tidak dapat disimpan");
+      setSavedRecord({ id: result.id, status: result.status || "DALAM KAWASAN" }); notify("Daftar masuk berjaya disimpan");
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Rekod tidak dapat disimpan"); }
+    finally { setSaving(false); }
+  };
+  const checkoutVisit = async () => {
+    setSaving(true); setSaveError("");
+    try {
+      const response = await fetch("/api/ekunjung", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "checkout", id: checkoutId, timeOut: checkoutTime }) });
+      const result = await response.json() as { name?: string; error?: string };
+      if (!response.ok) throw new Error(result.error || "Masa keluar tidak dapat disimpan");
+      if (result.name) setCheckoutName(result.name); setCheckoutDone(true); notify("Masa keluar telah disahkan");
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Masa keluar tidak dapat disimpan"); }
+    finally { setSaving(false); }
+  };
   if (visitMode === "out") return <div className="visitor-form-shell">
     <span className="modal-overline">E-KUNJUNG SMKAP</span><h2 id="folder-title">Rekod masa keluar</h2><p>Pelawat atau pengawal boleh melengkapkan rekod keluar dengan dua langkah sahaja.</p>
     <div className="visitor-mode-tabs"><button onClick={() => setVisitMode("in")}>Daftar masuk</button><button className="active">Rekod keluar</button></div>
     <div className="visitor-checkout-card"><span>↗</span><div><strong>Daftar keluar pelawat</strong><small>Cari nama seperti dalam rekod daftar masuk</small></div></div>
-    {checkoutDone ? <div className="visitor-complete"><span>✓</span><strong>SELESAI</strong><p>{checkoutName} telah direkod keluar pada {checkoutTime}.</p><button onClick={() => { setCheckoutDone(false); setCheckoutName(""); setCheckoutTime(new Date().toTimeString().slice(0, 5)); }}>Rekod pelawat lain</button></div> : <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); setCheckoutDone(true); notify("Masa keluar telah disahkan."); }}>
-      <label>Nama pelawat *<input autoFocus value={checkoutName} onChange={(event) => setCheckoutName(event.target.value)} onBlur={() => setCheckoutName(tidyTitleCase(checkoutName))} placeholder="Cari atau masukkan nama pelawat" required /></label>
+    {checkoutDone ? <div className="visitor-complete"><span>✓</span><strong>SELESAI</strong><p>{checkoutName} telah direkod keluar pada {checkoutTime}.</p><button onClick={() => { setCheckoutDone(false); setCheckoutName(""); setCheckoutId(""); setCheckoutTime(new Date().toTimeString().slice(0, 5)); }}>Rekod pelawat lain</button></div> : <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); void checkoutVisit(); }}>
+      <label>Pilih pelawat *<select autoFocus value={checkoutId} onChange={(event) => { const id = event.target.value; setCheckoutId(id); setCheckoutName(activeRecords.find((record) => record.id === id)?.name || ""); }} required disabled={loadingActive}><option value="">{loadingActive ? "Membaca rekod..." : activeRecords.length ? "Pilih nama pelawat" : "Tiada pelawat aktif"}</option>{activeRecords.map((record) => <option key={record.id} value={record.id}>{record.name}{record.vehicleNo ? ` · ${record.vehicleNo}` : ""} · masuk {record.timeIn}</option>)}</select></label>
       <label>Masa keluar *<input type="time" value={checkoutTime} onChange={(event) => setCheckoutTime(event.target.value)} required /></label>
-      <div className="visitor-actions"><button type="button" onClick={close}>Kembali</button><button className="visitor-primary" disabled={!checkoutName || !checkoutTime}>Sahkan masa keluar <span>→</span></button></div>
+      {saveError && <p className="visitor-error">{saveError}</p>}
+      <div className="visitor-actions"><button type="button" onClick={close}>Kembali</button><button className="visitor-primary" disabled={!checkoutId || !checkoutTime || saving}>{saving ? "Menyimpan..." : <>Sahkan masa keluar <span>→</span></>}</button></div>
     </form>}
     <p className="visitor-disclaimer"><span>ⓘ</span> Rekod keluar mesti disahkan oleh pelawat atau pengawal. Masa boleh dilaras jika pendaftaran dibuat lewat.</p>
   </div>;
+  if (savedRecord) return <div className="visitor-form-shell"><span className="modal-overline">E-KUNJUNG SMKAP</span><div className="visitor-complete visitor-checkin-complete"><span>✓</span><strong>DAFTAR MASUK BERJAYA</strong><p>Rekod {form.visitorName} telah disimpan dalam Google Sheet sekolah.</p><small>{savedRecord.id} · {savedRecord.status}</small><button onClick={close}>Selesai</button></div><p className="visitor-disclaimer"><span>ⓘ</span> Sila patuhi arahan pengawal dan rekodkan masa keluar sebelum meninggalkan kawasan sekolah.</p></div>;
   if (review) return <article className="visitor-review">
     <span className="modal-overline">SEMAKAN E-KUNJUNG</span><h2 id="folder-title">Semak maklumat pelawat</h2><p>Pastikan semua maklumat betul sebelum rekod dihantar.</p>
     <div className="visitor-review-layout"><img src={photo} alt="Gambar pelawat" /><div>{[["Nama pelawat",form.visitorName],["Nombor telefon",form.phone],["Tujuan lawatan",form.purpose],["Staf ditemui",form.staff],["Tarikh & masa",`${form.date} · ${form.timeIn}`],...(form.vehicleNo ? [["Nombor kenderaan",form.vehicleNo.toUpperCase()]] : []),...(form.organisation ? [["Organisasi",form.organisation]] : []),...(form.meetingPlace ? [["Tempat perjumpaan",form.meetingPlace]] : []),...(form.notes ? [["Catatan",form.notes]] : [])].map(([label,value]) => <div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div></div>
-    <div className="visitor-actions"><button onClick={() => setReview(false)}>Kembali ubah maklumat</button><button className="visitor-primary" onClick={() => notify("Paparan E-Kunjung siap. Sambungan Google Sheets akan dibuat selepas ini.")}>Sahkan paparan</button></div>
+    {saveError && <p className="visitor-error">{saveError}</p>}
+    <div className="visitor-actions"><button onClick={() => setReview(false)} disabled={saving}>Kembali ubah maklumat</button><button className="visitor-primary" onClick={() => void saveVisit()} disabled={saving}>{saving ? "Menyimpan..." : "Sahkan & daftar masuk"}</button></div>
   </article>;
   return <div className="visitor-form-shell">
     <span className="modal-overline">DAFTAR PELAWAT</span><h2 id="folder-title">E-Kunjung SMKAP</h2><p>Daftar masuk ke SMKAP dengan pantas.</p>
@@ -250,7 +300,7 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
       <div className="visitor-row"><label>Nombor telefon *<input type="tel" inputMode="tel" value={form.phone} onChange={(event) => setVisitorField("phone",event.target.value.replace(/[^0-9+ -]/g, ""))} placeholder="Contoh: 012-345 6789" required /></label><label>Nombor kenderaan<input value={form.vehicleNo} onChange={(event) => setVisitorField("vehicleNo",event.target.value.toUpperCase())} placeholder="Contoh: CAA 1234" /></label></div>
       <label>Tujuan lawatan *<select value={form.purpose} onChange={(event) => setVisitorField("purpose",event.target.value)} required><option value="">Pilih tujuan</option><option>Urusan Rasmi</option><option>Berjumpa Guru / Staf</option><option>Penghantaran Barang</option><option>Mesyuarat / Program</option><option>Urusan Murid</option><option>Lain-lain</option></select></label>
       <label>Staf yang ingin ditemui *<input value={form.staff} onChange={(event) => setVisitorField("staff",event.target.value)} onBlur={() => tidyVisitorField("staff")} placeholder="Nama guru atau staf" required /></label>
-      <label className="visitor-photo">Gambar pelawat *<input type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) setPhoto(URL.createObjectURL(file)); }} />{photo ? <div><img src={photo} alt="Pratonton gambar pelawat" /><span>Tekan untuk tukar gambar</span></div> : <div><b>⌁</b><strong>Ambil atau pilih satu gambar</strong><span>JPG atau PNG</span></div>}</label>
+      <label className="visitor-photo">Gambar pelawat *<input type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) { if (photo) URL.revokeObjectURL(photo); setPhotoFile(file); setPhoto(URL.createObjectURL(file)); } }} />{photo ? <div><img src={photo} alt="Pratonton gambar pelawat" /><span>Tekan untuk tukar gambar</span></div> : <div><b>⌁</b><strong>Ambil atau pilih satu gambar</strong><span>JPG atau PNG</span></div>}</label>
       <details className="visitor-optional"><summary><span>＋</span> Maklumat tambahan <small>Jika perlu sahaja</small></summary><div><div className="visitor-row"><label>Organisasi<input value={form.organisation} onChange={(event) => setVisitorField("organisation",event.target.value)} onBlur={() => tidyVisitorField("organisation")} placeholder="Syarikat / jabatan" /></label><label>Tempat perjumpaan<input value={form.meetingPlace} onChange={(event) => setVisitorField("meetingPlace",event.target.value)} onBlur={() => tidyVisitorField("meetingPlace")} placeholder="Pejabat / bilik" /></label></div><label>Catatan<input value={form.notes} onChange={(event) => setVisitorField("notes",event.target.value)} placeholder="Jika ada" /></label></div></details>
       <p className="visitor-disclaimer"><span>ⓘ</span> Dengan meneruskan, pelawat bersetuju maklumat dan gambar digunakan oleh pihak sekolah bagi rekod lawatan, keselamatan dan kecemasan sahaja. Pendaftaran ini bukan kebenaran automatik untuk memasuki kawasan larangan; pelawat hendaklah mematuhi arahan pengawal dan pihak sekolah.</p>
       <div className="visitor-actions"><button type="button" onClick={close}>Kembali</button><button className="visitor-primary" disabled={!complete}>Semak maklumat <span>→</span></button></div>
