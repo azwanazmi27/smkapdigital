@@ -29,7 +29,7 @@ Catatan guru: ${text}
 Objektif asal: ${objective || "Tidak dinyatakan"}
 Hasil asal: ${outcome || "Tidak dinyatakan"}`;
 
-    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -50,7 +50,8 @@ Hasil asal: ${outcome || "Tidak dinyatakan"}`;
 
     const enhanced = result.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
     if (!enhanced) return Response.json({ error: "Gemini tidak menghasilkan teks. Cuba sekali lagi." }, { status: 502 });
-    const parsed = JSON.parse(enhanced) as { details?: unknown; objective?: unknown; outcome?: unknown };
+    const jsonText = enhanced.replace(/^\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`$/, "").trim();
+    const parsed = JSON.parse(jsonText) as { details?: unknown; objective?: unknown; outcome?: unknown };
     if (typeof parsed.details !== "string") return Response.json({ error: "Format jawapan Gemini tidak lengkap." }, { status: 502 });
     return Response.json({
       details: parsed.details.trim(),

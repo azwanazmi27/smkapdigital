@@ -192,6 +192,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     ["MOHD FADIL BIN ABDULLAH", "Guru Penolong Kanan Tingkatan Enam"],
   ] as const;
   const [verifiedName, verifiedRole] = form.verifier === "manual" ? [form.manualVerifier, form.manualVerifierRole] : form.verifier.split("|");
+  const dayName = form.date ? new Intl.DateTimeFormat("ms-MY", { weekday: "long" }).format(new Date(`${form.date}T12:00:00`)) : "";
 
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const enhance = async () => {
@@ -225,9 +226,10 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     pdf.setFillColor(...navy); pdf.rect(0, 0, pageWidth, 39, "F");
     pdf.setFillColor(...maroon); pdf.rect(0, 36.5, pageWidth, 2.5, "F");
     pdf.setFillColor(...gold); pdf.rect(0, 39, pageWidth, 1.1, "F");
+    pdf.setFillColor(255, 255, 255); pdf.roundedRect(8, 5.5, 64, 21, 2, 2, "F");
     try {
       const logoData = await fileToDataUrl(await (await fetch("/logo-smkap.png")).blob());
-      pdf.addImage(logoData, "PNG", 12, 8, 58, 14.5, undefined, "FAST");
+      pdf.addImage(logoData, "PNG", 10, 8.5, 60, 15, undefined, "FAST");
     } catch {}
     pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
     pdf.text("SMK AGAMA PAHANG", 76, 14);
@@ -241,8 +243,8 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     pdf.text(titleLines.slice(0, 2), x, 49);
     const titleBottom = 49 + Math.min(titleLines.length, 2) * 6;
 
-    const metaY = titleBottom + 2, boxW = 45, gap = 2;
-    const meta = [["BIDANG", form.category], ["TARIKH", form.date], ["TEMPAT", form.venue], ["ANJURAN", form.organiser || "-"]];
+    const metaY = titleBottom + 2, boxW = 35.6, gap = 2;
+    const meta = [["BIDANG", form.category], ["TARIKH", form.date], ["HARI", dayName], ["TEMPAT", form.venue], ["ANJURAN", form.organiser || "-"]];
     meta.forEach(([label, value], index) => {
       const bx = x + index * (boxW + gap);
       pdf.setFillColor(...pale); pdf.roundedRect(bx, metaY, boxW, 17, 2, 2, "F");
@@ -271,9 +273,12 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
       const cellW = (contentWidth - 6 - (cols - 1) * 3) / cols, cellH = (photoH - 6 - (rows - 1) * 3) / rows;
       for (let index = 0; index < shown.length; index++) {
         const data = await fileToDataUrl(shown[index]); const px = x + 3 + (index % cols) * (cellW + 3); const py = photoY + 6 + Math.floor(index / cols) * (cellH + 3);
-        const props = pdf.getImageProperties(data); const ratio = Math.min(cellW / props.width, cellH / props.height);
+        pdf.setFillColor(255, 255, 255); pdf.setDrawColor(203, 210, 216); pdf.roundedRect(px, py, cellW, cellH, 1.5, 1.5, "FD");
+        const innerW = cellW - 4, innerH = cellH - 4;
+        const props = pdf.getImageProperties(data); const ratio = Math.min(innerW / props.width, innerH / props.height);
         const iw = props.width * ratio, ih = props.height * ratio;
         pdf.addImage(data, shown[index].type === "image/png" ? "PNG" : "JPEG", px + (cellW - iw) / 2, py + (cellH - ih) / 2, iw, ih, undefined, "FAST");
+        pdf.setFillColor(...maroon); pdf.circle(px + 4, py + 4, 2.6, "F"); pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(6); pdf.text(String(index + 1), px + 4, py + 4.8, { align: "center" });
       }
     } else {
       pdf.setTextColor(...muted); pdf.setFont("helvetica", "italic"); pdf.setFontSize(8); pdf.text("Tiada gambar program dilampirkan.", pageWidth / 2, photoY + 35, { align: "center" });
@@ -288,7 +293,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     });
     pdf.setFillColor(...navy); pdf.rect(0, 289, pageWidth, 8, "F"); pdf.setTextColor(255, 255, 255); pdf.setFontSize(6.5);
     pdf.text("Portal Rasmi SMK Agama Pahang | Dokumen dijana secara digital", 12, 294);
-    pdf.text("MUADZAM SHAH", 198, 294, { align: "right" });
+    pdf.text("SMKAP", 198, 294, { align: "right" });
     const blob = pdf.output("blob");
     return { base64: await fileToBase64(blob), url: URL.createObjectURL(blob) };
   };
@@ -313,8 +318,9 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
         <label>Tajuk program<input value={form.title} onChange={(e) => setField("title", e.target.value)} placeholder="Contoh: Program Ihya' Ramadan" required /></label>
         <label>Bidang<select value={form.category} onChange={(e) => setField("category", e.target.value)}><option>Pengurusan</option><option>Kurikulum</option><option>HEM</option><option>Kokurikulum</option><option>Tingkatan Enam · Kurikulum</option><option>Tingkatan Enam · HEM</option><option>Tingkatan Enam · Kokurikulum</option><option>Lain-lain</option></select></label>
       </div>
-      <div className="generator-row generator-three">
+      <div className="generator-row generator-four">
         <label>Tarikh<input type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} required /></label>
+        <label>Hari<input value={dayName} readOnly aria-readonly="true" /></label>
         <label>Tempat<input value={form.venue} onChange={(e) => setField("venue", e.target.value)} placeholder="Dewan / lokasi" required /></label>
         <label>Anjuran<input value={form.organiser} onChange={(e) => setField("organiser", e.target.value)} placeholder="Unit / panitia" /></label>
       </div>
