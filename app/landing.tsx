@@ -2,52 +2,52 @@
 
 import { useState } from "react";
 
-type Folder = "laporan" | "sekolah" | "cari" | "plc" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "admin" | null;
 
 const folders = [
-  { id: "laporan", no: "01", icon: "✎", title: "Hantar laporan", text: "Saya mahu isi laporan OPR", count: "6 pilihan", accent: "teal" },
-  { id: "sekolah", no: "02", icon: "↔", title: "Urusan sekolah", text: "Saya mahu buat urusan harian", count: "4 pilihan", accent: "blue" },
-  { id: "cari", no: "03", icon: "⌕", title: "Cari & semak", text: "Saya mahu cari maklumat", count: "3 pilihan", accent: "purple" },
-  { id: "plc", no: "04", icon: "◎", title: "PLC guru", text: "Saya mahu rekod aktiviti PLC", count: "1 aplikasi", accent: "gold" },
+  { id: "ibubapa", no: "01", icon: "⌂", title: "Ibu Bapa", text: "Maklumat dan urusan penjaga", count: "3 pilihan", accent: "teal" },
+  { id: "warga", no: "02", icon: "◎", title: "Warga Sekolah", text: "Urusan guru dan kakitangan", count: "5 modul", accent: "blue" },
+  { id: "tentang", no: "03", icon: "⌕", title: "Tentang Sekolah", text: "Kenali SMK Agama Pahang", count: "3 bahagian", accent: "purple" },
+  { id: "pengunjung", no: "04", icon: "⌁", title: "Pengunjung", text: "Daftar dan dapatkan panduan", count: "3 pilihan", accent: "gold" },
 ] as const;
 
 const folderContent: Record<Exclude<Folder, null | "admin">, { title: string; intro: string; items: { icon: string; title: string; text: string; badge?: string }[] }> = {
-  laporan: {
-    title: "Hantar laporan",
-    intro: "Pilih bidang OPR. Penulisan boleh diperkemas oleh AI sebelum disimpan ke Google Drive sekolah.",
+  ibubapa: {
+    title: "Ibu Bapa",
+    intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
     items: [
-      { icon: "◈", title: "Pengurusan", text: "12 laporan", badge: "12" },
-      { icon: "▥", title: "Kurikulum", text: "15 laporan", badge: "15" },
-      { icon: "♡", title: "Hal Ehwal Murid", text: "8 laporan", badge: "8" },
-      { icon: "✦", title: "Kokurikulum", text: "7 laporan", badge: "7" },
-      { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum", badge: "5" },
-      { icon: "＋", title: "Cipta OPR baharu", text: "AI bantu kemaskan penulisan" },
+      { icon: "▤", title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
+      { icon: "□", title: "Takwim sekolah", text: "Tarikh dan aktiviti penting" },
+      { icon: "☎", title: "Hubungi sekolah", text: "Saluran rasmi untuk pertanyaan" },
     ],
   },
-  sekolah: {
-    title: "Urusan sekolah",
-    intro: "Urusan rutin warga sekolah dalam satu aliran yang mudah.",
+  warga: {
+    title: "Warga Sekolah",
+    intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
+      { icon: "✎", title: "Laporan OPR", text: "Cipta, kemas dengan AI dan semak laporan" },
       { icon: "✓", title: "E-Keberadaan", text: "Rekod guru tidak hadir", badge: "3" },
       { icon: "↔", title: "E-Relief", text: "Agih guru ganti secara terus", badge: "8" },
-      { icon: "⌁", title: "E-Kunjung", text: "QR daftar masuk pelawat", badge: "12" },
-      { icon: "?", title: "Bantuan & panduan", text: "Panduan penggunaan portal" },
+      { icon: "◎", title: "PLC Guru", text: "Rekod aktiviti pembelajaran profesional" },
+      { icon: "⑥", title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
     ],
   },
-  cari: {
-    title: "Cari & semak",
-    intro: "Cari maklumat rasmi sekolah tanpa paparan data sensitif.",
+  tentang: {
+    title: "Tentang Sekolah",
+    intro: "Kenali organisasi, warga dan hala tuju SMK Agama Pahang.",
     items: [
+      { icon: "⌂", title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
       { icon: "♙", title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
       { icon: "◉", title: "Senarai guru", text: "Direktori nama dan jawatan" },
-      { icon: "⌂", title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
     ],
   },
-  plc: {
-    title: "PLC guru",
-    intro: "Ruang khusus untuk merekod aktiviti Komuniti Pembelajaran Profesional guru.",
+  pengunjung: {
+    title: "Pengunjung",
+    intro: "Daftar kehadiran dan dapatkan panduan sebelum berurusan di sekolah.",
     items: [
-      { icon: "◎", title: "E-PLC", text: "Rekod, semak dan simpan aktiviti PLC" },
+      { icon: "⌁", title: "E-Kunjung", text: "Imbas QR dan daftar masuk", badge: "QR" },
+      { icon: "↗", title: "Panduan ke sekolah", text: "Lokasi dan panduan ketibaan" },
+      { icon: "☎", title: "Hubungi pejabat", text: "Saluran rasmi urusan pelawat" },
     ],
   },
 };
