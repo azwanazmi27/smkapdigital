@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Building2, ChevronRight, HeartHandshake, MapPin, Settings, ShieldCheck, Users } from "lucide-react";
 
 type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
 type SubItem = { icon: string; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 
 const folders = [
-  { id: "tentang", no: "01", icon: "🏫", title: "Tentang Sekolah", text: "Kenali SMK Agama Pahang", count: "3 bahagian", accent: "purple" },
-  { id: "warga", no: "02", icon: "👥", title: "Warga Sekolah", text: "Urusan guru dan kakitangan", count: "4 modul", accent: "blue" },
-  { id: "ibubapa", no: "03", icon: "👪", title: "Ibu Bapa", text: "Maklumat dan urusan penjaga", count: "3 pilihan", accent: "teal" },
-  { id: "pengunjung", no: "04", icon: "📍", title: "Pengunjung", text: "Daftar dan dapatkan panduan", count: "3 pilihan", accent: "gold" },
+  { id: "tentang", no: "01", icon: Building2, title: "Tentang Sekolah", text: "Profil & maklumat sekolah" },
+  { id: "warga", no: "02", icon: Users, title: "Guru & Staf", text: "Urusan guru dan kakitangan" },
+  { id: "ibubapa", no: "03", icon: HeartHandshake, title: "Ibu Bapa / Penjaga", text: "Maklumat dan urusan anak" },
+  { id: "pengunjung", no: "04", icon: MapPin, title: "Pelawat", text: "Daftar lawatan & panduan" },
 ] as const;
 
 const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "ekunjung">, { title: string; intro: string; items: SubItem[] }> = {
   ibubapa: {
-    title: "Ibu Bapa",
+    title: "Ibu Bapa / Penjaga",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
     items: [
       { icon: "📢", title: "Hebahan sekolah", text: "Pengumuman dan makluman terkini" },
@@ -23,7 +24,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     ],
   },
   warga: {
-    title: "Warga Sekolah",
+    title: "Guru & Staf",
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
       { icon: "📝", title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
@@ -42,7 +43,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
     ],
   },
   pengunjung: {
-    title: "Pengunjung",
+    title: "Pelawat",
     intro: "Daftar kehadiran dan dapatkan panduan sebelum berurusan di sekolah.",
     items: [
       { icon: "📋", title: "E-Kunjung", text: "Imbas dan daftar masuk", folder: "ekunjung" },
@@ -87,37 +88,35 @@ export function LandingPortal() {
     <header className="landing-header">
       <div className="official-logo"><span><img src="/logo-smkap.png" alt="Logo rasmi SMK Agama Pahang" /></span><div><strong>SMK Agama Pahang</strong><small>Berilmu · Bertakwa</small></div></div>
       <div className="portal-label"><i></i><span>PORTAL RASMI</span><b>2026</b></div>
-      <button className="admin-entry" onClick={() => setOpen("admin")}><span>⚙</span><div><strong>Pentadbir</strong><small>Urus kandungan</small></div></button>
+      <button className="admin-entry" onClick={() => setOpen("admin")} aria-label="Buka tetapan pentadbir"><span><Settings aria-hidden="true" /></span><div><strong>Admin</strong><small>Tetapan</small></div></button>
     </header>
 
     <section className="landing-main">
       <div className="landing-intro">
         <div className="intro-label"><i></i> PORTAL SEHENTI WARGA SMKAP</div>
         <h1>Urusan sekolah,<br/><em>lebih mudah.</em></h1>
-        <p>Semua perkhidmatan digital sekolah dalam satu tempat. Pilih urusan anda untuk bermula.</p>
+        <p>Semua urusan sekolah dalam satu tempat.</p>
       </div>
 
       <div className="folder-area">
-        <div className="folder-heading"><span><i></i> MULA DI SINI</span><strong>Apakah yang anda mahu lakukan?</strong></div>
+        <div className="folder-heading"><span><i></i> PILIH URUSAN</span><strong>Apa urusan anda hari ini?</strong></div>
         <div className="folder-grid">
-          {folders.map((folder) => <button key={folder.id} className={`folder-card ${folder.accent}`} onClick={() => setOpen(folder.id)}>
-            <span className="folder-no">{folder.no}</span>
-            <div className="folder-icon">{folder.icon}</div>
-            <h2>{folder.title}</h2>
-            <p>{folder.text}</p>
-            <div className="folder-foot"><strong>{folder.count}</strong><i>↗</i></div>
-          </button>)}
+          {folders.map((folder) => { const FolderIcon = folder.icon; return <button key={folder.id} className="folder-card" onClick={() => setOpen(folder.id)} aria-label={`${folder.title}: ${folder.text}`}>
+            <div className="folder-icon"><FolderIcon aria-hidden="true" /></div>
+            <div className="folder-copy"><span className="folder-no">{folder.no}</span><h2>{folder.title}</h2><p>{folder.text}</p></div>
+            <ChevronRight className="folder-chevron" aria-hidden="true" />
+          </button>; })}
         </div>
-        <p className="safe-note"><span>✓</span> Selamat dan mudah digunakan · Gunakan akaun sekolah apabila diminta.</p>
+        <p className="safe-note"><ShieldCheck aria-hidden="true" /> Selamat digunakan · Gunakan akaun sekolah apabila diminta.</p>
       </div>
     </section>
 
-    <footer className="landing-footer"><span>SMK AGAMA PAHANG · MUADZAM SHAH</span><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>? Perlukan bantuan</button></footer>
+    <footer className="landing-footer"><span>© 2026 SMK Agama Pahang</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprhub" || open === "etempahan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}>⌂ Portal Utama</button>
-        <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Warga Sekolah" : "Tutup"}>×</button>
+        <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}>×</button>
         {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
@@ -257,7 +256,7 @@ function BookingCentre({ notify, close }: { notify: (message: string) => void; c
   };
   if (result) return <div className="booking-centre"><span className="modal-overline">E-TEMPAHAN SMKAP</span><div className={`booking-result ${result.success ? "success" : "failed"}`}><span>{result.success ? "✓" : "!"}</span><h2>{result.success ? "TEMPAHAN BERJAYA" : "TEMPAHAN TIDAK BERJAYA"}</h2><p>{result.message}</p>{result.id && <small>Nombor rujukan: {result.id}</small>}<div><button onClick={() => { setResult(null); setTab("dashboard"); }}>Lihat status bilik</button><button className="booking-primary" onClick={() => { setResult(null); setTab("form"); }}>Buat tempahan lain</button></div></div></div>;
   return <div className="booking-centre">
-    <div className="booking-head"><div><span className="modal-overline">E-TEMPAHAN SMKAP</span><h2 id="folder-title">Tempahan bilik sekolah</h2><p>Semak kekosongan dan buat tempahan dalam beberapa langkah sahaja.</p></div><button onClick={close}>Kembali ke Warga Sekolah</button></div>
+    <div className="booking-head"><div><span className="modal-overline">E-TEMPAHAN SMKAP</span><h2 id="folder-title">Tempahan bilik sekolah</h2><p>Semak kekosongan dan buat tempahan dalam beberapa langkah sahaja.</p></div><button onClick={close}>Kembali ke Guru & Staf</button></div>
     <div className="booking-tabs"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>Status bilik</button><button className={tab === "form" ? "active" : ""} onClick={() => setTab("form")}>＋ Buat tempahan</button></div>
     {tab === "dashboard" ? <>
       <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
