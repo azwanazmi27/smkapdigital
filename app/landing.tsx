@@ -95,7 +95,6 @@ export function LandingPortal() {
         <div className="intro-label"><i></i> PORTAL SEHENTI WARGA SMKAP</div>
         <h1>Urusan sekolah,<br/><em>lebih mudah.</em></h1>
         <p>Semua perkhidmatan digital sekolah dalam satu tempat. Pilih urusan anda untuk bermula.</p>
-        <figure className="school-visual"><img src="/kampus-smkap-panorama.jpeg" alt="Bangunan utama SMK Agama Pahang di Muadzam Shah" /><figcaption><span>SMKAP</span><div><strong>Berilmu · Bertakwa</strong><small>Sekolah Kluster Kecemerlangan</small></div></figcaption></figure>
       </div>
 
       <div className="folder-area">
