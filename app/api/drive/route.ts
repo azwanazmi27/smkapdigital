@@ -1,4 +1,5 @@
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { env } from "cloudflare:workers";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 
@@ -7,6 +8,32 @@ const allowedCategories = new Set([
   "Tingkatan Enam · Kurikulum", "Tingkatan Enam · HEM",
   "Tingkatan Enam · Kokurikulum", "Lain-lain",
 ]);
+
+type OprFile = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
+
+function parseDriveFiles(value: unknown): OprFile[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const file = item as Record<string, unknown>;
+    const required = ["id", "name", "category", "createdAt", "updatedAt", "viewUrl", "previewUrl", "downloadUrl"];
+    if (!required.every((key) => typeof file[key] === "string") || !allowedCategories.has(file.category as string)) return [];
+    return [file as OprFile];
+  });
+}
+
+async function cachedReports() {
+  const result = await env.DB.prepare("SELECT id,name,category,created_at AS createdAt,updated_at AS updatedAt,view_url AS viewUrl,preview_url AS previewUrl,download_url AS downloadUrl FROM opr_reports ORDER BY updated_at DESC").all<OprFile>();
+  return result.results;
+}
+
+async function replaceReportCache(files: OprFile[]) {
+  const syncedAt = new Date().toISOString();
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM opr_reports"),
+    ...files.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?)").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)),
+  ]);
+}
 
 function validMagic(raw: Uint8Array, mimeType: string) {
   if (mimeType === "application/pdf") return raw[0] === 0x25 && raw[1] === 0x50 && raw[2] === 0x44 && raw[3] === 0x46;
@@ -23,10 +50,15 @@ async function authorizedUser() {
   return allowed.includes(user.email.toLowerCase()) ? user : null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     if (!await authorizedUser()) {
       return Response.json({ error: "Akaun ini belum dibenarkan melihat OPR." }, { status: 403 });
+    }
+    const refresh = new URL(request.url).searchParams.get("refresh") === "1";
+    if (!refresh) {
+      const cached = await cachedReports();
+      if (cached.length) return Response.json({ success: true, files: cached, source: "cache" }, { headers: { "Cache-Control": "private, max-age=60" } });
     }
     const webAppUrl = process.env.OPR_APPS_SCRIPT_URL;
     const token = process.env.OPR_APPS_SCRIPT_TOKEN;
@@ -42,15 +74,9 @@ export async function GET() {
     });
     const result = await response.json() as { ok?: boolean; files?: unknown; error?: string };
     if (!response.ok || !result.ok || !Array.isArray(result.files)) throw new Error(result.error || "Senarai Drive tidak tersedia");
-    const files = result.files.flatMap((item) => {
-      if (!item || typeof item !== "object") return [];
-      const file = item as Record<string, unknown>;
-      const required = ["id", "name", "category", "createdAt", "updatedAt", "viewUrl", "previewUrl", "downloadUrl"];
-      if (!required.every((key) => typeof file[key] === "string")) return [];
-      if (!allowedCategories.has(file.category as string)) return [];
-      return [{ id: file.id, name: file.name, category: file.category, createdAt: file.createdAt, updatedAt: file.updatedAt, viewUrl: file.viewUrl, previewUrl: file.previewUrl, downloadUrl: file.downloadUrl }];
-    });
-    return Response.json({ success: true, files }, { headers: { "Cache-Control": "private, no-store" } });
+    const files = parseDriveFiles(result.files);
+    await replaceReportCache(files);
+    return Response.json({ success: true, files, source: "drive" }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Google Drive list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Senarai OPR tidak dapat dibaca daripada Google Drive sekarang." }, { status: 502 });
@@ -112,6 +138,11 @@ export async function POST(request: Request) {
     });
     const result = await response.json() as { ok?: boolean; files?: unknown[]; error?: string };
     if (!response.ok || !result.ok) throw new Error(result.error || "Apps Script gagal menyimpan fail");
+    const saved = parseDriveFiles(result.files);
+    if (saved.length) {
+      const syncedAt = new Date().toISOString();
+      await env.DB.batch(saved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,created_at=excluded.created_at,updated_at=excluded.updated_at,view_url=excluded.view_url,preview_url=excluded.preview_url,download_url=excluded.download_url,synced_at=excluded.synced_at").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)));
+    }
     return Response.json({ success: true, files: result.files || [] });
   } catch (error) {
     console.error("Google Drive upload error", error instanceof Error ? error.message : error);
