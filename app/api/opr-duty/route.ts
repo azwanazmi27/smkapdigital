@@ -18,6 +18,7 @@ const select = "SELECT id,report_date AS reportDate,week_number AS weekNumber,sc
 
 export async function GET(request: Request) {
   try {
+    if (!await getChatGPTUser()) return Response.json({ error:"Sila log masuk untuk melihat laporan guru bertugas." },{ status:401 });
     if (!await authorized()) return Response.json({ error:"Akaun ini belum dibenarkan melihat laporan guru bertugas." },{ status:403 });
     await prepare(); const url = new URL(request.url); const week = Number(url.searchParams.get("week")); const year = Number(url.searchParams.get("year"));
     const result = week && year ? await env.DB.prepare(`${select} WHERE school_year=? AND week_number=? ORDER BY report_date`).bind(year,week).all<DutyRow>() : await env.DB.prepare(`${select} ORDER BY report_date DESC LIMIT 60`).all<DutyRow>();
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (!await getChatGPTUser()) return Response.json({ error:"Sila log masuk untuk menyimpan laporan guru bertugas." },{ status:401 });
     const user = await authorized(); if (!user) return Response.json({ error:"Akaun ini belum dibenarkan menyimpan laporan guru bertugas." },{ status:403 });
     await prepare(); const body = await request.json() as Record<string,unknown>;
     const text = (key:string,max=800) => typeof body[key] === "string" ? String(body[key]).trim().slice(0,max) : "";

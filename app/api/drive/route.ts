@@ -71,6 +71,10 @@ async function authorizedUser() {
 
 export async function GET(request: Request) {
   try {
+    const signedInUser = await getChatGPTUser();
+    if (!signedInUser) {
+      return Response.json({ error: "Sila log masuk untuk melihat OPR." }, { status: 401 });
+    }
     if (!await authorizedUser()) {
       return Response.json({ error: "Akaun ini belum dibenarkan melihat OPR." }, { status: 403 });
     }
@@ -104,6 +108,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const signedInUser = await getChatGPTUser();
+    if (!signedInUser) {
+      return Response.json({ error: "Sila log masuk untuk menghantar OPR." }, { status: 401 });
+    }
     const user = await authorizedUser();
     if (!user) {
       return Response.json({ error: "Akaun ini belum dibenarkan menghantar OPR." }, { status: 403 });
