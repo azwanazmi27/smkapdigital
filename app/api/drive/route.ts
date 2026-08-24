@@ -1,4 +1,3 @@
-import { getChatGPTUser } from "../../chatgpt-auth";
 import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 
@@ -61,23 +60,8 @@ function validMagic(raw: Uint8Array, mimeType: string) {
   return false;
 }
 
-async function authorizedUser() {
-  const user = await getChatGPTUser();
-  if (!user) return null;
-  const allowed = (process.env.OPR_ALLOWED_EMAILS || "")
-    .split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
-  return allowed.includes(user.email.toLowerCase()) ? user : null;
-}
-
 export async function GET(request: Request) {
   try {
-    const signedInUser = await getChatGPTUser();
-    if (!signedInUser) {
-      return Response.json({ error: "Sila log masuk untuk melihat OPR." }, { status: 401 });
-    }
-    if (!await authorizedUser()) {
-      return Response.json({ error: "Akaun ini belum dibenarkan melihat OPR." }, { status: 403 });
-    }
     const refresh = new URL(request.url).searchParams.get("refresh") === "1";
     if (!refresh) {
       const cached = await cachedReports();
@@ -108,15 +92,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const signedInUser = await getChatGPTUser();
-    if (!signedInUser) {
-      return Response.json({ error: "Sila log masuk untuk menghantar OPR." }, { status: 401 });
-    }
-    const user = await authorizedUser();
-    if (!user) {
-      return Response.json({ error: "Akaun ini belum dibenarkan menghantar OPR." }, { status: 403 });
-    }
-
     const webAppUrl = process.env.OPR_APPS_SCRIPT_URL;
     const token = process.env.OPR_APPS_SCRIPT_TOKEN;
     if (!webAppUrl || !token) {

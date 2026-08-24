@@ -1,14 +1,6 @@
 import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "../../chatgpt-auth";
 
 type DutyRow = { id:string; reportDate:string; weekNumber:number; schoolYear:number; dayName:string; teachers:string; teacherTotal:number; teacherPresent:number; teacherAbsent:number; cleanlinessStatus:string; disciplineStatus:string; safetyStatus:string; healthStatus:string; canteenStatus:string; activityNote:string; generalNote:string; detailsJson:string; preparedBy:string; createdAt:string; updatedAt:string };
-
-async function authorized() {
-  const user = await getChatGPTUser();
-  if (!user) return null;
-  const allowed = (process.env.OPR_ALLOWED_EMAILS || "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
-  return allowed.includes(user.email.toLowerCase()) ? user : null;
-}
 
 async function prepare() {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS opr_duty_reports (id TEXT PRIMARY KEY,report_date TEXT NOT NULL UNIQUE,week_number INTEGER NOT NULL,school_year INTEGER NOT NULL,day_name TEXT NOT NULL,teachers TEXT NOT NULL,teacher_total INTEGER NOT NULL DEFAULT 0,teacher_present INTEGER NOT NULL DEFAULT 0,teacher_absent INTEGER NOT NULL DEFAULT 0,cleanliness_status TEXT NOT NULL,discipline_status TEXT NOT NULL,safety_status TEXT NOT NULL,health_status TEXT NOT NULL,canteen_status TEXT NOT NULL,activity_note TEXT NOT NULL DEFAULT '',general_note TEXT NOT NULL DEFAULT '',details_json TEXT NOT NULL DEFAULT '{}',prepared_by TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL)").run();
@@ -18,8 +10,6 @@ const select = "SELECT id,report_date AS reportDate,week_number AS weekNumber,sc
 
 export async function GET(request: Request) {
   try {
-    if (!await getChatGPTUser()) return Response.json({ error:"Sila log masuk untuk melihat laporan guru bertugas." },{ status:401 });
-    if (!await authorized()) return Response.json({ error:"Akaun ini belum dibenarkan melihat laporan guru bertugas." },{ status:403 });
     await prepare(); const url = new URL(request.url); const week = Number(url.searchParams.get("week")); const year = Number(url.searchParams.get("year"));
     const result = week && year ? await env.DB.prepare(`${select} WHERE school_year=? AND week_number=? ORDER BY report_date`).bind(year,week).all<DutyRow>() : await env.DB.prepare(`${select} ORDER BY report_date DESC LIMIT 60`).all<DutyRow>();
     return Response.json({ records:result.results },{ headers:{ "Cache-Control":"private, no-store" } });
@@ -28,8 +18,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    if (!await getChatGPTUser()) return Response.json({ error:"Sila log masuk untuk menyimpan laporan guru bertugas." },{ status:401 });
-    const user = await authorized(); if (!user) return Response.json({ error:"Akaun ini belum dibenarkan menyimpan laporan guru bertugas." },{ status:403 });
     await prepare(); const body = await request.json() as Record<string,unknown>;
     const text = (key:string,max=800) => typeof body[key] === "string" ? String(body[key]).trim().slice(0,max) : "";
     const integer = (key:string,max=999) => Math.max(0,Math.min(max,Number(body[key]) || 0));
