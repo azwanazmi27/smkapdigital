@@ -7,9 +7,9 @@ type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 const allowedCategories = new Set<string>([...legacyOprCategories, ...oprCategoryValues]);
 
 function driveCategory(category: string) {
-  if (category.startsWith("Tingkatan Enam · Kurikulum")) return "Tingkatan Enam · Kurikulum";
-  if (category.startsWith("Tingkatan Enam · HEM")) return "Tingkatan Enam · HEM";
-  if (category.startsWith("Tingkatan Enam · Kokurikulum")) return "Tingkatan Enam · Kokurikulum";
+  if (category.startsWith("Tingkatan Enam · Hal Ehwal Murid Tingkatan Enam")) return "Tingkatan Enam · HEM";
+  if (category.startsWith("Tingkatan Enam · Kokurikulum Tingkatan Enam")) return "Tingkatan Enam · Kokurikulum";
+  if (category.startsWith("Tingkatan Enam")) return "Tingkatan Enam · Kurikulum";
   if (category.startsWith("Pengurusan")) return "Pengurusan";
   if (category.startsWith("Kurikulum")) return "Kurikulum";
   if (category.startsWith("HEM")) return "HEM";
@@ -37,9 +37,15 @@ async function cachedReports() {
 
 async function replaceReportCache(files: OprFile[]) {
   const syncedAt = new Date().toISOString();
+  const existing = await env.DB.prepare("SELECT id,category FROM opr_reports").all<{ id:string; category:string }>();
+  const categoryById = new Map(existing.results.map((file) => [file.id,file.category]));
+  const preserved = files.map((file) => {
+    const previous = categoryById.get(file.id);
+    return previous && previous !== file.category && driveCategory(previous) === file.category ? { ...file,category:previous } : file;
+  });
   await env.DB.batch([
     env.DB.prepare("DELETE FROM opr_reports"),
-    ...files.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?)").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)),
+    ...preserved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?)").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)),
   ]);
 }
 

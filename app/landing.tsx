@@ -223,7 +223,6 @@ function AttendanceCentre({ notify }: { notify: (message: string) => void }) {
 const oprCategories = [
   ["Pengurusan", "#79d4c5"], ["Kurikulum", "#78b9df"], ["HEM", "#dd8d78"],
   ["Kokurikulum", "#e2ba65"], ["Tingkatan Enam", "#a792d5"],
-  ["Lain-lain", "#8ea3aa"],
 ] as const;
 
 function findFolderNode(path: string) {
@@ -551,7 +550,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
-    title: "", category: "Kurikulum · Bahasa & Perpustakaan · Bahasa Melayu", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
+    title: "", category: "Kurikulum · Bahasa · Bahasa Melayu", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
     preparedBy: "", preparedRole: "", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
   });
 
