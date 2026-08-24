@@ -46,6 +46,7 @@ export const oprFolderTree: readonly OprFolderNode[] = [
     { name: "Hal Ehwal Murid Tingkatan Enam", children: [{ name: "Disiplin Tingkatan Enam" }, { name: "Kebajikan Pelajar Tingkatan Enam" }, { name: "Biasiswa" }, { name: "Guru Kelas" }] },
     { name: "Kokurikulum Tingkatan Enam", children: [{ name: "Unit Beruniform Tingkatan Enam" }, { name: "Persatuan Tingkatan Enam" }, { name: "Sukan & Permainan Tingkatan Enam" }] },
   ] },
+  { name: "Lain-lain" },
 ] as const;
 
 function leaves(nodes: readonly OprFolderNode[], prefix: string[] = []): string[] {

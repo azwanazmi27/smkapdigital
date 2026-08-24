@@ -56,6 +56,7 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
 .generator-form textarea { resize:vertical; line-height:1.55; }
 .generator-form input::placeholder,.generator-form textarea::placeholder { color:#607b82; }
 .generator-form input:focus,.generator-form select:focus,.generator-form textarea:focus { border-color:#5bc4b5; box-shadow:0 0 0 3px rgba(91,196,181,.1); }
+.generator-form .manual-category-use{min-height:38px;padding:8px 11px;border:1px solid rgba(117,210,195,.24);border-radius:10px;color:#8fe0d4;background:rgba(82,177,163,.09);font-size:10px;font-weight:850;text-align:left;cursor:pointer}.generator-form .manual-category-use:active{transform:scale(.985)}.manual-category-field{padding:12px 14px;border:1px solid rgba(117,210,195,.16);border-radius:13px;background:rgba(65,157,146,.07)}
 .generator-row { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
 .generator-three { grid-template-columns:.7fr 1fr 1fr; }
 .generator-four { grid-template-columns:.65fr .65fr 1fr 1fr; }

@@ -14,7 +14,12 @@ function driveCategory(category: string) {
   if (category.startsWith("Kurikulum")) return "Kurikulum";
   if (category.startsWith("HEM")) return "HEM";
   if (category.startsWith("Kokurikulum")) return "Kokurikulum";
+  if (category.startsWith("Lain-lain")) return "Lain-lain";
   return category;
+}
+
+function validCategory(category:string) {
+  return allowedCategories.has(category) || (/^Lain-lain · [^<>]{1,80}$/.test(category));
 }
 
 type OprFile = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
@@ -112,7 +117,7 @@ export async function POST(request: Request) {
 
     const body = await request.json() as { category?: unknown; files?: unknown };
     const category = typeof body.category === "string" ? body.category : "";
-    if (!allowedCategories.has(category)) {
+    if (!validCategory(category)) {
       return Response.json({ error: "Kategori OPR tidak sah." }, { status: 400 });
     }
 

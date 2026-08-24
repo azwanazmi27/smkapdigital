@@ -223,6 +223,7 @@ function AttendanceCentre({ notify }: { notify: (message: string) => void }) {
 const oprCategories = [
   ["Pengurusan", "#79d4c5"], ["Kurikulum", "#78b9df"], ["HEM", "#dd8d78"],
   ["Kokurikulum", "#e2ba65"], ["Tingkatan Enam", "#a792d5"],
+  ["Lain-lain", "#8ea3aa"],
 ] as const;
 
 function findFolderNode(path: string) {
@@ -547,10 +548,11 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const [pdfBase64, setPdfBase64] = useState("");
   const [details, setDetails] = useState("");
   const [aiMessage, setAiMessage] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
-    title: "", category: "Kurikulum · Bahasa · Bahasa Melayu", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
+    title: "", category: "Kurikulum · Bahasa · Bahasa Melayu", manualCategory: "", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
     preparedBy: "", preparedRole: "", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
   });
 
@@ -563,6 +565,9 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   ] as const;
   const [verifiedName, verifiedRole] = form.verifier === "manual" ? [form.manualVerifier, form.manualVerifierRole] : form.verifier.split("|");
   const dayName = form.date ? new Intl.DateTimeFormat("ms-MY", { weekday: "long" }).format(new Date(`${form.date}T12:00:00`)) : "";
+  const categoryOptions = oprCategoryGroups.flatMap((group) => group.options.map((option) => ({ value:group.label === "Lain-lain" ? option : `${group.label} · ${option}`, label:group.label === "Lain-lain" ? option : `${group.label} › ${option}` })));
+  const categoryMatches = categorySearch.trim() ? categoryOptions.filter((option) => option.label.toLowerCase().includes(categorySearch.trim().toLowerCase())) : categoryOptions;
+  const effectiveCategory = form.category === "Lain-lain" && form.manualCategory.trim() ? `Lain-lain · ${tidyTitleCase(form.manualCategory).replace(/[<>]/g,"").slice(0,80)}` : form.category;
 
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const tidyField = (field: keyof typeof form) => setForm((current) => ({ ...current, [field]: tidyTitleCase(current[field]) }));
@@ -571,7 +576,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     setAiMessage("");
     setEnhancing(true);
     try {
-      const response = await fetch("/api/gemini", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: details, title: form.title, category: form.category, objective: form.objective, outcome: form.outcome }) });
+      const response = await fetch("/api/gemini", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: details, title: form.title, category: effectiveCategory, objective: form.objective, outcome: form.outcome }) });
       const data = await response.json() as { details?: string; objective?: string; outcome?: string; error?: string };
       if (!response.ok || !data.details) throw new Error(data.error || "Gemini tidak dapat memproses permintaan");
       setDetails(data.details);
@@ -587,7 +592,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     }
   };
 
-  const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole);
+  const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole && (form.category !== "Lain-lain" || form.manualCategory.trim()));
   const safeName = (value: string) => value.normalize("NFKD").replace(/[^a-zA-Z0-9 -]/g, "").replace(/\s+/g, " ").trim() || "OPR";
   const fileToDataUrl = (file: Blob) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
   const fileToBase64 = async (file: Blob) => (await fileToDataUrl(file)).split(",")[1] || "";
@@ -628,7 +633,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     pdf.setFontSize(9); pdf.setFont("helvetica", "normal"); pdf.text("MUADZAM SHAH, PAHANG", 76, 20);
     pdf.setTextColor(...gold); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8.5); pdf.text("ONE PAGE REPORT (OPR)", 76, 28);
     pdf.setFontSize(7); pdf.setTextColor(58, 91, 116); pdf.text(`DIJANA: ${new Date().toLocaleDateString("ms-MY")}`, 198, 11, { align: "right" });
-    pdf.text(`RUJUKAN: OPR/${form.category.replace(/[^A-Za-z]/g, "").slice(0, 6).toUpperCase()}/${form.date.replace(/-/g, "")}`, 198, 16, { align: "right" });
+    pdf.text(`RUJUKAN: OPR/${effectiveCategory.replace(/[^A-Za-z]/g, "").slice(0, 6).toUpperCase()}/${form.date.replace(/-/g, "")}`, 198, 16, { align: "right" });
 
     pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(15);
     const titleLines = pdf.splitTextToSize(form.title.toUpperCase(), contentWidth);
@@ -636,7 +641,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     const titleBottom = 49 + Math.min(titleLines.length, 2) * 6;
 
     const metaY = titleBottom + 2, boxW = 35.6, gap = 2;
-    const meta = [["BIDANG", form.category], ["TARIKH", form.date], ["HARI", dayName], ["TEMPAT", form.venue], ["ANJURAN", form.organiser || "-"]];
+    const meta = [["BIDANG", effectiveCategory], ["TARIKH", form.date], ["HARI", dayName], ["TEMPAT", form.venue], ["ANJURAN", form.organiser || "-"]];
     meta.forEach(([label, value], index) => {
       const bx = x + index * (boxW + gap);
       pdf.setFillColor(...pale); pdf.roundedRect(bx, metaY, boxW, 17, 2, 2, "F");
@@ -698,7 +703,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     } catch { notify("Pratonton PDF tidak dapat dijana"); }
     finally { setRendering(false); }
   };
-  const sendToDrive = async () => { if (!pdfBase64 || !pdfPreviewUrl) return notify("Sila jana dan semak pratonton PDF dahulu"); setSending(true); setDriveUrl(""); try { const base = `${form.date}-${safeName(form.title)}`; const pdfBase = `${base}__PENYEDIA__${safeName(form.preparedBy)}`; const files = [{ name: `${pdfBase}.pdf`, mimeType: "application/pdf", base64: pdfBase64 }]; for (let index = 0; index < photoFiles.length; index++) files.push({ name: `${base}-gambar-${index + 1}.${photoFiles[index].type === "image/png" ? "png" : "jpg"}`, mimeType: photoFiles[index].type || "image/jpeg", base64: await fileToBase64(photoFiles[index]) }); const response = await fetch("/api/drive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: form.category, files }) }); const result = await response.json() as { error?: string; files?: Array<{ url: string }> }; if (!response.ok || !result.files?.[0]) throw new Error(result.error || "Penghantaran tidak berjaya"); setDriveUrl(result.files[0].url); notify("OPR berjaya disimpan ke Google Drive sekolah"); } catch (error) { notify(error instanceof Error ? error.message : "OPR tidak dapat dihantar"); } finally { setSending(false); } };
+  const sendToDrive = async () => { if (!pdfBase64 || !pdfPreviewUrl) return notify("Sila jana dan semak pratonton PDF dahulu"); setSending(true); setDriveUrl(""); try { const base = `${form.date}-${safeName(form.title)}`; const pdfBase = `${base}__PENYEDIA__${safeName(form.preparedBy)}`; const files = [{ name: `${pdfBase}.pdf`, mimeType: "application/pdf", base64: pdfBase64 }]; for (let index = 0; index < photoFiles.length; index++) files.push({ name: `${base}-gambar-${index + 1}.${photoFiles[index].type === "image/png" ? "png" : "jpg"}`, mimeType: photoFiles[index].type || "image/jpeg", base64: await fileToBase64(photoFiles[index]) }); const response = await fetch("/api/drive", { method: "POST", headers:{"Content-Type":"application/json"},body:JSON.stringify({ category:effectiveCategory,files }) }); const result = await response.json() as { error?:string;files?:Array<{url:string}> }; if(!response.ok||!result.files?.[0]) throw new Error(result.error||"Penghantaran tidak berjaya"); setDriveUrl(result.files[0].url); notify("OPR berjaya disimpan ke Google Drive sekolah"); } catch(error){notify(error instanceof Error?error.message:"OPR tidak dapat dihantar");} finally{setSending(false);} };
   return <div className="opr-generator">
     <span className="modal-overline">PENJANA OPR RASMI SMKAP</span>
     <h2 id="folder-title">Cipta OPR baharu</h2>
@@ -708,8 +713,9 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     {!preview ? <form className="generator-form" onSubmit={(event) => { event.preventDefault(); if (complete) void preparePreview(); }}>
       <div className="generator-row">
         <label>Tajuk program<input value={form.title} onChange={(e) => setField("title", e.target.value)} onBlur={() => tidyField("title")} placeholder="Contoh: Program Ihya' Ramadan" required /></label>
-        <label>Bidang dan unit<select value={form.category} onChange={(e) => setField("category", e.target.value)}>{oprCategoryGroups.map((group) => <optgroup key={group.label} label={group.label}>{group.options.map((option) => { const value = group.label === "Lain-lain" ? option : `${group.label} · ${option}`; return <option key={value} value={value}>{option}</option>; })}</optgroup>)}</select></label>
+        <label>Bidang dan unit<input type="search" value={categorySearch} onChange={(event)=>setCategorySearch(event.target.value)} placeholder="Taip untuk cari, contoh: MUET atau Disiplin"/><select value={form.category} onChange={(e)=>{setField("category",e.target.value);setCategorySearch("");}}>{!categoryMatches.some((option)=>option.value===form.category)&&<option value={form.category}>{form.category.replaceAll(" · "," › ")}</option>}{categoryMatches.map((option)=><option key={option.value} value={option.value}>{option.label}</option>)}</select>{categorySearch&&categoryMatches.length===0&&<button type="button" className="manual-category-use" onClick={()=>{setField("category","Lain-lain");setField("manualCategory",tidyTitleCase(categorySearch));setCategorySearch("");}}>Gunakan “{categorySearch}” sebagai kategori manual</button>}<small>Taip kata carian, kemudian pilih padanan daripada senarai.</small></label>
       </div>
+      {form.category==="Lain-lain"&&<label className="manual-category-field">Nama unit / kategori lain<input value={form.manualCategory} onChange={(event)=>setField("manualCategory",event.target.value)} onBlur={()=>tidyField("manualCategory")} placeholder="Contoh: Program Khas Sekolah" required/><small>OPR akan difailkan di bawah folder Lain-lain menggunakan nama ini.</small></label>}
       <div className="generator-row generator-four">
         <label>Tarikh<input type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} required /></label>
         <label>Hari<input value={dayName} readOnly aria-readonly="true" /></label>
@@ -730,7 +736,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     </form> : <article className="opr-preview pdf-review">
       <div className="pdf-review-head"><div><span>PRATONTON PDF SEBENAR</span><h3>Semak sebelum simpan</h3><p>Pastikan tajuk, kandungan, gambar serta nama penyedia dan pengesah adalah betul.</p></div><a href={pdfPreviewUrl} download={`${form.date}-${safeName(form.title)}.pdf`}>Muat turun semakan</a></div>
       <div className="pdf-preview-stage">{pdfPreviewUrl ? <iframe src={pdfPreviewUrl} title="Pratonton PDF OPR rasmi" /> : <p>Pratonton sedang disediakan...</p>}</div>
-      <div className="drive-destination"><span>◈</span><div><strong>Destinasi Google Drive</strong><small>Folder {form.category} · OPR Disahkan</small></div></div>
+      <div className="drive-destination"><span>◈</span><div><strong>Destinasi Google Drive</strong><small>Folder {effectiveCategory} · OPR Disahkan</small></div></div>
       {driveUrl && <p className="drive-success">✓ OPR telah difailkan. <a href={driveUrl} target="_blank" rel="noreferrer">Buka PDF di Google Drive</a></p>}
       <div className="preview-confirmation"><span>✓</span><p><strong>Sudah semak pratonton?</strong><small>Selepas disimpan, PDF akan dimasukkan ke folder bidang yang dipilih.</small></p></div>
       <div className="generator-actions"><button onClick={() => { setPreview(false); setPdfBase64(""); if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(""); }} disabled={sending}>Ubah maklumat</button><button className="save" onClick={sendToDrive} disabled={sending || Boolean(driveUrl) || !pdfBase64}>{sending ? "Menyimpan..." : driveUrl ? "Sudah disimpan" : "Simpan ke Google Drive"}</button></div>
