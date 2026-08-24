@@ -6,6 +6,23 @@ import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDay
 
 type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "oprhub" | "oprgenerator" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
+type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
+
+let oprMemoryCache: OprReport[] | null = null;
+let oprRequest: Promise<OprReport[]> | null = null;
+
+function fetchOprIndex(refresh = false) {
+  if (!refresh && oprMemoryCache) return Promise.resolve(oprMemoryCache);
+  if (!refresh && oprRequest) return oprRequest;
+  const request = fetch(`/api/drive${refresh ? "?refresh=1" : ""}`, { cache: "no-store" }).then(async (response) => {
+    const data = await response.json() as { files?: OprReport[]; error?: string };
+    if (!response.ok || !data.files) throw new Error(data.error || "Senarai OPR tidak tersedia");
+    oprMemoryCache = data.files;
+    return data.files;
+  }).finally(() => { oprRequest = null; });
+  if (!refresh) oprRequest = request;
+  return request;
+}
 
 function GlassIcon({ icon: Icon, size = "md" }: { icon: LucideIcon; size?: "sm" | "md" | "lg" }) {
   return <span className={`glass-icon glass-icon-${size}`}><Icon aria-hidden="true" /></span>;
@@ -74,6 +91,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
 export function LandingPortal() {
   const [open, setOpen] = useState<Folder>(null);
   const [toast, setToast] = useState("");
+  useEffect(() => { void fetchOprIndex().catch(() => {}); }, []);
 
   const closeCurrentView = () => {
     if (open === "oprgenerator") return setOpen("oprhub");
@@ -204,23 +222,18 @@ const oprCategories = [
   ["Kokurikulum", "#e2ba65"], ["Tingkatan Enam", "#a792d5"], ["Lain-lain", "#8ea3aa"],
 ] as const;
 
-type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
-
 function OprDashboard({ create }: { create: () => void; notify: (message: string) => void }) {
   const [folderView, setFolderView] = useState<string | null>(null);
   const [folderSearch, setFolderSearch] = useState("");
   const [selected, setSelected] = useState<OprReport | null>(null);
-  const [reports, setReports] = useState<OprReport[]>([]);
-  const [loadingReports, setLoadingReports] = useState(true);
+  const [reports, setReports] = useState<OprReport[]>(() => oprMemoryCache || []);
+  const [loadingReports, setLoadingReports] = useState(!oprMemoryCache);
   const [refreshingReports, setRefreshingReports] = useState(false);
   const [reportError, setReportError] = useState("");
   const loadReports = async (refresh = false) => {
     refresh ? setRefreshingReports(true) : setLoadingReports(true); setReportError("");
     try {
-      const response = await fetch(`/api/drive${refresh ? "?refresh=1" : ""}`, { cache: "no-store" });
-      const data = await response.json() as { files?: OprReport[]; error?: string };
-      if (!response.ok || !data.files) throw new Error(data.error || "Senarai OPR tidak tersedia");
-      setReports(data.files);
+      setReports(await fetchOprIndex(refresh));
     } catch (error) { setReportError(error instanceof Error ? error.message : "Senarai OPR tidak tersedia"); }
     finally { setLoadingReports(false); setRefreshingReports(false); }
   };
