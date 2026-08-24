@@ -34,6 +34,32 @@ function parseDriveFiles(value: unknown): OprFile[] {
   });
 }
 
+function normalizeUploadedFiles(value: unknown, category: string, incoming: Array<{ name: string }>): OprFile[] {
+  if (!Array.isArray(value)) return [];
+  const now = new Date().toISOString();
+  return value.flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const file = item as Record<string, unknown>;
+    const id = typeof file.id === "string" ? file.id : "";
+    if (!id) return [];
+    const name = typeof file.name === "string" ? file.name : incoming[index]?.name;
+    if (!name) return [];
+    const viewUrl = typeof file.viewUrl === "string" ? file.viewUrl
+      : typeof file.url === "string" ? file.url
+      : `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
+    return [{
+      id,
+      name,
+      category,
+      createdAt: typeof file.createdAt === "string" ? file.createdAt : now,
+      updatedAt: typeof file.updatedAt === "string" ? file.updatedAt : now,
+      viewUrl,
+      previewUrl: typeof file.previewUrl === "string" ? file.previewUrl : `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`,
+      downloadUrl: typeof file.downloadUrl === "string" ? file.downloadUrl : `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`,
+    }];
+  });
+}
+
 async function cachedReports() {
   const result = await env.DB.prepare("SELECT id,name,category,created_at AS createdAt,updated_at AS updatedAt,view_url AS viewUrl,preview_url AS previewUrl,download_url AS downloadUrl FROM opr_reports ORDER BY updated_at DESC").all<OprFile>();
   return result.results;
@@ -140,7 +166,8 @@ export async function POST(request: Request) {
     });
     const result = await response.json() as { ok?: boolean; files?: unknown[]; error?: string };
     if (!response.ok || !result.ok) throw new Error(result.error || "Apps Script gagal menyimpan fail");
-    const saved = parseDriveFiles(result.files).map((file) => ({ ...file, category }));
+    const saved = normalizeUploadedFiles(result.files, category, files);
+    if (!saved.length) throw new Error("Google Drive tidak memulangkan ID fail yang telah disimpan");
     if (saved.length) {
       const syncedAt = new Date().toISOString();
       await env.DB.batch(saved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,created_at=excluded.created_at,updated_at=excluded.updated_at,view_url=excluded.view_url,preview_url=excluded.preview_url,download_url=excluded.download_url,synced_at=excluded.synced_at").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)));
