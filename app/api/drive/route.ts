@@ -170,7 +170,7 @@ export async function POST(request: Request) {
       const syncedAt = new Date().toISOString();
       await env.DB.batch(saved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,created_at=excluded.created_at,updated_at=excluded.updated_at,view_url=excluded.view_url,preview_url=excluded.preview_url,download_url=excluded.download_url,synced_at=excluded.synced_at").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)));
     }
-    return Response.json({ success: true, files: result.files || [] });
+    return Response.json({ success: true, files: saved });
   } catch (error) {
     console.error("Google Drive upload error", error instanceof Error ? error.message : error);
     return Response.json({ error: "OPR tidak dapat dihantar ke Google Drive sekarang." }, { status: 502 });
