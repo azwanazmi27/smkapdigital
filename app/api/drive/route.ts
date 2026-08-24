@@ -1,14 +1,21 @@
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { env } from "cloudflare:workers";
+import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 
-const allowedCategories = new Set([
-  "Pengurusan", "Kurikulum", "HEM", "Kokurikulum",
-  "Tingkatan Enam · Kurikulum", "Tingkatan Enam · HEM",
-  "Tingkatan Enam · Kokurikulum", "Laporan Guru Bertugas",
-  "Laporan Perhimpunan", "Lain-lain",
-]);
+const allowedCategories = new Set<string>([...legacyOprCategories, ...oprCategoryValues]);
+
+function driveCategory(category: string) {
+  if (category.startsWith("Tingkatan Enam · Kurikulum")) return "Tingkatan Enam · Kurikulum";
+  if (category.startsWith("Tingkatan Enam · HEM")) return "Tingkatan Enam · HEM";
+  if (category.startsWith("Tingkatan Enam · Kokurikulum")) return "Tingkatan Enam · Kokurikulum";
+  if (category.startsWith("Pengurusan")) return "Pengurusan";
+  if (category.startsWith("Kurikulum")) return "Kurikulum";
+  if (category.startsWith("HEM")) return "HEM";
+  if (category.startsWith("Kokurikulum")) return "Kokurikulum";
+  return category;
+}
 
 type OprFile = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
@@ -134,12 +141,12 @@ export async function POST(request: Request) {
     const response = await fetch(webAppUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, category, files }),
+      body: JSON.stringify({ token, category: driveCategory(category), files }),
       redirect: "follow",
     });
     const result = await response.json() as { ok?: boolean; files?: unknown[]; error?: string };
     if (!response.ok || !result.ok) throw new Error(result.error || "Apps Script gagal menyimpan fail");
-    const saved = parseDriveFiles(result.files);
+    const saved = parseDriveFiles(result.files).map((file) => ({ ...file, category }));
     if (saved.length) {
       const syncedAt = new Date().toISOString();
       await env.DB.batch(saved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,created_at=excluded.created_at,updated_at=excluded.updated_at,view_url=excluded.view_url,preview_url=excluded.preview_url,download_url=excluded.download_url,synced_at=excluded.synced_at").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)));
