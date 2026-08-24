@@ -83,6 +83,8 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "e
       { icon: Users, title: "Hal Ehwal Murid", text: "Laporan HEM" },
       { icon: Trophy, title: "Kokurikulum", text: "Laporan aktiviti" },
       { icon: GraduationCap, title: "Tingkatan Enam", text: "Kurikulum, HEM & Kokurikulum" },
+      { icon: ClipboardList, title: "Laporan Guru Bertugas", text: "Laporan mingguan guru bertugas" },
+      { icon: Presentation, title: "Laporan Perhimpunan", text: "Laporan perhimpunan mingguan" },
       { icon: Folder, title: "Lain-lain", text: "Laporan kategori tambahan" },
     ],
   },
@@ -219,7 +221,9 @@ function AttendanceCentre({ notify }: { notify: (message: string) => void }) {
 
 const oprCategories = [
   ["Pengurusan", "#79d4c5"], ["Kurikulum", "#78b9df"], ["HEM", "#dd8d78"],
-  ["Kokurikulum", "#e2ba65"], ["Tingkatan Enam", "#a792d5"], ["Lain-lain", "#8ea3aa"],
+  ["Kokurikulum", "#e2ba65"], ["Tingkatan Enam", "#a792d5"],
+  ["Laporan Guru Bertugas", "#6fc7a5"], ["Laporan Perhimpunan", "#ed9c72"],
+  ["Lain-lain", "#8ea3aa"],
 ] as const;
 
 function OprDashboard({ create }: { create: () => void; notify: (message: string) => void }) {
@@ -649,7 +653,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
     {!preview ? <form className="generator-form" onSubmit={(event) => { event.preventDefault(); if (complete) void preparePreview(); }}>
       <div className="generator-row">
         <label>Tajuk program<input value={form.title} onChange={(e) => setField("title", e.target.value)} onBlur={() => tidyField("title")} placeholder="Contoh: Program Ihya' Ramadan" required /></label>
-        <label>Bidang<select value={form.category} onChange={(e) => setField("category", e.target.value)}><option>Pengurusan</option><option>Kurikulum</option><option>HEM</option><option>Kokurikulum</option><option>Tingkatan Enam · Kurikulum</option><option>Tingkatan Enam · HEM</option><option>Tingkatan Enam · Kokurikulum</option><option>Lain-lain</option></select></label>
+        <label>Bidang<select value={form.category} onChange={(e) => setField("category", e.target.value)}><option>Pengurusan</option><option>Kurikulum</option><option>HEM</option><option>Kokurikulum</option><option>Tingkatan Enam · Kurikulum</option><option>Tingkatan Enam · HEM</option><option>Tingkatan Enam · Kokurikulum</option><option>Laporan Guru Bertugas</option><option>Laporan Perhimpunan</option><option>Lain-lain</option></select></label>
       </div>
       <div className="generator-row generator-four">
         <label>Tarikh<input type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} required /></label>

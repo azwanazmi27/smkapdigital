@@ -6,7 +6,8 @@ type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 const allowedCategories = new Set([
   "Pengurusan", "Kurikulum", "HEM", "Kokurikulum",
   "Tingkatan Enam · Kurikulum", "Tingkatan Enam · HEM",
-  "Tingkatan Enam · Kokurikulum", "Lain-lain",
+  "Tingkatan Enam · Kokurikulum", "Laporan Guru Bertugas",
+  "Laporan Perhimpunan", "Lain-lain",
 ]);
 
 type OprFile = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
