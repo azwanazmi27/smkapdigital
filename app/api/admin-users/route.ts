@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { seedPortalUsers } from "../../admin-user-seed";
 
-type GoogleIdentity={aud:string;email:string;email_verified:string|boolean;name?:string;sub:string};
+type GoogleIdentity={aud:string;email:string;email_verified:string|boolean;name?:string;picture?:string;sub:string};
 type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string;photoBase64?:string;mimeType?:string};
 const CLIENT_ID="700702672944-20sjvug0albitl36cm671s7h19k57pc4.apps.googleusercontent.com";
 const SUPER_ADMINS=[
@@ -33,13 +33,14 @@ async function identity(request:Request){
 }
 async function actor(request:Request){
   const google=await identity(request);if(!google)return null;
-  return env.DB.prepare("SELECT id,email,name,position,grade,role,status FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL").bind(google.email).first<Record<string,string>>();
+  const user=await env.DB.prepare("SELECT id,email,name,position,grade,role,status FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL").bind(google.email).first<Record<string,string>>();
+  return user?{...user,googlePicture:google.picture||""}:null;
 }
 const denied=(admin=false)=>Response.json({error:admin?"Akaun ini belum dibenarkan menggunakan panel pentadbir.":"Akaun DELIMa ini belum didaftarkan sebagai warga sekolah."},{status:403});
 async function audit(email:string,action:string,target:string){await env.DB.prepare("INSERT INTO admin_audit_logs(id,actor_email,action,target_email,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),email,action,target,new Date().toISOString()).run();}
 
 export async function GET(request:Request){
-  try{await prepare();const resource=new URL(request.url).searchParams.get("resource");if(resource==="config")return Response.json({clientId:CLIENT_ID});const me=await actor(request);if(!me)return denied();if(resource==="me"){const profile=await env.DB.prepare("SELECT avatar_key AS avatarKey FROM portal_profiles WHERE user_id=?").bind(me.id).first<{avatarKey:string}>();let avatarDataUrl="";if(profile?.avatarKey){const object=await env.FILES.get(profile.avatarKey);if(object){const bytes=new Uint8Array(await object.arrayBuffer());let binary="";for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));avatarDataUrl=`data:${object.httpMetadata?.contentType||"image/jpeg"};base64,${btoa(binary)}`;}}return Response.json({me:{...me,avatarDataUrl}});}if(me.role!=="super_admin"&&me.role!=="admin")return denied(true);const result=await env.DB.prepare("SELECT id,email,name,position,grade,role,status,created_at AS createdAt,updated_at AS updatedAt FROM portal_users WHERE deleted_at IS NULL ORDER BY name,email").all();return Response.json({me,users:result.results});}
+  try{await prepare();const resource=new URL(request.url).searchParams.get("resource");if(resource==="config")return Response.json({clientId:CLIENT_ID});const me=await actor(request);if(!me)return denied();if(resource==="me"){const profile=await env.DB.prepare("SELECT avatar_key AS avatarKey FROM portal_profiles WHERE user_id=?").bind(me.id).first<{avatarKey:string}>();let avatarDataUrl=me.googlePicture||"";if(profile?.avatarKey){const object=await env.FILES.get(profile.avatarKey);if(object){const bytes=new Uint8Array(await object.arrayBuffer());let binary="";for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));avatarDataUrl=`data:${object.httpMetadata?.contentType||"image/jpeg"};base64,${btoa(binary)}`;}}const {googlePicture,...safeMe}=me;return Response.json({me:{...safeMe,avatarDataUrl}});}if(me.role!=="super_admin"&&me.role!=="admin")return denied(true);const result=await env.DB.prepare("SELECT id,email,name,position,grade,role,status,created_at AS createdAt,updated_at AS updatedAt FROM portal_users WHERE deleted_at IS NULL ORDER BY name,email").all();return Response.json({me,users:result.results});}
   catch(error){console.error("Admin users read",error);return Response.json({error:"Senarai pengguna tidak dapat dibaca sekarang."},{status:500});}
 }
 export async function POST(request:Request){
