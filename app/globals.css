@@ -655,3 +655,8 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
 @keyframes glassPopup{from{opacity:0;transform:translate(-50%,calc(-50% + 9px)) scale(.985)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media(max-width:700px){.opr-folder-grid,.opr-primary-folder-grid,.opr-folder-utilities{grid-template-columns:1fr 1fr}.opr-folder-grid>button,.opr-folder-utilities>button{min-height:82px;padding:13px 11px}.landing-toast{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:calc(100% - 28px)}}
 @media(max-width:430px){.opr-folder-grid,.opr-primary-folder-grid,.opr-folder-utilities{grid-template-columns:1fr}}
+
+/* Kebersihan laporan harian — semua kawalan mesti boleh dicapai */
+.duty-section-clean{grid-column:1/-1;overflow:visible!important}.duty-section-clean .duty-location-row{grid-template-columns:minmax(170px,1fr) minmax(270px,auto) minmax(180px,1fr);gap:12px}.duty-rating-buttons{display:grid!important;grid-template-columns:repeat(3,minmax(78px,1fr));gap:6px}.duty-location-note{min-width:0;margin:0!important}.duty-section-clean .duty-location-list{overflow:visible}
+@media(max-width:980px){.duty-form-complete{grid-template-columns:1fr}.duty-section-clean{grid-column:auto}.duty-section-clean .duty-location-row{grid-template-columns:1fr}.duty-rating-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}.duty-location-note{width:100%}}
+@media(max-width:430px){.duty-rating-buttons{grid-template-columns:1fr}.duty-location-row button{min-height:38px}}
