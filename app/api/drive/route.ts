@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
+import { portalActor } from "../../server-auth";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean};
@@ -26,13 +27,8 @@ function validCategory(category:string) {
 type OprFile = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
 async function admin(request:Request){
-  const bearer=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
-  if(!bearer)return null;
-  const response=await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(bearer)}`);
-  if(!response.ok)return null;
-  const google=await response.json() as GoogleIdentity;
-  if(google.aud!==CLIENT_ID||String(google.email_verified)!=="true")return null;
-  return env.DB.prepare("SELECT id,email,role FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL AND role IN ('admin','super_admin')").bind(google.email.toLowerCase()).first<{id:string;email:string;role:string}>();
+  const me=await portalActor(request);
+  return me&&["admin","super_admin"].includes(me.role)?me:null;
 }
 
 function binaryResponse(result:{base64?:string;mimeType?:string;name?:string},download=false){

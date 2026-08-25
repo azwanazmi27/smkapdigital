@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { portalActor } from "../../server-auth";
 
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean};
 type ContentBody={id?:string;kind?:"announcement"|"event";title?:string;body?:string;audience?:string;publishedAt?:string;endsAt?:string;imageBase64?:string;imageMimeType?:string;eventDate?:string;endDate?:string;category?:string;details?:string};
@@ -38,8 +39,8 @@ await env.DB.prepare(`UPDATE portal_users SET
     WHEN lower(position) LIKE '%pendidikan islam%' THEN 240
     ELSE 900 END
   WHERE show_org_chart IS NULL`).run();}
-async function admin(request:Request){const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!token)return null;const response=await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);if(!response.ok)return null;const google=await response.json() as GoogleIdentity;if(google.aud!==CLIENT_ID||String(google.email_verified)!=="true")return null;return env.DB.prepare("SELECT id,email,name,role FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL AND role IN ('admin','super_admin')").bind(google.email.toLowerCase()).first<Record<string,string>>();}
-async function viewer(request:Request){const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!token)return null;const response=await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);if(!response.ok)return null;const google=await response.json() as GoogleIdentity;if(google.aud!==CLIENT_ID||String(google.email_verified)!=="true")return null;return env.DB.prepare("SELECT id,email,name,role FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL").bind(google.email.toLowerCase()).first<Record<string,string>>();}
+async function admin(request:Request){const me=await portalActor(request);return me&&["admin","super_admin"].includes(me.role)?me:null;}
+async function viewer(request:Request){return portalActor(request);}
 async function log(actor:string,action:string,target:string){await env.DB.prepare("INSERT INTO admin_audit_logs(id,actor_email,action,target_email,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),actor,action,target,new Date().toISOString()).run();}
 async function imageDataUrl(key:string){if(!key)return "";const object=await env.FILES.get(key);if(!object)return "";const bytes=new Uint8Array(await object.arrayBuffer());let binary="";for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));return `data:${object.httpMetadata?.contentType||"image/jpeg"};base64,${btoa(binary)}`;}
 

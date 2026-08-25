@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { seedPortalUsers } from "../../admin-user-seed";
+import { portalActor } from "../../server-auth";
 
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean;name?:string;picture?:string;sub:string};
 type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string;showDirectory?:boolean;showOrgChart?:boolean;orgPosition?:string;orgOrder?:number;photoBase64?:string;mimeType?:string;settings?:Record<string,string>;permissions?:string[];title?:string;body?:string;audience?:string;publishedAt?:string;eventDate?:string;endDate?:string;category?:string;details?:string};
@@ -69,11 +70,7 @@ async function identity(request:Request){
   if(data.aud!==CLIENT_ID||String(data.email_verified)!=="true"||!data.email?.toLowerCase().endsWith("@moe-dl.edu.my"))return null;
   return {...data,email:data.email.toLowerCase()};
 }
-async function actor(request:Request){
-  const google=await identity(request);if(!google)return null;
-  const user=await env.DB.prepare("SELECT id,email,name,position,grade,role,status FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL").bind(google.email).first<Record<string,string>>();
-  return user?{...user,googlePicture:google.picture||""}:null;
-}
+async function actor(request:Request){return portalActor(request);}
 const denied=(admin=false)=>Response.json({error:admin?"Akaun ini belum dibenarkan menggunakan panel pentadbir.":"Akaun DELIMa ini belum didaftarkan sebagai warga sekolah."},{status:403});
 async function audit(email:string,action:string,target:string){await env.DB.prepare("INSERT INTO admin_audit_logs(id,actor_email,action,target_email,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),email,action,target,new Date().toISOString()).run();}
 
