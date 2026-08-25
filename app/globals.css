@@ -792,3 +792,9 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
   }
 }
 .saved-opr-preview>footer .opr-delete-action{color:#9b3732;border-color:#efbbb5;background:#fff4f2}.saved-opr-preview>footer .opr-delete-action:hover,.saved-opr-preview>footer .opr-delete-action:focus-visible{color:#fff;border-color:#9b3732;background:#9b3732}
+
+/* Kawalan pentadbir Carta Organisasi. */
+.admin-org-check{margin-top:16px!important;padding:14px;border:1px solid rgba(128,210,205,.17);border-radius:13px;background:rgba(255,255,255,.035)}
+.admin-org-config{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 14px;padding:14px;border:1px solid rgba(128,210,205,.18);border-radius:15px;background:rgba(3,35,45,.48)}
+.admin-org-config label{margin:0}.admin-org-order-preview{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr auto auto 1fr;align-items:center;gap:8px;padding:10px 12px;border-radius:11px;color:#8ba8aa;background:rgba(121,214,206,.07);font-size:10px}.admin-org-order-preview strong{min-width:0;color:#d9ece9;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.admin-org-order-preview i{color:#6fd6ca;font-style:normal}
+@media(max-width:700px){.admin-org-config{grid-template-columns:1fr}.admin-org-order-preview{grid-column:auto;grid-template-columns:auto 1fr}.admin-org-order-preview i{display:none}}
