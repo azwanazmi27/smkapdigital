@@ -100,7 +100,15 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "o
 export function LandingPortal() {
   const [open, setOpen] = useState<Folder>(null);
   const [toast, setToast] = useState("");
-  useEffect(() => { void fetchOprIndex().catch(() => {}); }, []);
+  const [identity,setIdentity]=useState<PortalIdentity|null>(null);
+  const [authOpen,setAuthOpen]=useState(false);
+  const [welcome,setWelcome]=useState(false);
+  const [authError,setAuthError]=useState("");
+  const loadIdentity=async(token:string)=>{const response=await fetch("/api/admin-users?resource=me",{headers:{Authorization:`Bearer ${token}`}}),data=await response.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setAuthOpen(false);setWelcome(true);setOpen("warga");window.setTimeout(()=>setWelcome(false),4200);};
+  useEffect(() => { void fetchOprIndex().catch(() => {});const saved=sessionStorage.getItem("smkap_google_token");if(saved)void loadIdentity(saved).catch(()=>sessionStorage.removeItem("smkap_google_token")); }, []);
+  useEffect(()=>{if(!authOpen)return;let cancelled=false;const start=async()=>{try{setAuthError("");const config=await fetch("/api/admin-users?resource=config").then(r=>r.json());if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const script=document.createElement("script");script.src="https://accounts.google.com/gsi/client";script.async=true;document.head.appendChild(script);}for(let i=0;i<50&&!window.google;i++)await new Promise(r=>setTimeout(r,100));if(cancelled||!window.google)throw new Error();window.google.accounts.id.initialize({client_id:config.clientId,callback:({credential})=>{sessionStorage.setItem("smkap_google_token",credential);void loadIdentity(credential).catch(error=>{sessionStorage.removeItem("smkap_google_token");setAuthError(error instanceof Error?error.message:"Log masuk tidak berjaya.");});}});const element=document.getElementById("google-staff-signin");if(element){element.innerHTML="";window.google.accounts.id.renderButton(element,{theme:"outline",size:"large",text:"continue_with",shape:"pill",width:300});}}catch{setAuthError("Butang Google tidak dapat disediakan sekarang.");}};void start();return()=>{cancelled=true};},[authOpen]);
+  const openFolder=(folder:typeof folders[number])=>{if(folder.id==="warga"&&!identity){setAuthOpen(true);return;}setOpen(folder.id);};
+  const updatePhoto=async(file?:File)=>{if(!file||!identity)return;const reader=new FileReader();reader.onload=async()=>{try{const token=sessionStorage.getItem("smkap_google_token")||"",base64=String(reader.result).split(",")[1]||"";const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({photoBase64:base64,mimeType:file.type})}),data=await response.json();if(!response.ok)throw new Error(data.error);await loadIdentity(token);notify("Gambar profil berjaya dikemas kini");}catch(error){notify(error instanceof Error?error.message:"Gambar tidak dapat disimpan");}};reader.readAsDataURL(file);};
 
   const closeCurrentView = () => {
     if (open === "oprgenerator" || open === "oprduty") return setOpen("oprhub");
@@ -135,7 +143,7 @@ export function LandingPortal() {
       <div className="folder-area">
         <div className="folder-heading"><span><i></i> PILIH URUSAN</span><strong>Apa urusan anda hari ini?</strong></div>
         <div className="folder-grid">
-          {folders.map((folder) => { const FolderIcon = folder.icon; return <button key={folder.id} className="folder-card" onClick={() => setOpen(folder.id)} aria-label={`${folder.title}: ${folder.text}`}>
+          {folders.map((folder) => { const FolderIcon = folder.icon; return <button key={folder.id} className="folder-card" onClick={() => openFolder(folder)} aria-label={`${folder.title}: ${folder.text}`}>
             <div className="folder-icon"><FolderIcon aria-hidden="true" /></div>
             <div className="folder-copy"><span className="folder-no">{folder.no}</span><h2>{folder.title}</h2><p>{folder.text}</p></div>
             <ChevronRight className="folder-chevron" aria-hidden="true" />
@@ -151,7 +159,7 @@ export function LandingPortal() {
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -163,15 +171,18 @@ export function LandingPortal() {
         </>}
       </section>
     </div>}
+    {authOpen&&<div className="staff-auth-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setAuthOpen(false)}><section className="staff-auth-card" role="dialog" aria-modal="true"><button onClick={()=>setAuthOpen(false)} aria-label="Tutup">×</button><GlassIcon icon={ShieldCheck} size="lg"/><span>AKSES WARGA SEKOLAH</span><h2>Log masuk dengan ID DELIMa</h2><p>Gunakan akaun <b>@moe-dl.edu.my</b> yang didaftarkan oleh sekolah.</p><div id="google-staff-signin"></div>{authError&&<small>{authError}</small>}</section></div>}
+    {welcome&&identity&&<div className="welcome-glass" role="status"><div className="profile-photo">{identity.avatarDataUrl?<img src={identity.avatarDataUrl} alt="Gambar profil"/>:<span>{identity.name.split(/\s+/).slice(0,2).map(x=>x[0]).join("")}</span>}</div><div><small>SELAMAT DATANG</small><strong>{identity.name}</strong><span>{identity.position||"Warga SMKAP"}</span><label>Kemas kini gambar<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>void updatePhoto(e.target.files?.[0])}/></label></div><button onClick={()=>setWelcome(false)}>×</button></div>}
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
 }
 
-function ReliefIntegratedApp() {
+type PortalIdentity={id:string;email:string;name:string;position:string;grade:string;role:string;avatarDataUrl?:string};
+function ReliefIntegratedApp({user}:{user:PortalIdentity|null}) {
   const [ready, setReady] = useState(false);
   return <div className="relief-integrated-shell">
     {!ready && <div className="relief-integrated-loading"><i></i><strong>Menyediakan E‑Keberadaan & Sistem Relief lengkap…</strong><small>Guru · Tingkatan 6 · Rumusan · Pentadbir · Relief</small></div>}
-    <iframe className={ready ? "ready" : ""} src="/ekeberadaan-app/standalone.html" title="E-Keberadaan dan Sistem Relief SMKAP" onLoad={() => window.setTimeout(() => setReady(true), 300)} allow="clipboard-write; fullscreen" />
+    <iframe className={ready ? "ready" : ""} src="/ekeberadaan-app/standalone.html" title="E-Keberadaan dan Sistem Relief SMKAP" onLoad={(event) => {event.currentTarget.contentWindow?.postMessage({type:"SMKAP_IDENTITY",user},window.location.origin);window.setTimeout(() => setReady(true), 300)}} allow="clipboard-write; fullscreen" />
   </div>;
 }
 
@@ -353,7 +364,7 @@ const roomIcon = (room: string) => {
 };
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string };
 
-function BookingCentre({ notify, close }: { notify: (message: string) => void; close: () => void }) {
+function BookingCentre({ notify, close, user }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null }) {
   const today = new Date().toISOString().slice(0, 10);
   const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
   const [tab, setTab] = useState<"dashboard" | "list" | "form">("dashboard");
@@ -368,7 +379,7 @@ function BookingCentre({ notify, close }: { notify: (message: string) => void; c
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ success: boolean; message: string; id?: string; count?: number } | null>(null);
-  const [form, setForm] = useState({ room: "", applicantName: "", email: "", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
+  const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const loadBookings = async () => {
     setLoading(true); setError("");
@@ -583,7 +594,7 @@ function OprDutyCentreLegacy({ notify }:{ notify:(message:string)=>void }) {
 
 type DutyWeekGroup = { key:string; year:number; week:number; daily:OprReport[]; weekly:OprReport[]; updatedAt:string };
 
-function OprDutyCentre({ notify }:{ notify:(message:string)=>void }) {
+function OprDutyCentre({ notify,user }:{ notify:(message:string)=>void;user:PortalIdentity|null }) {
   const today=new Date().toISOString().slice(0,10), initialWeek=isoWeek(today);
   const [tab,setTab]=useState<"dashboard"|"daily"|"weekly">("dashboard");
   const [saving,setSaving]=useState(false); const [loading,setLoading]=useState(false); const [reports,setReports]=useState<DutyReport[]>([]);
@@ -591,7 +602,7 @@ function OprDutyCentre({ notify }:{ notify:(message:string)=>void }) {
   const [driveReports,setDriveReports]=useState<OprReport[]>([]); const [dashboardLoading,setDashboardLoading]=useState(true); const [dashboardError,setDashboardError]=useState(""); const [selectedWeekKey,setSelectedWeekKey]=useState(""); const [selectedDriveReport,setSelectedDriveReport]=useState<OprReport|null>(null);
   const [dailyRendering,setDailyRendering]=useState(false); const [dailyPdfBase64,setDailyPdfBase64]=useState(""); const [dailyPreviewUrl,setDailyPreviewUrl]=useState(""); const [dailySavedUrl,setDailySavedUrl]=useState("");
   const [weeklyRendering,setWeeklyRendering]=useState(false); const [weeklySending,setWeeklySending]=useState(false); const [weeklyPdfBase64,setWeeklyPdfBase64]=useState(""); const [weeklyPreviewUrl,setWeeklyPreviewUrl]=useState(""); const [weeklySavedUrl,setWeeklySavedUrl]=useState("");
-  const [form,setForm]=useState({ reportDate:today,weekNumber:String(initialWeek.week),schoolYear:String(initialWeek.year),teachers:"",teacherTotal:"",teacherPresent:"",teacherAbsent:"",cleanlinessStatus:"Baik",disciplineStatus:"Tiada isu",safetyStatus:"Tiada isu",healthStatus:"Tiada isu",canteenStatus:"Tiada isu",activityNote:"",generalNote:"",preparedBy:"" });
+  const [form,setForm]=useState({ reportDate:today,weekNumber:String(initialWeek.week),schoolYear:String(initialWeek.year),teachers:"",teacherTotal:"",teacherPresent:"",teacherAbsent:"",cleanlinessStatus:"Baik",disciplineStatus:"Tiada isu",safetyStatus:"Tiada isu",healthStatus:"Tiada isu",canteenStatus:"Tiada isu",activityNote:"",generalNote:"",preparedBy:user?.name||"" });
   const [details,setDetails]=useState<DutyDetails>(freshDutyDetails);
   const dayName=new Intl.DateTimeFormat("ms-MY",{weekday:"long"}).format(new Date(`${form.reportDate}T12:00:00`));
   const safeName=(value:string)=>value.normalize("NFKD").replace(/[^a-zA-Z0-9 -]/g,"").replace(/\s+/g," ").trim()||"Laporan";
@@ -715,7 +726,7 @@ function OprDutyCentre({ notify }:{ notify:(message:string)=>void }) {
   </div>;
 }
 
-function OprGenerator({ notify, close }: { notify: (message: string) => void; close: () => void }) {
+function OprGenerator({ notify, close, user }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null }) {
   const [enhancing, setEnhancing] = useState(false);
   const [sending, setSending] = useState(false);
   const [rendering, setRendering] = useState(false);
@@ -730,7 +741,7 @@ function OprGenerator({ notify, close }: { notify: (message: string) => void; cl
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
     title: "", category: "Kurikulum · Bahasa · Bahasa Melayu", manualCategory: "", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
-    preparedBy: "", preparedRole: "", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
+    preparedBy: user?.name||"", preparedRole: user?.position||"", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
   });
 
   const verifiers = [

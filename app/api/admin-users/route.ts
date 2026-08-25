@@ -2,13 +2,13 @@ import { env } from "cloudflare:workers";
 import { seedPortalUsers } from "../../admin-user-seed";
 
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean;name?:string;sub:string};
-type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string};
+type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string;photoBase64?:string;mimeType?:string};
 const CLIENT_ID="700702672944-20sjvug0albitl36cm671s7h19k57pc4.apps.googleusercontent.com";
 const SUPER_ADMINS=[
   {email:"sekolah-2508@moe-dl.edu.my",name:"Pentadbir Sekolah"},
   {email:"g-55165663@moe-dl.edu.my",name:"NOOR AZWAN BIN AZMI"},
 ];
-const roles=new Set(["super_admin","admin","module_admin","teacher"]),statuses=new Set(["active","inactive"]);
+const roles=new Set(["super_admin","admin","teacher"]),statuses=new Set(["active","inactive"]);
 const clean=(v:unknown,n=160)=>typeof v==="string"?v.trim().slice(0,n):"";
 
 async function prepare(){
@@ -16,6 +16,7 @@ async function prepare(){
     env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_users (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,name TEXT NOT NULL,position TEXT NOT NULL DEFAULT '',grade TEXT NOT NULL DEFAULT '',role TEXT NOT NULL DEFAULT 'teacher',status TEXT NOT NULL DEFAULT 'active',created_at TEXT NOT NULL,updated_at TEXT NOT NULL,deleted_at TEXT)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_audit_logs (id TEXT PRIMARY KEY,actor_email TEXT NOT NULL,action TEXT NOT NULL,target_email TEXT NOT NULL,created_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_profiles (user_id TEXT PRIMARY KEY,avatar_key TEXT NOT NULL,updated_at TEXT NOT NULL)"),
   ]);
   const now=new Date().toISOString();
   await env.DB.batch(SUPER_ADMINS.map((u)=>env.DB.prepare("INSERT INTO portal_users(id,email,name,position,grade,role,status,created_at,updated_at) VALUES(?,?,?,?,?,'super_admin','active',?,?) ON CONFLICT(email) DO UPDATE SET role='super_admin',status='active',deleted_at=NULL,updated_at=excluded.updated_at").bind(crypto.randomUUID(),u.email,u.name,"Pentadbir Portal","",now,now)));
@@ -34,11 +35,11 @@ async function actor(request:Request){
   const google=await identity(request);if(!google)return null;
   return env.DB.prepare("SELECT id,email,name,position,grade,role,status FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL").bind(google.email).first<Record<string,string>>();
 }
-const denied=()=>Response.json({error:"Akaun ini belum dibenarkan menggunakan panel pentadbir."},{status:403});
+const denied=(admin=false)=>Response.json({error:admin?"Akaun ini belum dibenarkan menggunakan panel pentadbir.":"Akaun DELIMa ini belum didaftarkan sebagai warga sekolah."},{status:403});
 async function audit(email:string,action:string,target:string){await env.DB.prepare("INSERT INTO admin_audit_logs(id,actor_email,action,target_email,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),email,action,target,new Date().toISOString()).run();}
 
 export async function GET(request:Request){
-  try{await prepare();if(new URL(request.url).searchParams.get("resource")==="config")return Response.json({clientId:CLIENT_ID});const me=await actor(request);if(!me)return denied();if(me.role!=="super_admin"&&me.role!=="admin")return denied();const result=await env.DB.prepare("SELECT id,email,name,position,grade,role,status,created_at AS createdAt,updated_at AS updatedAt FROM portal_users WHERE deleted_at IS NULL ORDER BY name,email").all();return Response.json({me,users:result.results});}
+  try{await prepare();const resource=new URL(request.url).searchParams.get("resource");if(resource==="config")return Response.json({clientId:CLIENT_ID});const me=await actor(request);if(!me)return denied();if(resource==="me"){const profile=await env.DB.prepare("SELECT avatar_key AS avatarKey FROM portal_profiles WHERE user_id=?").bind(me.id).first<{avatarKey:string}>();let avatarDataUrl="";if(profile?.avatarKey){const object=await env.FILES.get(profile.avatarKey);if(object){const bytes=new Uint8Array(await object.arrayBuffer());let binary="";for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));avatarDataUrl=`data:${object.httpMetadata?.contentType||"image/jpeg"};base64,${btoa(binary)}`;}}return Response.json({me:{...me,avatarDataUrl}});}if(me.role!=="super_admin"&&me.role!=="admin")return denied(true);const result=await env.DB.prepare("SELECT id,email,name,position,grade,role,status,created_at AS createdAt,updated_at AS updatedAt FROM portal_users WHERE deleted_at IS NULL ORDER BY name,email").all();return Response.json({me,users:result.results});}
   catch(error){console.error("Admin users read",error);return Response.json({error:"Senarai pengguna tidak dapat dibaca sekarang."},{status:500});}
 }
 export async function POST(request:Request){
@@ -46,7 +47,7 @@ export async function POST(request:Request){
   catch(error){console.error("Admin users create",error);return Response.json({error:"Pengguna tidak dapat disimpan."},{status:500});}
 }
 export async function PUT(request:Request){
-  try{await prepare();const me=await actor(request);if(!me||me.role!=="super_admin")return denied();const b=await request.json() as UserBody,id=clean(b.id),email=clean(b.email).toLowerCase(),name=clean(b.name),role=roles.has(clean(b.role))?clean(b.role):"teacher",status=statuses.has(clean(b.status))?clean(b.status):"active";if(!id||!email.endsWith("@moe-dl.edu.my")||!name)return Response.json({error:"Maklumat pengguna tidak lengkap."},{status:400});await env.DB.prepare("UPDATE portal_users SET email=?,name=?,position=?,grade=?,role=?,status=?,updated_at=? WHERE id=? AND deleted_at IS NULL").bind(email,name,clean(b.position),clean(b.grade,12),role,status,new Date().toISOString(),id).run();await audit(me.email,"update",email);return Response.json({success:true});}
+  try{await prepare();const me=await actor(request);if(!me)return denied();const resource=new URL(request.url).searchParams.get("resource"),b=await request.json() as UserBody;if(resource==="profile"){const mime=clean(b.mimeType,40);if(!["image/jpeg","image/png","image/webp"].includes(mime)||!b.photoBase64)return Response.json({error:"Pilih gambar JPG, PNG atau WebP."},{status:400});const binary=atob(b.photoBase64),bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));if(bytes.byteLength>1_500_000)return Response.json({error:"Gambar profil mesti 1.5 MB atau kurang."},{status:400});const ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg",key=`profiles/${me.id}.${ext}`;await env.FILES.put(key,bytes,{httpMetadata:{contentType:mime}});await env.DB.prepare("INSERT INTO portal_profiles(user_id,avatar_key,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET avatar_key=excluded.avatar_key,updated_at=excluded.updated_at").bind(me.id,key,new Date().toISOString()).run();return Response.json({success:true});}if(me.role!=="super_admin")return denied(true);const id=clean(b.id),email=clean(b.email).toLowerCase(),name=clean(b.name),role=roles.has(clean(b.role))?clean(b.role):"teacher",status=statuses.has(clean(b.status))?clean(b.status):"active";if(!id||!email.endsWith("@moe-dl.edu.my")||!name)return Response.json({error:"Maklumat pengguna tidak lengkap."},{status:400});await env.DB.prepare("UPDATE portal_users SET email=?,name=?,position=?,grade=?,role=?,status=?,updated_at=? WHERE id=? AND deleted_at IS NULL").bind(email,name,clean(b.position),clean(b.grade,12),role,status,new Date().toISOString(),id).run();await audit(me.email,"update",email);return Response.json({success:true});}
   catch(error){console.error("Admin users update",error);return Response.json({error:"Perubahan tidak dapat disimpan."},{status:500});}
 }
 export async function DELETE(request:Request){
