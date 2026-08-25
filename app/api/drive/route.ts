@@ -2,6 +2,8 @@ import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
+type GoogleIdentity={aud:string;email:string;email_verified:string|boolean};
+const CLIENT_ID="700702672944-20sjvug0albitl36cm671s7h19k57pc4.apps.googleusercontent.com";
 
 const allowedCategories = new Set<string>([...legacyOprCategories, ...oprCategoryValues]);
 
@@ -22,6 +24,32 @@ function validCategory(category:string) {
 }
 
 type OprFile = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
+
+async function admin(request:Request){
+  const bearer=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
+  if(!bearer)return null;
+  const response=await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(bearer)}`);
+  if(!response.ok)return null;
+  const google=await response.json() as GoogleIdentity;
+  if(google.aud!==CLIENT_ID||String(google.email_verified)!=="true")return null;
+  return env.DB.prepare("SELECT id,email,role FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL AND role IN ('admin','super_admin')").bind(google.email.toLowerCase()).first<{id:string;email:string;role:string}>();
+}
+
+function binaryResponse(result:{base64?:string;mimeType?:string;name?:string},download=false){
+  if(!result.base64)throw new Error("Kandungan fail tidak diterima");
+  const decoded=atob(result.base64),bytes=Uint8Array.from(decoded,c=>c.charCodeAt(0));
+  const safe=(result.name||"dokumen").replace(/[\r\n"\\]/g,"-");
+  return new Response(bytes,{headers:{"Content-Type":result.mimeType||"application/octet-stream","Content-Disposition":`${download?"attachment":"inline"}; filename="${safe}"`,"Cache-Control":"private, max-age=300","X-Content-Type-Options":"nosniff"}});
+}
+
+async function scriptAction(payload:Record<string,unknown>){
+  const webAppUrl=process.env.OPR_APPS_SCRIPT_URL,token=process.env.OPR_APPS_SCRIPT_TOKEN;
+  if(!webAppUrl||!token)throw new Error("Sambungan Google Drive belum dikonfigurasi");
+  const response=await fetch(webAppUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,...payload}),redirect:"follow",cache:"no-store"});
+  const result=await response.json() as {ok?:boolean;error?:string;base64?:string;mimeType?:string;name?:string};
+  if(!response.ok||!result.ok)throw new Error(result.error||"Google Drive tidak dapat memproses permintaan");
+  return result;
+}
 
 function parseDriveFiles(value: unknown): OprFile[] {
   if (!Array.isArray(value)) return [];
@@ -88,7 +116,12 @@ function validMagic(raw: Uint8Array, mimeType: string) {
 
 export async function GET(request: Request) {
   try {
-    const refresh = new URL(request.url).searchParams.get("refresh") === "1";
+    const url=new URL(request.url),fileId=url.searchParams.get("file"),download=url.searchParams.get("download")==="1";
+    if(fileId){
+      if(!/^[\w-]{10,120}$/.test(fileId))return Response.json({error:"ID fail tidak sah."},{status:400});
+      return binaryResponse(await scriptAction({action:"download",id:fileId}),download);
+    }
+    const refresh = url.searchParams.get("refresh") === "1";
     if (!refresh) {
       const cached = await cachedReports();
       if (cached.length) return Response.json({ success: true, files: cached, source: "cache" }, { headers: { "Cache-Control": "private, max-age=60" } });
@@ -124,7 +157,15 @@ export async function POST(request: Request) {
       return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
     }
 
-    const body = await request.json() as { category?: unknown; files?: unknown };
+    const body = await request.json() as { category?: unknown; files?: unknown; action?:unknown; ids?:unknown; name?:unknown };
+    if(body.action==="bundle"){
+      const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memuat turun bundle."},{status:403});
+      const ids=Array.isArray(body.ids)?body.ids.filter((id):id is string=>typeof id==="string"&&/^[\w-]{10,120}$/.test(id)).slice(0,100):[];
+      if(!ids.length)return Response.json({error:"Tiada fail dipilih."},{status:400});
+      const requestedName=typeof body.name==="string"?body.name:"Semua-Laporan-SMKAP.zip";
+      const name=requestedName.replace(/[^a-zA-Z0-9 ._-]/g,"-").slice(0,120)||"Semua-Laporan-SMKAP.zip";
+      return binaryResponse(await scriptAction({action:"bundle",ids,name}),true);
+    }
     const category = typeof body.category === "string" ? body.category : "";
     if (!validCategory(category)) {
       return Response.json({ error: "Kategori OPR tidak sah." }, { status: 400 });
@@ -177,4 +218,15 @@ export async function POST(request: Request) {
     console.error("Google Drive upload error", error instanceof Error ? error.message : error);
     return Response.json({ error: "OPR tidak dapat dihantar ke Google Drive sekarang." }, { status: 502 });
   }
+}
+
+export async function DELETE(request:Request){
+  try{
+    const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memadam laporan."},{status:403});
+    const id=new URL(request.url).searchParams.get("id")||"";
+    if(!/^[\w-]{10,120}$/.test(id))return Response.json({error:"ID fail tidak sah."},{status:400});
+    await scriptAction({action:"delete",id});
+    await env.DB.prepare("DELETE FROM opr_reports WHERE id=?").bind(id).run();
+    return Response.json({success:true});
+  }catch(error){console.error("Google Drive delete error",error);return Response.json({error:"Laporan tidak dapat dipadam daripada Google Drive sekarang."},{status:502});}
 }
