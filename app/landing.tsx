@@ -6,7 +6,7 @@ import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDay
 import { jsPDF } from "jspdf";
 import { oprCategoryGroups, oprFolderTree, type OprFolderNode } from "./opr-categories";
 
-type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
@@ -59,7 +59,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "o
       { icon: FileText, title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
       { icon: CircleCheck, title: "E-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", folder: "ekeberadaan" },
       { icon: CalendarRange, title: "E-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
-      { icon: GraduationCap, title: "Tingkatan Enam", text: "Kurikulum, HEM dan Kokurikulum" },
+      { icon: Trophy, title: "Arkib Kejayaan", text: "Simpan sijil dan rekod pencapaian", folder: "achievement" },
     ],
   },
   tentang: {
@@ -108,6 +108,7 @@ export function LandingPortal() {
     if (open === "ekunjung") return setOpen("pengunjung");
     if (open === "etempahan") return setOpen("warga");
     if (open === "ekeberadaan") return setOpen("warga");
+    if (open === "achievement") return setOpen("warga");
     setOpen(null);
   };
 
@@ -147,10 +148,10 @@ export function LandingPortal() {
     <footer className="landing-footer"><span>© 2026 SMK Agama Pahang</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
-      <section className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
+      <section className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "oprduty" ? <OprDutyCentre notify={notify} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -171,6 +172,36 @@ function ReliefIntegratedApp() {
   return <div className="relief-integrated-shell">
     {!ready && <div className="relief-integrated-loading"><i></i><strong>Menyediakan E‑Keberadaan & Sistem Relief lengkap…</strong><small>Guru · Tingkatan 6 · Rumusan · Pentadbir · Relief</small></div>}
     <iframe className={ready ? "ready" : ""} src="/ekeberadaan-app/standalone.html" title="E-Keberadaan dan Sistem Relief SMKAP" onLoad={() => window.setTimeout(() => setReady(true), 300)} allow="clipboard-write; fullscreen" />
+  </div>;
+}
+
+const achievementCategory = "Lain-lain · Arkib Kejayaan";
+const achievementLevels = ["Sekolah", "Daerah", "Negeri", "Kebangsaan", "Antarabangsa"];
+const achievementFields = ["Akademik", "Kokurikulum", "Sukan", "Inovasi", "Sahsiah", "Lain-lain"];
+
+function AchievementArchive({ notify }: { notify: (message: string) => void }) {
+  const today = new Date().toISOString().slice(0,10);
+  const [tab,setTab] = useState<"dashboard"|"upload">("dashboard");
+  const [reports,setReports] = useState<OprReport[]>(()=>oprMemoryCache?.filter((item)=>item.category===achievementCategory)||[]);
+  const [loading,setLoading] = useState(!oprMemoryCache);
+  const [saving,setSaving] = useState(false);
+  const [search,setSearch] = useState("");
+  const [levelFilter,setLevelFilter] = useState("Semua peringkat");
+  const [selected,setSelected] = useState<OprReport|null>(null);
+  const [file,setFile] = useState<File|null>(null);
+  const [form,setForm] = useState({title:"",date:today,venue:"",level:"Daerah",field:"Kokurikulum",achievement:"",uploadedBy:""});
+  const clean=(value:string)=>value.normalize("NFKD").replace(/[^a-zA-Z0-9 &().-]/g,"").replace(/\s+/g," ").trim().slice(0,70)||"Tidak dinyatakan";
+  const meta=(report:OprReport)=>{const base=report.name.replace(/\.(pdf|png|jpe?g)$/i,"");const read=(key:string)=>base.match(new RegExp(`__${key}__(.*?)(?=__[A-Z]+__|$)`))?.[1]||"";const lead=base.match(/^(\d{4}-\d{2}-\d{2})-ARKIB-(.*?)(?=__[A-Z]+__|$)/);return{date:lead?.[1]||report.updatedAt.slice(0,10),title:lead?.[2]||base,venue:read("TEMPAT"),level:read("PERINGKAT"),field:read("BIDANG"),achievement:read("PENCAPAIAN"),uploadedBy:read("PENYEDIA")};};
+  const load=async(refresh=false)=>{setLoading(true);try{const all=await fetchOprIndex(refresh);setReports(all.filter((item)=>item.category===achievementCategory));}catch{notify("Arkib kejayaan tidak dapat dibaca sekarang");}finally{setLoading(false);}};
+  useEffect(()=>{void load(false);},[]);
+  const visible=reports.filter((report)=>{const item=meta(report);const haystack=Object.values(item).join(" ").toLowerCase();return haystack.includes(search.toLowerCase())&&(levelFilter==="Semua peringkat"||item.level===levelFilter);});
+  const thisYear=reports.filter((report)=>meta(report).date.startsWith(String(new Date().getFullYear()))).length;
+  const levelCounts=achievementLevels.map((level)=>({level,count:reports.filter((report)=>meta(report).level===level).length})).sort((a,b)=>b.count-a.count);
+  const fileBase64=async(blob:Blob)=>await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(",")[1]||"");reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});
+  const submit=async(event:React.FormEvent)=>{event.preventDefault();if(!file)return notify("Pilih sijil PDF atau gambar dahulu");if(file.size>6_000_000)return notify("Saiz fail mesti 6 MB atau kurang");setSaving(true);try{const ext=file.type==="application/pdf"?"pdf":file.type==="image/png"?"png":"jpg";const name=`${form.date}-ARKIB-${clean(form.title)}__TEMPAT__${clean(form.venue)}__PERINGKAT__${clean(form.level)}__BIDANG__${clean(form.field)}__PENCAPAIAN__${clean(form.achievement)}__PENYEDIA__${clean(form.uploadedBy)}.${ext}`;const response=await fetch("/api/drive",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category:achievementCategory,files:[{name,mimeType:file.type,base64:await fileBase64(file)}]})});const data=await response.json()as{error?:string;files?:OprReport[]};if(!response.ok||!data.files?.[0])throw new Error(data.error||"Fail tidak dapat disimpan");rememberOprReport(data.files[0]);setReports((current)=>[data.files![0],...current]);setForm({title:"",date:today,venue:"",level:"Daerah",field:"Kokurikulum",achievement:"",uploadedBy:""});setFile(null);setTab("dashboard");notify("Kejayaan berjaya disimpan ke Google Drive");}catch(error){notify(error instanceof Error?error.message:"Arkib tidak dapat disimpan");}finally{setSaving(false);}};
+  if(selected){const item=meta(selected);const image=/\.(png|jpe?g)$/i.test(selected.name);return <div className="achievement-shell"><div className="achievement-preview"><button onClick={()=>setSelected(null)} aria-label="Tutup pratonton">×</button><span className="modal-overline">ARKIB KEJAYAAN SMKAP</span><h2>{item.title}</h2><p>{new Intl.DateTimeFormat("ms-MY",{day:"numeric",month:"long",year:"numeric"}).format(new Date(`${item.date}T12:00:00`))} · {item.level}</p><div className="achievement-document">{image?<img src={selected.viewUrl} alt={`Dokumen ${item.title}`}/>:<iframe src={selected.previewUrl} title={`Sijil ${item.title}`}/>}</div><div className="achievement-preview-meta"><span><small>Pencapaian</small><strong>{item.achievement}</strong></span><span><small>Tempat</small><strong>{item.venue}</strong></span><span><small>Bidang</small><strong>{item.field}</strong></span><span><small>Dimuat naik oleh</small><strong>{item.uploadedBy}</strong></span></div><a href={selected.viewUrl} target="_blank" rel="noreferrer">Buka fail di Google Drive</a></div></div>}
+  return <div className="achievement-shell"><div className="achievement-head"><div><span className="modal-overline">ARKIB KEJAYAAN SMKAP</span><h2 id="folder-title">Sijil dan pencapaian sekolah</h2><p>Simpan bukti kejayaan secara tersusun dan mudah dicari semula.</p></div><button onClick={()=>setTab(tab==="dashboard"?"upload":"dashboard")}>{tab==="dashboard"?"＋ Tambah kejayaan":"Kembali ke dashboard"}</button></div>
+    {tab==="upload"?<form className="achievement-form" onSubmit={submit}><div className="achievement-form-title"><GlassIcon icon={Trophy} size="lg"/><div><span>REKOD BAHARU</span><h3>Muat naik sijil atau gambar</h3><p>Isi maklumat penting sahaja. Nama fail akan disusun secara automatik.</p></div></div><div className="achievement-form-grid"><label>Tajuk kejayaan *<input value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} placeholder="Contoh: Pertandingan Inovasi STEAM 2026" required/></label><label>Tarikh *<input type="date" value={form.date} onChange={(e)=>setForm({...form,date:e.target.value})} required/></label><label>Tempat *<input value={form.venue} onChange={(e)=>setForm({...form,venue:e.target.value})} placeholder="Contoh: Politeknik Muadzam Shah" required/></label><label>Peringkat *<select value={form.level} onChange={(e)=>setForm({...form,level:e.target.value})}>{achievementLevels.map((level)=><option key={level}>{level}</option>)}</select></label><label>Bidang *<select value={form.field} onChange={(e)=>setForm({...form,field:e.target.value})}>{achievementFields.map((field)=><option key={field}>{field}</option>)}</select></label><label>Pencapaian *<input value={form.achievement} onChange={(e)=>setForm({...form,achievement:e.target.value})} placeholder="Contoh: Johan / Tempat kelima / Penyertaan" required/></label><label>Nama guru yang memuat naik *<input value={form.uploadedBy} onChange={(e)=>setForm({...form,uploadedBy:e.target.value})} required/></label><label className="achievement-upload">Fail sijil atau gambar *<input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" onChange={(e)=>setFile(e.target.files?.[0]||null)} required/><span>{file?file.name:"Pilih PDF, JPG atau PNG"}</span><small>Maksimum 6 MB</small></label></div><button className="achievement-save" disabled={saving}>{saving?"Sedang menyimpan…":"Simpan ke Arkib Kejayaan"}</button></form>:<><div className="achievement-kpis"><article><span>JUMLAH REKOD</span><strong>{reports.length}</strong><small>Sijil dan pencapaian</small></article><article><span>TAHUN INI</span><strong>{thisYear}</strong><small>Rekod semasa</small></article><article><span>PERINGKAT UTAMA</span><strong className="word">{levelCounts[0]?.count?levelCounts[0].level:"Belum ada"}</strong><small>{levelCounts[0]?.count||0} rekod</small></article></div><div className="achievement-tools"><label><Search/><input type="search" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Cari tajuk, tempat atau guru"/></label><select value={levelFilter} onChange={(e)=>setLevelFilter(e.target.value)}><option>Semua peringkat</option>{achievementLevels.map((level)=><option key={level}>{level}</option>)}</select><button onClick={()=>void load(true)} disabled={loading}>{loading?"Menyemak…":"Segarkan"}</button></div><section className="achievement-list"><div><span className="modal-overline">SENARAI KEJAYAAN</span><h3>{visible.length} rekod ditemui</h3></div>{loading&&!reports.length?<p className="achievement-empty">Membaca arkib daripada Google Drive…</p>:visible.length?<div className="achievement-grid">{visible.map((report)=>{const item=meta(report);return <button key={report.id} onClick={()=>setSelected(report)}><span className="achievement-file"><Trophy/></span><div><small>{item.field} · {item.level}</small><strong>{item.title}</strong><p>{item.achievement}</p><em>{new Intl.DateTimeFormat("ms-MY",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${item.date}T12:00:00`))} · {item.venue}</em></div><ChevronRight/></button>})}</div>:<p className="achievement-empty">Belum ada rekod yang sepadan.</p>}</section></>}
   </div>;
 }
 

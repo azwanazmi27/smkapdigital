@@ -29,7 +29,7 @@ function parseDriveFiles(value: unknown): OprFile[] {
     if (!item || typeof item !== "object") return [];
     const file = item as Record<string, unknown>;
     const required = ["id", "name", "category", "createdAt", "updatedAt", "viewUrl", "previewUrl", "downloadUrl"];
-    if (!required.every((key) => typeof file[key] === "string") || !allowedCategories.has(file.category as string)) return [];
+    if (!required.every((key) => typeof file[key] === "string") || !validCategory(file.category as string)) return [];
     return [file as OprFile];
   });
 }
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
       files.push({ name, mimeType, base64 });
     }
 
-    if (files[0].mimeType !== "application/pdf") {
+    if (category !== "Lain-lain · Arkib Kejayaan" && files[0].mimeType !== "application/pdf") {
       return Response.json({ error: "PDF OPR diperlukan." }, { status: 400 });
     }
 
