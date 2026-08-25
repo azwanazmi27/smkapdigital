@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     await Promise.all(rows.results.map(async row => {
       try {
         const subscription: PushSubscription = { endpoint: row.endpoint, expirationTime: null, keys: { p256dh: row.p256dh, auth: row.auth } };
-        const init = await buildPushPayload({ body: { title, body: message, url, tag: `smkap-${Date.now()}` }, options: { ttl: 86400, urgency: "normal" } }, subscription, keys);
+        const init = await buildPushPayload({ data: { title, body: message, url, tag: `smkap-${Date.now()}` }, options: { ttl: 86400, urgency: "normal" } }, subscription, keys);
         const response = await fetch(row.endpoint, init);
         if (!response.ok) {
           failed++;
