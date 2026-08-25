@@ -798,3 +798,32 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .admin-org-config{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 14px;padding:14px;border:1px solid rgba(128,210,205,.18);border-radius:15px;background:rgba(3,35,45,.48)}
 .admin-org-config label{margin:0}.admin-org-order-preview{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr auto auto 1fr;align-items:center;gap:8px;padding:10px 12px;border-radius:11px;color:#8ba8aa;background:rgba(121,214,206,.07);font-size:10px}.admin-org-order-preview strong{min-width:0;color:#d9ece9;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.admin-org-order-preview i{color:#6fd6ca;font-style:normal}
 @media(max-width:700px){.admin-org-config{grid-template-columns:1fr}.admin-org-order-preview{grid-column:auto;grid-template-columns:auto 1fr}.admin-org-order-preview i{display:none}}
+
+/* Identiti SMKAP Digital — disepadukan tanpa mengubah struktur halaman utama. */
+.official-logo.portal-brand{width:auto;max-width:470px;height:62px;display:flex;align-items:center;gap:10px;padding:0;background:transparent;overflow:visible}
+.portal-brand .school-crest{width:55px;height:58px;flex:0 0 55px;overflow:hidden}
+.portal-brand .school-crest img{width:auto;height:58px;max-width:none;display:block;object-fit:initial;filter:drop-shadow(0 5px 10px rgba(0,0,0,.25))}
+.portal-brand .brand-divider{width:1px;height:36px;flex:0 0 1px;background:linear-gradient(transparent,rgba(124,220,211,.42),transparent)}
+.portal-brand .digital-mark{width:48px;height:48px;flex:0 0 48px;border-radius:13px;object-fit:cover;box-shadow:0 8px 24px rgba(0,19,34,.32),0 0 18px rgba(55,194,236,.1)}
+.portal-brand .digital-copy{min-width:0;display:grid!important;gap:2px}
+.portal-brand .digital-copy strong,.portal-brand .digital-copy small,.portal-brand .digital-copy b{display:block;white-space:nowrap}
+.portal-brand .digital-copy strong{margin:0;color:#f2f8f7;font-size:17px;font-weight:800;line-height:1.05;letter-spacing:-.02em}
+.portal-brand .digital-copy strong em{color:#70d6d2;font-style:normal}
+.portal-brand .digital-copy small{color:#a6bec0;font-size:9px;font-weight:700;letter-spacing:.035em;text-transform:none}
+.portal-brand .digital-copy b{color:#d8b75f;font-size:7px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+.school-source-note b{color:#8ca9aa}
+@media(max-width:1100px){.landing-header .portal-label{display:none}.official-logo.portal-brand{max-width:none}}
+@media(max-width:700px){
+  .official-logo.portal-brand{width:auto;max-width:calc(100% - 98px);height:52px;gap:6px}
+  .portal-brand .school-crest{width:39px;height:45px;flex-basis:39px}.portal-brand .school-crest img{height:45px}
+  .portal-brand .brand-divider{height:29px}
+  .portal-brand .digital-mark{width:38px;height:38px;flex-basis:38px;border-radius:10px}
+  .portal-brand .digital-copy{display:grid!important}
+  .portal-brand .digital-copy strong{font-size:12px}.portal-brand .digital-copy small{font-size:7px}.portal-brand .digital-copy b{font-size:5.5px;letter-spacing:.08em}
+}
+@media(max-width:390px){
+  .official-logo.portal-brand{width:auto;max-width:calc(100% - 94px);gap:5px}
+  .portal-brand .school-crest{width:34px;flex-basis:34px}.portal-brand .digital-mark{width:34px;height:34px;flex-basis:34px}
+  .portal-brand .digital-copy strong{font-size:10px}.portal-brand .digital-copy small{font-size:6px}.portal-brand .digital-copy b{display:none}
+}
+@media(max-width:340px){.portal-brand .school-crest,.portal-brand .brand-divider{display:none}.portal-brand .digital-copy{display:grid!important}}
