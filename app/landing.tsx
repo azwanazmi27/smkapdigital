@@ -105,7 +105,7 @@ export function LandingPortal() {
   const [welcome,setWelcome]=useState(false);
   const [profileOpen,setProfileOpen]=useState(false);
   const [authError,setAuthError]=useState("");
-  const loadIdentity=async(token:string)=>{const response=await fetch("/api/admin-users?resource=me",{headers:{Authorization:`Bearer ${token}`}}),data=await response.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setAuthOpen(false);setWelcome(true);setOpen("warga");window.setTimeout(()=>setWelcome(false),4200);};
+  const loadIdentity=async(token:string)=>{const response=await fetch("/api/admin-users?resource=me",{headers:{Authorization:`Bearer ${token}`}}),data=await response.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setAuthOpen(false);setWelcome(true);setOpen("warga");};
   useEffect(() => { void fetchOprIndex().catch(() => {});const saved=sessionStorage.getItem("smkap_google_token");if(saved)void loadIdentity(saved).catch(()=>sessionStorage.removeItem("smkap_google_token")); }, []);
   useEffect(()=>{if(!authOpen)return;let cancelled=false;const start=async()=>{try{setAuthError("");const config=await fetch("/api/admin-users?resource=config").then(r=>r.json());if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const script=document.createElement("script");script.src="https://accounts.google.com/gsi/client";script.async=true;document.head.appendChild(script);}for(let i=0;i<50&&!window.google;i++)await new Promise(r=>setTimeout(r,100));if(cancelled||!window.google)throw new Error();window.google.accounts.id.initialize({client_id:config.clientId,callback:({credential})=>{sessionStorage.setItem("smkap_google_token",credential);void loadIdentity(credential).catch(error=>{sessionStorage.removeItem("smkap_google_token");setAuthError(error instanceof Error?error.message:"Log masuk tidak berjaya.");});}});const element=document.getElementById("google-staff-signin");if(element){element.innerHTML="";window.google.accounts.id.renderButton(element,{theme:"outline",size:"large",text:"continue_with",shape:"pill",width:300});}}catch{setAuthError("Butang Google tidak dapat disediakan sekarang.");}};void start();return()=>{cancelled=true};},[authOpen]);
   const openFolder=(folder:typeof folders[number])=>{if(folder.id==="warga"&&!identity){setAuthOpen(true);return;}setOpen(folder.id);};
@@ -178,7 +178,7 @@ export function LandingPortal() {
       </section>
     </div>}
     {authOpen&&<div className="staff-auth-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setAuthOpen(false)}><section className="staff-auth-card" role="dialog" aria-modal="true"><button onClick={()=>setAuthOpen(false)} aria-label="Tutup">×</button><GlassIcon icon={ShieldCheck} size="lg"/><span>AKSES WARGA SEKOLAH</span><h2>Log masuk dengan ID DELIMa</h2><p>Gunakan akaun <b>@moe-dl.edu.my</b> yang didaftarkan oleh sekolah.</p><div id="google-staff-signin"></div>{authError&&<small>{authError}</small>}</section></div>}
-    {welcome&&identity&&<div className="welcome-glass" role="status"><div className="profile-photo">{identity.avatarDataUrl?<img src={identity.avatarDataUrl} alt="Gambar profil"/>:<span>{identity.name.split(/\s+/).slice(0,2).map(x=>x[0]).join("")}</span>}</div><div><small>SELAMAT DATANG</small><strong>{identity.name}</strong><span>{identity.position||"Warga SMKAP"}</span></div><button onClick={()=>setWelcome(false)}>×</button></div>}
+    {welcome&&identity&&<LoginWelcome user={identity} close={()=>setWelcome(false)}/>}
     {profileOpen&&identity&&<ProfileCard user={identity} close={()=>setProfileOpen(false)} save={updateProfile} updatePhoto={updatePhoto} logout={logout} notify={notify}/>}
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
@@ -186,6 +186,12 @@ export function LandingPortal() {
 
 type PortalIdentity={id:string;email:string;name:string;position:string;grade:string;role:string;avatarDataUrl?:string};
 function IdentityAvatar({user}:{user:PortalIdentity}){return <span className="identity-avatar">{user.avatarDataUrl?<img src={user.avatarDataUrl} alt=""/>:<b>{user.name.split(/\s+/).filter(Boolean).slice(0,2).map(word=>word[0]).join("")}</b>}</span>}
+
+function LoginWelcome({user,close}:{user:PortalIdentity;close:()=>void}){
+  const [closing,setClosing]=useState(false);
+  const dismiss=()=>{if(closing)return;setClosing(true);window.setTimeout(close,250)};
+  return <div className={`welcome-backdrop ${closing?"is-closing":""}`} onMouseDown={event=>event.target===event.currentTarget&&dismiss()}><section className="login-welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-name"><button className="login-welcome-close" onClick={dismiss} aria-label="Tutup">×</button><div className="login-welcome-photo">{user.avatarDataUrl?<img src={user.avatarDataUrl} alt="Gambar profil pengguna"/>:<span>{user.name.split(/\s+/).filter(Boolean).slice(0,2).map(word=>word[0]).join("")}</span>}</div><p className="login-welcome-kicker">SELAMAT DATANG</p><h2 id="welcome-name">{user.name}</h2><p className="login-welcome-position">{user.position||"Warga SMKAP"}</p><p className="login-welcome-message">Semoga dipermudahkan segala urusan anda hari ini.</p><button className="login-welcome-cta" onClick={dismiss}><span>TERUSKAN KE PORTAL</span><b aria-hidden="true">→</b></button></section></div>;
+}
 
 function ProfileCard({user,close,save,updatePhoto,logout,notify}:{user:PortalIdentity;close:()=>void;save:(profile:{name:string;position:string;grade:string})=>Promise<void>;updatePhoto:(file?:File)=>Promise<void>;logout:()=>void;notify:(message:string)=>void}){
   const [editing,setEditing]=useState(false),[saving,setSaving]=useState(false),[form,setForm]=useState({name:user.name,position:user.position,grade:user.grade});
