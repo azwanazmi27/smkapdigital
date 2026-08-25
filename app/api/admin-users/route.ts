@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { seedPortalUsers } from "../../admin-user-seed";
 
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean;name?:string;sub:string};
 type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string};
@@ -18,6 +19,7 @@ async function prepare(){
   ]);
   const now=new Date().toISOString();
   await env.DB.batch(SUPER_ADMINS.map((u)=>env.DB.prepare("INSERT INTO portal_users(id,email,name,position,grade,role,status,created_at,updated_at) VALUES(?,?,?,?,?,'super_admin','active',?,?) ON CONFLICT(email) DO UPDATE SET role='super_admin',status='active',deleted_at=NULL,updated_at=excluded.updated_at").bind(crypto.randomUUID(),u.email,u.name,"Pentadbir Portal","",now,now)));
+  await env.DB.batch(seedPortalUsers.map((u)=>env.DB.prepare("INSERT INTO portal_users(id,email,name,position,grade,role,status,created_at,updated_at) VALUES(?,?,?,?,?,'teacher','active',?,?) ON CONFLICT(email) DO UPDATE SET name=CASE WHEN portal_users.name='' THEN excluded.name ELSE portal_users.name END,position=CASE WHEN portal_users.position='' THEN excluded.position ELSE portal_users.position END,updated_at=excluded.updated_at").bind(crypto.randomUUID(),u.email,u.name,u.position,u.grade,now,now)));
 }
 async function identity(request:Request){
   const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
