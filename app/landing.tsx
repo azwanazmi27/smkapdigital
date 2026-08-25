@@ -180,7 +180,7 @@ export function LandingPortal() {
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         {open!=="orgchart"&&<button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>}
         {identity&&open!=="admin"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{currentFolderContent?.title}</h2>
           <p>{currentFolderContent?.intro}</p>
@@ -372,7 +372,7 @@ function findFolderNode(path: string) {
   return found;
 }
 
-function OprDashboard({ create, openDuty }: { create: () => void; openDuty: () => void; notify: (message: string) => void }) {
+function OprDashboard({ create, openDuty, notify, user }: { create: () => void; openDuty: () => void; notify: (message: string) => void; user: PortalIdentity | null }) {
   const [folderView, setFolderView] = useState<string | null>(null);
   const [folderSearch, setFolderSearch] = useState("");
   const [selected, setSelected] = useState<OprReport | null>(null);
@@ -380,6 +380,8 @@ function OprDashboard({ create, openDuty }: { create: () => void; openDuty: () =
   const [loadingReports, setLoadingReports] = useState(!oprMemoryCache);
   const [refreshingReports, setRefreshingReports] = useState(false);
   const [reportError, setReportError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<OprReport | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const loadReports = async (refresh = false) => {
     refresh ? setRefreshingReports(true) : setLoadingReports(true); setReportError("");
     try {
@@ -403,11 +405,32 @@ function OprDashboard({ create, openDuty }: { create: () => void; openDuty: () =
   const mostActiveIndex = counts.indexOf(Math.max(...counts));
   const thisMonth = oprReports.filter((report) => { const date = new Date(report.updatedAt); const now = new Date(); return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear(); }).length;
   const signInRequired = reportError.toLowerCase().includes("log masuk");
+  const canDelete = user?.role === "admin" || user?.role === "super_admin";
+  const removeReport = async () => {
+    if (!deleteTarget || !canDelete) return;
+    setDeleting(true);
+    try {
+      const token = sessionStorage.getItem("smkap_google_token") || "";
+      const response = await fetch(`/api/drive?id=${encodeURIComponent(deleteTarget.id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "OPR tidak dapat dipadam");
+      setReports((current) => current.filter((report) => report.id !== deleteTarget.id));
+      if (oprMemoryCache) oprMemoryCache = oprMemoryCache.filter((report) => report.id !== deleteTarget.id);
+      setSelected((current) => current?.id === deleteTarget.id ? null : current);
+      setDeleteTarget(null);
+      notify("OPR berjaya dipindahkan ke tong sampah Google Drive");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "OPR tidak dapat dipadam");
+    } finally {
+      setDeleting(false);
+    }
+  };
   if (selected) return <article className="saved-opr-preview drive-opr-preview" role="document" aria-label={`Pratonton ${reportTitle(selected)}`}>
     <button className="saved-preview-close" onClick={() => setSelected(null)} aria-label="Tutup pratonton">×</button>
     <header><span>PDF SEBENAR · GOOGLE DRIVE SEKOLAH</span><h2>{reportTitle(selected)}</h2><p>{reportDate(selected)} · {reportPreparer(selected)}</p></header>
     <div className="drive-pdf-frame"><iframe src={`/api/drive?file=${encodeURIComponent(selected.id)}`} title={`PDF ${reportTitle(selected)}`} /></div>
-    <footer><button onClick={() => setSelected(null)}>Tutup pratonton</button><a href={`/api/drive?file=${encodeURIComponent(selected.id)}`} target="_blank" rel="noreferrer">Buka PDF</a><a className="print-opr" href={`/api/drive?file=${encodeURIComponent(selected.id)}`} target="_blank" rel="noreferrer">▣ Buka untuk cetak</a></footer>
+    <footer><button onClick={() => setSelected(null)}>Tutup pratonton</button><a href={`/api/drive?file=${encodeURIComponent(selected.id)}`} target="_blank" rel="noreferrer">Buka PDF</a><a className="print-opr" href={`/api/drive?file=${encodeURIComponent(selected.id)}`} target="_blank" rel="noreferrer">▣ Buka untuk cetak</a>{canDelete && <button className="opr-delete-action" onClick={() => setDeleteTarget(selected)}>Padam OPR</button>}</footer>
+    {deleteTarget && <div className="achievement-confirm" role="alertdialog" aria-modal="true" aria-labelledby="delete-opr-title"><section><span>PADAM OPR LENGKAP</span><h3 id="delete-opr-title">Padam “{reportTitle(deleteTarget)}”?</h3><p>Fail akan dipindahkan ke tong sampah Google Drive dan tidak lagi dipaparkan dalam dashboard Pusat OPR.</p><div><button onClick={() => setDeleteTarget(null)} disabled={deleting}>Batal</button><button onClick={() => void removeReport()} disabled={deleting}>{deleting ? "Sedang memadam…" : "Ya, padam OPR"}</button></div></section></div>}
   </article>;
   return <div className="opr-dashboard">
     <div className="opr-dash-head"><div><span className="modal-overline">PUSAT OPR</span><h2 id="folder-title">Dashboard laporan sekolah</h2><p>Pantau, cari dan hasilkan One Page Report dalam satu ruang kerja.</p></div>{signInRequired ? <a className="dash-create" href="/signin-with-chatgpt?return_to=%2F"><b>↗</b><span>Log Masuk Warga Sekolah<small>Gunakan akaun Google/DELIMa yang dibenarkan</small></span></a> : <button className="dash-create" onClick={create}><b>＋</b><span>Buat OPR Baharu<small>Tekan di sini untuk mula</small></span></button>}</div>
