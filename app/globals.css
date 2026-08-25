@@ -2,9 +2,10 @@
 
 :root { --green-950:#0f332b; --green-900:#173f35; --green-800:#215344; --green-700:#28624f; --green-100:#e0eee8; --cream:#f7f3eb; --paper:#fffefa; --ink:#20322c; --muted:#728078; --gold:#e8b44a; --coral:#df735f; --blue:#5c8fa0; --line:#e5e8e1; }
 * { box-sizing:border-box; }
-html { background:var(--cream); scroll-behavior:smooth; }
+html { background:var(--cream); scroll-behavior:smooth; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 body { margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-geist), Arial, sans-serif; font-size:16px; }
-button,input,select,textarea { font:inherit; }
+button,input,select,textarea { max-width:100%; min-width:0; font:inherit; }
+textarea { height:auto; overflow-y:hidden!important; resize:none!important; field-sizing:content; line-height:1.55; }
 button { cursor:pointer; }
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid rgba(232,180,74,.52); outline-offset:2px; }
 .portal-shell { min-height:100vh; }
@@ -781,4 +782,13 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 /* Senarai dan pratonton OPR: kekal kemas serta tidak melimpah pada telefon. */
 .report-list>button,.folder-scroll-list>button{max-width:100%;overflow:hidden}.report-list>button>div,.folder-scroll-list>button>div{min-width:0}.report-list strong,.folder-scroll-list strong,.saved-opr-preview>header h2{overflow-wrap:anywhere;word-break:break-word}.saved-opr-preview>header h2{max-width:calc(100% - 48px);line-height:1.18}
 @media(max-width:700px){.report-list>button{width:100%;grid-template-columns:35px minmax(0,1fr) 18px}.report-list>button>b{width:max-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drive-pdf-frame{height:62dvh;min-height:430px}.saved-opr-preview>footer{grid-template-columns:1fr}.saved-opr-preview>footer a,.saved-opr-preview>footer button{width:100%;justify-content:center;text-align:center}}
+
+/* iOS Safari mengezum kawalan borang yang saiz tulisannya kurang daripada 16px. */
+@media (max-width:900px), (hover:none) and (pointer:coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    font-size:16px!important;
+  }
+}
 .saved-opr-preview>footer .opr-delete-action{color:#9b3732;border-color:#efbbb5;background:#fff4f2}.saved-opr-preview>footer .opr-delete-action:hover,.saved-opr-preview>footer .opr-delete-action:focus-visible{color:#fff;border-color:#9b3732;background:#9b3732}

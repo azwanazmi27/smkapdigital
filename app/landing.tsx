@@ -26,6 +26,12 @@ function fetchOprIndex(refresh = false) {
   return request;
 }
 
+function resizeAutoGrowTextarea(field: HTMLTextAreaElement) {
+  if (field.dataset.autogrow === "off") return;
+  field.style.height = "auto";
+  field.style.height = `${Math.max(field.scrollHeight + 2, 48)}px`;
+}
+
 function rememberOprReport(report: OprReport) {
   oprMemoryCache = [report, ...(oprMemoryCache || []).filter((item) => item.id !== report.id)]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -110,6 +116,26 @@ export function LandingPortal() {
   const [authError,setAuthError]=useState("");
   const loadIdentity=async(token:string)=>{const [response,announcementResponse]=await Promise.all([fetch("/api/admin-users?resource=me",{headers:{Authorization:`Bearer ${token}`}}),fetch("/api/portal-content?view=staff",{headers:{Authorization:`Bearer ${token}`},cache:"no-store"})]),data=await response.json(),announcementData=await announcementResponse.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setStaffAnnouncements(announcementResponse.ok?announcementData.announcements||[]:[]);setAuthOpen(false);setWelcome(true);setOpen("warga");};
   useEffect(() => { void fetchOprIndex().catch(() => {});const saved=sessionStorage.getItem("smkap_google_token");if(saved)void loadIdentity(saved).catch(()=>sessionStorage.removeItem("smkap_google_token")); }, []);
+  useEffect(() => {
+    const resizeAll = () => document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(resizeAutoGrowTextarea);
+    const resizeTarget = (event: Event) => {
+      if (event.target instanceof HTMLTextAreaElement) resizeAutoGrowTextarea(event.target);
+    };
+    const observer = new MutationObserver((changes) => {
+      if (changes.some((change) => change.addedNodes.length > 0)) requestAnimationFrame(resizeAll);
+    });
+    document.addEventListener("input", resizeTarget);
+    document.addEventListener("focusin", resizeTarget);
+    window.addEventListener("resize", resizeAll);
+    observer.observe(document.body, { childList: true, subtree: true });
+    requestAnimationFrame(resizeAll);
+    return () => {
+      document.removeEventListener("input", resizeTarget);
+      document.removeEventListener("focusin", resizeTarget);
+      window.removeEventListener("resize", resizeAll);
+      observer.disconnect();
+    };
+  }, []);
   useEffect(()=>{if(!authOpen)return;let cancelled=false;const start=async()=>{try{setAuthError("");const config=await fetch("/api/admin-users?resource=config").then(r=>r.json());if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const script=document.createElement("script");script.src="https://accounts.google.com/gsi/client";script.async=true;document.head.appendChild(script);}for(let i=0;i<50&&!window.google;i++)await new Promise(r=>setTimeout(r,100));if(cancelled||!window.google)throw new Error();window.google.accounts.id.initialize({client_id:config.clientId,callback:({credential})=>{sessionStorage.setItem("smkap_google_token",credential);void loadIdentity(credential).catch(error=>{sessionStorage.removeItem("smkap_google_token");setAuthError(error instanceof Error?error.message:"Log masuk tidak berjaya.");});}});const element=document.getElementById("google-staff-signin");if(element){element.innerHTML="";window.google.accounts.id.renderButton(element,{theme:"outline",size:"large",text:"continue_with",shape:"pill",width:300});}}catch{setAuthError("Butang Google tidak dapat disediakan sekarang.");}};void start();return()=>{cancelled=true};},[authOpen]);
   const unreadStaffAnnouncements=()=>staffAnnouncements.filter(item=>localStorage.getItem(`smkap_announcement_read_${item.id}`)!=="1");
   const openFolder=(folder:typeof folders[number])=>{if(folder.id==="warga"&&!identity){setAuthOpen(true);return;}setOpen(folder.id);};
@@ -1061,8 +1087,8 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
       <button type="button" className="generator-ai" onClick={enhance} disabled={enhancing}><span>✦</span><span>{enhancing ? "Gemini sedang menulis..." : "Jana pelaksanaan, objektif & hasil dengan Gemini AI"}<small>AI mengekalkan fakta asal dan mengemaskan ketiga-tiga bahagian</small></span></button>
       {aiMessage && <p className={`ai-status ${aiMessage.startsWith("✓") ? "success" : "error"}`} role="status">{aiMessage}</p>}
       <div className="generator-row">
-        <label>Objektif<input value={form.objective} onChange={(e) => setField("objective", e.target.value)} placeholder="Objektif utama program" /></label>
-        <label>Hasil / impak<input value={form.outcome} onChange={(e) => setField("outcome", e.target.value)} placeholder="Hasil yang dicapai" /></label>
+        <label>Objektif<textarea rows={2} value={form.objective} onChange={(e) => setField("objective", e.target.value)} placeholder="Objektif utama program" /></label>
+        <label>Hasil / impak<textarea rows={2} value={form.outcome} onChange={(e) => setField("outcome", e.target.value)} placeholder="Hasil yang dicapai" /></label>
       </div>
       <label className="photo-drop">Gambar program<input type="file" accept="image/jpeg,image/png" multiple onChange={async (event) => { const selected = Array.from(event.target.files || []).slice(0, 6); if ((event.target.files?.length || 0) > 6) notify("Maksimum 6 gambar dipilih"); try { const files = await Promise.all(selected.map(optimisePhoto)); setPhotos((current) => { current.forEach((url) => URL.revokeObjectURL(url)); return files.map((file) => URL.createObjectURL(file)); }); setPhotoFiles(files); notify("Gambar telah dioptimumkan untuk laporan"); } catch { notify("Satu atau lebih gambar tidak dapat diproses"); } }} /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG · dioptimumkan secara automatik</small></label>
       {photos.length > 0 && <div className="photo-preview-strip">{photos.map((src, index) => <div key={src}><img src={src} alt={`Pratonton gambar program ${index + 1}`} /><button type="button" onClick={() => { setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index)); setPhotoFiles((current) => current.filter((_, photoIndex) => photoIndex !== index)); }} aria-label={`Buang gambar ${index + 1}`}>×</button></div>)}</div>}
