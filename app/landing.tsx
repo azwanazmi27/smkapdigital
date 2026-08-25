@@ -6,7 +6,7 @@ import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDay
 import { jsPDF } from "jspdf";
 import { oprCategoryGroups, oprFolderTree, type OprFolderNode } from "./opr-categories";
 
-type Folder = "ibubapa" | "warga" | "tentang" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "tentang" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
@@ -42,7 +42,7 @@ const folders = [
   { id: "pengunjung", no: "04", icon: MapPin, title: "Pelawat", text: "Daftar lawatan & panduan" },
 ] as const;
 
-const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "oprduty" | "ekunjung">, { title: string; intro: string; items: SubItem[] }> = {
+const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "oprduty" | "ekunjung" | "directory">, { title: string; intro: string; items: SubItem[] }> = {
   ibubapa: {
     title: "Ibu Bapa / Penjaga",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
@@ -68,7 +68,7 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "o
     items: [
       { icon: Landmark, title: "Profil sekolah", text: "Maklumat dan hala tuju SMKAP" },
       { icon: Network, title: "Carta organisasi", text: "Struktur pengurusan sekolah" },
-      { icon: UserRound, title: "Senarai guru", text: "Direktori nama dan jawatan" },
+      { icon: UserRound, title: "Senarai guru", text: "Nama, jawatan dan gred SSPA", folder: "directory" },
     ],
   },
   pengunjung: {
@@ -117,6 +117,7 @@ export function LandingPortal() {
     if (open === "etempahan") return setOpen("warga");
     if (open === "ekeberadaan") return setOpen("warga");
     if (open === "achievement") return setOpen("warga");
+    if (open === "directory") return setOpen("tentang");
     setOpen(null);
   };
 
@@ -130,6 +131,7 @@ export function LandingPortal() {
     <header className="landing-header">
       <div className="official-logo"><span><img src="/logo-smkap.png" alt="Logo rasmi SMK Agama Pahang" /></span><div><strong>SMK Agama Pahang</strong><small>Berilmu · Bertakwa</small></div></div>
       <div className="portal-label"><i></i><span>PORTAL RASMI</span><b>2026</b></div>
+      {identity&&<button className="signed-user-chip" onClick={()=>setWelcome(true)} aria-label={`Profil ${identity.name}`}><IdentityAvatar user={identity}/><span><small>SUDAH LOG MASUK</small><strong>{identity.name}</strong></span></button>}
       <button className="admin-entry" onClick={() => setOpen("admin")} aria-label="Buka tetapan pentadbir"><span><Settings aria-hidden="true" /></span><div><strong>Admin</strong><small>Tetapan</small></div></button>
     </header>
 
@@ -153,13 +155,14 @@ export function LandingPortal() {
       </div>
     </section>
 
-    <footer className="landing-footer"><span>© 2026 SMK Agama Pahang</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
+    <footer className="landing-footer"><p>Portal ini disediakan untuk urusan rasmi warga SMK Agama Pahang.</p><span>© 2026 SMK Agama Pahang · Dibangunkan oleh BangWan</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" ? "generator-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
+        {identity&&open!=="admin"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
+        {open === "admin" ? <AdminPanel notify={notify} /> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{folderContent[open].title}</h2>
           <p>{folderContent[open].intro}</p>
@@ -178,6 +181,15 @@ export function LandingPortal() {
 }
 
 type PortalIdentity={id:string;email:string;name:string;position:string;grade:string;role:string;avatarDataUrl?:string};
+function IdentityAvatar({user}:{user:PortalIdentity}){return <span className="identity-avatar">{user.avatarDataUrl?<img src={user.avatarDataUrl} alt=""/>:<b>{user.name.split(/\s+/).filter(Boolean).slice(0,2).map(word=>word[0]).join("")}</b>}</span>}
+
+type DirectoryUser={id:string;name:string;position:string;grade:string};
+function TeacherDirectory({notify}:{notify:(message:string)=>void}){
+  const [users,setUsers]=useState<DirectoryUser[]>([]),[search,setSearch]=useState(""),[loading,setLoading]=useState(true);
+  useEffect(()=>{fetch("/api/admin-users?resource=directory",{cache:"no-store"}).then(async response=>{const data=await response.json();if(!response.ok)throw new Error(data.error);setUsers(data.users||[]);}).catch(()=>notify("Senarai guru tidak dapat dibaca sekarang")).finally(()=>setLoading(false));},[]);
+  const visible=users.filter(user=>`${user.name} ${user.position} ${user.grade}`.toLowerCase().includes(search.toLowerCase()));
+  return <div className="teacher-directory"><span className="modal-overline">DIREKTORI WARGA</span><h2 id="folder-title">Senarai guru</h2><p>Maklumat rasmi berdasarkan senarai pengguna DELIMa yang didaftarkan.</p><label className="directory-search"><Search aria-hidden="true"/><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Cari nama, jawatan atau gred"/></label><div className="directory-summary"><strong>{loading?"…":visible.length}</strong><span>{search?"padanan ditemui":"guru dan pentadbir berdaftar"}</span></div><div className="directory-list">{loading?<p className="directory-empty">Sedang memuatkan senarai guru…</p>:visible.length?visible.map(user=><article key={user.id}><span>{user.name.split(/\s+/).filter(Boolean).slice(0,2).map(word=>word[0]).join("")}</span><div><strong>{user.name}</strong><small>{user.position||"Warga SMKAP"}</small></div><b>{user.grade||"Gred belum ditetapkan"}</b></article>):<p className="directory-empty">Tiada nama yang sepadan.</p>}</div></div>;
+}
 function ReliefIntegratedApp({user}:{user:PortalIdentity|null}) {
   const [ready, setReady] = useState(false);
   return <div className="relief-integrated-shell">
