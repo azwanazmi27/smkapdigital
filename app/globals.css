@@ -731,3 +731,12 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .org-tier article strong{font-size:13px;line-height:1.45}
 @media(min-width:1200px){.org-tier-2>div{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:720px){.org-tier-0>div,.org-tier-1>div,.org-tier-2>div{grid-template-columns:1fr}.org-tier article{grid-template-columns:64px minmax(0,1fr);min-height:104px}.org-tier article>img,.org-tier article>span{width:64px;height:76px}}
+
+/* Identiti sekolah di atas foto — frosted glass yang cerah dan tenang. */
+.school-profile-hero:after{background:linear-gradient(180deg,rgba(1,21,30,.02) 35%,rgba(1,21,30,.34) 100%)}
+.school-profile-hero figcaption{left:clamp(16px,3vw,34px);right:auto;bottom:clamp(16px,3vw,30px);width:min(760px,calc(100% - 68px));gap:20px;padding:18px 24px;border:1px solid rgba(255,255,255,.58);border-radius:23px;color:#092f3a;background:linear-gradient(135deg,rgba(238,251,251,.86),rgba(199,235,240,.69));box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 20px 48px rgba(2,22,31,.3);-webkit-backdrop-filter:blur(18px) saturate(135%);backdrop-filter:blur(18px) saturate(135%)}
+.school-profile-hero figcaption>img{width:112px;height:82px;flex:0 0 112px;filter:drop-shadow(0 6px 10px rgba(0,31,43,.16))}
+.school-profile-hero figcaption span{color:#167a82;font-size:9px;letter-spacing:.2em}
+.school-profile-hero figcaption strong{max-width:590px;margin:5px 0 4px;color:#092f3a;font-family:Georgia,"Times New Roman",serif;font-size:clamp(20px,2.35vw,32px);font-weight:700;line-height:1.08;letter-spacing:-.025em;text-wrap:balance}
+.school-profile-hero figcaption small{color:#9a7018;font-size:9px;letter-spacing:.16em}
+@media(max-width:600px){.school-profile-hero{height:310px}.school-profile-hero figcaption{left:12px;right:12px;bottom:12px;width:auto;gap:12px;padding:13px 14px;border-radius:17px}.school-profile-hero figcaption>img{width:76px;height:58px;flex-basis:76px}.school-profile-hero figcaption span{font-size:7px}.school-profile-hero figcaption strong{font-size:18px;line-height:1.12}.school-profile-hero figcaption small{font-size:7px}}
