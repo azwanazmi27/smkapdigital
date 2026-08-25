@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { seedPortalUsers } from "../../admin-user-seed";
 
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean;name?:string;picture?:string;sub:string};
-type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string;showDirectory?:boolean;photoBase64?:string;mimeType?:string;settings?:Record<string,string>;permissions?:string[]};
+type UserBody={id?:string;email?:string;name?:string;position?:string;grade?:string;role?:string;status?:string;showDirectory?:boolean;photoBase64?:string;mimeType?:string;settings?:Record<string,string>;permissions?:string[];title?:string;body?:string;audience?:string;publishedAt?:string;eventDate?:string;endDate?:string;category?:string;details?:string};
 const CLIENT_ID="700702672944-20sjvug0albitl36cm671s7h19k57pc4.apps.googleusercontent.com";
 const SUPER_ADMINS=[
   {email:"sekolah-2508@moe-dl.edu.my",name:"Pentadbir Sekolah"},
@@ -19,12 +19,16 @@ async function prepare(){
     env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_profiles (user_id TEXT PRIMARY KEY,avatar_key TEXT NOT NULL,updated_at TEXT NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS admin_module_permissions (user_id TEXT NOT NULL,module_key TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,PRIMARY KEY(user_id,module_key))"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_settings (setting_key TEXT PRIMARY KEY,setting_value TEXT NOT NULL,updated_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_announcements (id TEXT PRIMARY KEY,title TEXT NOT NULL,body TEXT NOT NULL,audience TEXT NOT NULL DEFAULT 'Semua',published_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'published',created_by TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_calendar (id TEXT PRIMARY KEY,title TEXT NOT NULL,event_date TEXT NOT NULL,end_date TEXT NOT NULL,category TEXT NOT NULL DEFAULT 'Sekolah',details TEXT NOT NULL DEFAULT '',created_by TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_portal_announcements_date ON portal_announcements(status,published_at)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_portal_calendar_date ON portal_calendar(event_date,end_date)"),
   ]);
   try{await env.DB.prepare("ALTER TABLE portal_users ADD COLUMN show_directory INTEGER NOT NULL DEFAULT 1").run();}catch{}
   const now=new Date().toISOString();
   await env.DB.batch(SUPER_ADMINS.map((u)=>env.DB.prepare("INSERT INTO portal_users(id,email,name,position,grade,role,status,created_at,updated_at) VALUES(?,?,?,?,?,'super_admin','active',?,?) ON CONFLICT(email) DO UPDATE SET role='super_admin',status='active',deleted_at=NULL,updated_at=excluded.updated_at").bind(crypto.randomUUID(),u.email,u.name,"Pentadbir Portal","",now,now)));
   await env.DB.batch(seedPortalUsers.map((u)=>env.DB.prepare("INSERT INTO portal_users(id,email,name,position,grade,role,status,created_at,updated_at) VALUES(?,?,?,?,?,'teacher','active',?,?) ON CONFLICT(email) DO UPDATE SET name=CASE WHEN portal_users.name='' THEN excluded.name ELSE portal_users.name END,position=CASE WHEN portal_users.position='' THEN excluded.position ELSE portal_users.position END,updated_at=excluded.updated_at").bind(crypto.randomUUID(),u.email,u.name,u.position,u.grade,now,now)));
-  const defaults={school_email:"cra8001@moe.edu.my",school_phone:"09-4523901",school_address:"26700 Muadzam Shah, Pahang",footer_notice:"Portal rasmi sekolah · Dibangunkan oleh BangWan",module_opr:"enabled",module_ekeberadaan:"enabled",module_etempahan:"enabled",module_ekunjung:"enabled",module_achievement:"enabled"};
+  const defaults={school_name:"Sekolah Menengah Kebangsaan Agama Pahang",school_code:"CRA8001",school_grade:"Gred A",school_type:"Sekolah Kluster Kecemerlangan",school_founded:"26 Februari 1996",school_motto:"Berilmu, Bertakwa",school_vision:"Pendidikan Berkualiti, Insan Terdidik, Negara Sejahtera",school_mission:"Melestarikan sistem pendidikan yang berkualiti untuk membangunkan potensi individu bagi memenuhi aspirasi negara.",school_history:"SMK Agama Pahang ditubuhkan pada 26 Februari 1996 di Muadzam Shah sebagai institusi pendidikan menengah kebangsaan agama yang menggabungkan kecemerlangan akademik, pengajian Islam dan pembentukan sahsiah.",school_email:"cra8001@moe.edu.my",school_phone:"09-4523901",school_address:"26700 Muadzam Shah, Pahang",footer_notice:"Portal rasmi sekolah · Dibangunkan oleh BangWan",module_opr:"enabled",module_ekeberadaan:"enabled",module_etempahan:"enabled",module_ekunjung:"enabled",module_achievement:"enabled"};
   await env.DB.batch(Object.entries(defaults).map(([key,value])=>env.DB.prepare("INSERT OR IGNORE INTO portal_settings(setting_key,setting_value,updated_at) VALUES(?,?,?)").bind(key,value,now)));
 }
 async function identity(request:Request){
