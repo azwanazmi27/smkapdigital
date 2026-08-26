@@ -12,7 +12,10 @@ const SUPER_ADMINS=[
 const roles=new Set(["super_admin","admin","teacher"]),statuses=new Set(["active","inactive"]);
 const clean=(v:unknown,n=160)=>typeof v==="string"?v.trim().slice(0,n):"";
 
+let preparation: Promise<void> | null = null;
 async function prepare(){
+  if(preparation)return preparation;
+  preparation=(async()=>{
   await env.DB.batch([
     env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_users (id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,name TEXT NOT NULL,position TEXT NOT NULL DEFAULT '',grade TEXT NOT NULL DEFAULT '',role TEXT NOT NULL DEFAULT 'teacher',status TEXT NOT NULL DEFAULT 'active',show_directory INTEGER NOT NULL DEFAULT 1,show_org_chart INTEGER NOT NULL DEFAULT 0,org_position TEXT NOT NULL DEFAULT '',org_order REAL NOT NULL DEFAULT 999,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,deleted_at TEXT)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email)"),
@@ -60,6 +63,8 @@ async function prepare(){
     WHERE show_org_chart IS NULL`).run();
   const defaults={school_name:"Sekolah Menengah Kebangsaan Agama Pahang",school_code:"CRA8001",school_grade:"Gred A",school_type:"Sekolah Kluster Kecemerlangan",school_founded:"26 Februari 1996",school_motto:"Berilmu, Bertakwa",school_vision:"Pendidikan Berkualiti, Insan Terdidik, Negara Sejahtera",school_mission:"Melestarikan sistem pendidikan yang berkualiti untuk membangunkan potensi individu bagi memenuhi aspirasi negara.",school_history:"SMK Agama Pahang ditubuhkan pada 26 Februari 1996 di Muadzam Shah sebagai institusi pendidikan menengah kebangsaan agama yang menggabungkan kecemerlangan akademik, pengajian Islam dan pembentukan sahsiah.",school_email:"cra8001@moe.edu.my",school_phone:"09-4523901",school_address:"26700 Muadzam Shah, Pahang",parent_coop_url:"https://koperasismkap.kiah.store/",parent_pibg_url:"https://app.herepay.org/pibgsmkapahang",footer_notice:"Portal rasmi sekolah · Dibangunkan oleh BangWan",module_opr:"enabled",module_ekeberadaan:"enabled",module_etempahan:"enabled",module_ekunjung:"enabled",module_achievement:"enabled"};
   await env.DB.batch(Object.entries(defaults).map(([key,value])=>env.DB.prepare("INSERT OR IGNORE INTO portal_settings(setting_key,setting_value,updated_at) VALUES(?,?,?)").bind(key,value,now)));
+  })().catch(error=>{preparation=null;throw error;});
+  return preparation;
 }
 async function identity(request:Request){
   const token=(request.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");

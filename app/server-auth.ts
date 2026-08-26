@@ -32,11 +32,15 @@ async function digest(value: string) {
   return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+let sessionTableReady: Promise<void> | null = null;
+
 export async function ensureSessionTable() {
-  await env.DB.batch([
+  if (sessionTableReady) return sessionTableReady;
+  sessionTableReady = env.DB.batch([
     env.DB.prepare("CREATE TABLE IF NOT EXISTS portal_sessions (token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,google_picture TEXT NOT NULL DEFAULT '',expires_at TEXT NOT NULL,created_at TEXT NOT NULL,last_seen_at TEXT NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_portal_sessions_user ON portal_sessions(user_id,expires_at)"),
-  ]);
+  ]).then(() => undefined).catch((error) => { sessionTableReady = null; throw error; });
+  return sessionTableReady;
 }
 
 export async function verifyGoogleCredential(credential: string) {
@@ -91,6 +95,6 @@ export async function portalActor(request: Request): Promise<PortalActor | null>
   const hash = await digest(token);
   const actor = await env.DB.prepare("SELECT u.id,u.email,u.name,u.position,u.grade,u.role,u.status,s.google_picture AS googlePicture FROM portal_sessions s JOIN portal_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.status='active' AND u.deleted_at IS NULL")
     .bind(hash, new Date().toISOString()).first<PortalActor>();
-  if (actor) await env.DB.prepare("UPDATE portal_sessions SET last_seen_at=? WHERE token_hash=?").bind(new Date().toISOString(), hash).run();
+  if (actor) void env.DB.prepare("UPDATE portal_sessions SET last_seen_at=? WHERE token_hash=?").bind(new Date().toISOString(), hash).run();
   return actor || null;
 }
