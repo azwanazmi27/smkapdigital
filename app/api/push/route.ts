@@ -10,7 +10,8 @@ type PushBody = {
   title?: string;
   body?: string;
   url?: string;
-  audience?: "Semua warga" | "Guru" | "Admin";
+  audience?: "Semua warga" | "Guru" | "Admin" | "Pengguna tertentu";
+  userIds?: string[];
 };
 
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -71,8 +72,11 @@ export async function POST(request: Request) {
     if (input.action !== "send" || !['admin','super_admin'].includes(me.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
     const title = clean(input.title, 100), message = clean(input.body, 500), url = clean(input.url, 500) || "/", audience = input.audience || "Semua warga";
     if (!title || !message) return Response.json({ error: "Tajuk dan mesej notifikasi perlu diisi." }, { status: 400 });
-    const where = audience === "Admin" ? "AND u.role IN ('admin','super_admin')" : audience === "Guru" ? "AND u.role='teacher'" : "";
-    const rows = await env.DB.prepare(`SELECT s.id,s.endpoint,s.p256dh,s.auth FROM push_subscriptions s JOIN portal_users u ON u.id=s.user_id WHERE u.status='active' AND u.deleted_at IS NULL ${where}`).all<{ id: string; endpoint: string; p256dh: string; auth: string }>();
+    const userIds = Array.isArray(input.userIds) ? [...new Set(input.userIds.map(id => clean(id, 80)).filter(Boolean))].slice(0, 200) : [];
+    if (audience === "Pengguna tertentu" && !userIds.length) return Response.json({ error: "Pilih sekurang-kurangnya seorang pengguna." }, { status: 400 });
+    const where = audience === "Admin" ? "AND u.role IN ('admin','super_admin')" : audience === "Guru" ? "AND u.role='teacher'" : audience === "Pengguna tertentu" ? `AND u.id IN (${userIds.map(() => "?").join(",")})` : "";
+    const statement = env.DB.prepare(`SELECT s.id,s.endpoint,s.p256dh,s.auth FROM push_subscriptions s JOIN portal_users u ON u.id=s.user_id WHERE u.status='active' AND u.deleted_at IS NULL ${where}`);
+    const rows = audience === "Pengguna tertentu" ? await statement.bind(...userIds).all<{ id: string; endpoint: string; p256dh: string; auth: string }>() : await statement.all<{ id: string; endpoint: string; p256dh: string; auth: string }>();
     let sent = 0, failed = 0;
     const keys = vapid();
     await Promise.all(rows.results.map(async row => {
@@ -88,7 +92,7 @@ export async function POST(request: Request) {
     }));
     const id = crypto.randomUUID();
     await env.DB.prepare("INSERT INTO push_notifications(id,title,body,url,audience,status,sent_count,failed_count,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)")
-      .bind(id, title, message, url, audience, failed ? (sent ? "sebahagian" : "gagal") : "berjaya", sent, failed, me.email, now).run();
+      .bind(id, title, message, url, audience === "Pengguna tertentu" ? `Pengguna tertentu (${userIds.length})` : audience, failed ? (sent ? "sebahagian" : "gagal") : "berjaya", sent, failed, me.email, now).run();
     return Response.json({ success: true, id, sent, failed });
   } catch (error) {
     console.error("Push write", error);
