@@ -47,8 +47,12 @@ function rememberOprReport(report: OprReport) {
 }
 
 function DrivePdfPreview({ fileId, title }: { fileId: string; title: string }) {
+  const [loading, setLoading] = useState(true);
   const previewUrl = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
-  return <div className="drive-pdf-frame drive-pdf-frame-safe"><iframe src={previewUrl} title={title} loading="lazy" /></div>;
+  return <div className={`drive-pdf-frame drive-pdf-frame-safe${loading ? " is-loading" : ""}`} aria-busy={loading}>
+    {loading && <div className="pdf-opening-state" role="status" aria-live="polite"><i aria-hidden="true"/><span><strong>Membuka pratonton PDF</strong><small>Sila tunggu sebentar…</small></span></div>}
+    <iframe src={previewUrl} title={title} loading="eager" onLoad={() => setLoading(false)} />
+  </div>;
 }
 
 function GlassIcon({ icon: Icon, size = "md" }: { icon: LucideIcon; size?: "sm" | "md" | "lg" }) {
@@ -121,6 +125,7 @@ export function LandingPortal() {
   const publicContent=usePublicContent();
   const [open, setOpen] = useState<Folder>(null);
   const [toast, setToast] = useState("");
+  const [opening, setOpening] = useState("");
   const [identity,setIdentity]=useState<PortalIdentity|null>(null);
   const [identityChecked,setIdentityChecked]=useState(false);
   const [pendingStaffOpen,setPendingStaffOpen]=useState(false);
@@ -138,7 +143,11 @@ export function LandingPortal() {
   const loadStaffAnnouncements=async()=>{try{const response=await fetch("/api/portal-content?view=staff",{cache:"no-store"}),data=await response.json();if(response.ok)setStaffAnnouncements(data.announcements||[]);}catch{}}
   const loadIdentity=async(showWelcome=false)=>{const response=await fetch("/api/admin-users?resource=me",{cache:"no-store"}),data=await response.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setIdentityChecked(true);setAuthOpen(false);void loadStaffAnnouncements();const target=requestedModule();if(target)setOpen(target);else if(showWelcome&&!requestedNotificationId())setOpen("warga");if(showWelcome&&!requestedNotificationId())setWelcome(true);await openRequestedNotification();};
   const establishSession=async(credential:string)=>{const response=await fetch("/api/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential})}),data=await response.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");if(data.me)setIdentity(data.me);setIdentityChecked(true);setAuthOpen(false);await loadIdentity(true);};
-  useEffect(() => { void loadIdentity(false).catch(()=>{setIdentity(null);setIdentityChecked(true);if(requestedModule()||requestedNotificationId())setAuthOpen(true);}); }, []);
+  useEffect(() => {
+    document.documentElement.classList.add("portal-ready");
+    void loadIdentity(false).catch(()=>{setIdentity(null);setIdentityChecked(true);if(requestedModule()||requestedNotificationId())setAuthOpen(true);});
+    return () => document.documentElement.classList.remove("portal-ready");
+  }, []);
   useEffect(()=>{if(!identityChecked||!pendingStaffOpen)return;setPendingStaffOpen(false);if(identity)setOpen("warga");else setAuthOpen(true);},[identityChecked,pendingStaffOpen,identity]);
   useEffect(() => {
     const resizeAll = () => document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(resizeAutoGrowTextarea);
@@ -162,7 +171,14 @@ export function LandingPortal() {
   }, []);
   useEffect(()=>{if(!authOpen)return;let cancelled=false;const start=async()=>{try{setAuthError("");const config=await fetch("/api/admin-users?resource=config").then(r=>r.json());if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const script=document.createElement("script");script.src="https://accounts.google.com/gsi/client";script.async=true;document.head.appendChild(script);}for(let i=0;i<50&&!window.google;i++)await new Promise(r=>setTimeout(r,100));if(cancelled||!window.google)throw new Error();window.google.accounts.id.initialize({client_id:config.clientId,callback:({credential})=>{void establishSession(credential).catch(error=>setAuthError(error instanceof Error?error.message:"Log masuk tidak berjaya."));}});const element=document.getElementById("google-staff-signin");if(element){element.innerHTML="";window.google.accounts.id.renderButton(element,{theme:"outline",size:"large",text:"continue_with",shape:"pill",width:300});}}catch{setAuthError("Butang Google tidak dapat disediakan sekarang.");}};void start();return()=>{cancelled=true};},[authOpen]);
   const unreadStaffAnnouncements=()=>staffAnnouncements.filter(item=>localStorage.getItem(`smkap_announcement_read_${item.id}`)!=="1");
-  const openFolder=(folder:typeof folders[number])=>{if(folder.id==="warga"&&!identityChecked){setPendingStaffOpen(true);return;}if(folder.id==="warga"&&!identity){setAuthOpen(true);return;}setOpen(folder.id);};
+  const finishOpening=()=>window.setTimeout(()=>setOpening(""),360);
+  const openFolder=(folder:typeof folders[number])=>{
+    setOpening(folder.title);
+    if(folder.id==="warga"&&!identityChecked){setPendingStaffOpen(true);finishOpening();return;}
+    if(folder.id==="warga"&&!identity){setAuthOpen(true);finishOpening();return;}
+    setOpen(folder.id);finishOpening();
+  };
+  const openSubmodule=(folder:Folder,title:string)=>{setOpening(title);setOpen(folder);finishOpening();};
   const closeStaffAnnouncement=(readId?:string)=>{if(readId)localStorage.setItem(`smkap_announcement_read_${readId}`,"1");setStaffAnnouncementOpen(false);};
   const updatePhoto=async(file?:File)=>{if(!file||!identity)return;const reader=new FileReader();reader.onload=async()=>{try{const base64=String(reader.result).split(",")[1]||"";const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({photoBase64:base64,mimeType:file.type})}),data=await response.json();if(!response.ok)throw new Error(data.error);await loadIdentity(false);notify("Gambar profil berjaya dikemas kini");}catch(error){notify(error instanceof Error?error.message:"Gambar tidak dapat disimpan");}};reader.readAsDataURL(file);};
   const updateProfile=async(profile:{name:string;position:string;grade:string})=>{const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)}),data=await response.json();if(!response.ok)throw new Error(data.error||"Profil tidak dapat dikemas kini.");setIdentity(current=>current?{...current,...profile}:current);notify("Profil berjaya dikemas kini");};
@@ -231,7 +247,7 @@ export function LandingPortal() {
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         {open!=="orgchart"&&<button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>}
         {identity&&open!=="admin"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
-        {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => setOpen("oprgenerator")} openDuty={() => setOpen("oprduty")} notify={notify} user={identity} /> : <>
+          {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => openSubmodule("oprgenerator","Cipta OPR baharu")} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{currentFolderContent?.title}</h2>
           <p>{currentFolderContent?.intro}</p>
@@ -239,7 +255,7 @@ export function LandingPortal() {
           <div className="submodule-grid">{currentItems.map((item) => {
             const inside = <><GlassIcon icon={item.icon} /> <div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? <ExternalLink aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}</i></>;
             if (item.href) return <a key={item.title} href={item.href} target="_blank" rel="noreferrer">{inside}</a>;
-            return <button key={item.title} onClick={() => item.folder ? setOpen(item.folder) : notify(`${item.title} dipilih`)}>{inside}</button>;
+            return <button key={item.title} onClick={() => item.folder ? openSubmodule(item.folder,item.title) : notify(`${item.title} dipilih`)}>{inside}</button>;
           })}</div>
         </>}
       </section>
@@ -249,6 +265,7 @@ export function LandingPortal() {
     {staffAnnouncementOpen&&staffAnnouncements.length>0&&<StaffAnnouncementPopup items={staffAnnouncements} close={closeStaffAnnouncement}/>} 
     {pushNotice&&<PushNoticePopup item={pushNotice} close={()=>{setPushNotice(null);const url=new URL(window.location.href);url.searchParams.delete("notification");history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}}/>}
     {profileOpen&&identity&&<ProfileCard user={identity} close={()=>setProfileOpen(false)} save={updateProfile} updatePhoto={updatePhoto} logout={logout} notify={notify} pushState={pushState} enableNotifications={enableNotifications}/>} 
+    {opening&&<div className="portal-opening" role="status" aria-live="polite"><div><i aria-hidden="true"/><span><strong>Membuka {opening}</strong><small>Sila tunggu sebentar…</small></span></div></div>}
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
 }

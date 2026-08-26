@@ -38,7 +38,16 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ms" style={{ backgroundColor: "#061d28" }}>
-      <body className={geist.variable} style={{ backgroundColor: "#061d28" }}><PwaRegister />{children}</body>
+      <body className={geist.variable} style={{ backgroundColor: "#061d28" }}>
+        <div id="portal-boot-screen" role="status" aria-live="polite">
+          <div className="portal-boot-card">
+            <img src="/smkap-digital.png" alt="" />
+            <div><strong>SMKAP Digital</strong><span>Menyediakan portal…</span></div>
+            <i aria-hidden="true" />
+          </div>
+        </div>
+        <PwaRegister />{children}
+      </body>
     </html>
   );
 }
