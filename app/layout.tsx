@@ -37,8 +37,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ms">
-      <body className={geist.variable}><PwaRegister />{children}</body>
+    <html lang="ms" style={{ backgroundColor: "#061d28" }}>
+      <body className={geist.variable} style={{ backgroundColor: "#061d28" }}><PwaRegister />{children}</body>
     </html>
   );
 }
