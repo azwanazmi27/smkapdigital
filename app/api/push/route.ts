@@ -37,8 +37,15 @@ export async function GET(request: Request) {
     await prepare();
     const me = await portalActor(request);
     if (!me) return Response.json({ error: "Log masuk DELIMa diperlukan." }, { status: 403 });
-    const view = new URL(request.url).searchParams.get("view");
+    const params = new URL(request.url).searchParams;
+    const view = params.get("view");
     if (view === "config") return Response.json({ publicKey: vapid().publicKey });
+    if (view === "notification") {
+      const id = clean(params.get("id"), 80);
+      const notification = id ? await env.DB.prepare("SELECT id,title,body,created_at AS createdAt FROM push_notifications WHERE id=?").bind(id).first() : null;
+      if (!notification) return Response.json({ error: "Notifikasi tidak ditemui." }, { status: 404 });
+      return Response.json({ notification });
+    }
     if (!['admin','super_admin'].includes(me.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
     const [summary, history] = await Promise.all([
       env.DB.prepare("SELECT COUNT(*) AS total,COUNT(DISTINCT user_id) AS users FROM push_subscriptions").first<{ total: number; users: number }>(),
@@ -70,8 +77,11 @@ export async function POST(request: Request) {
       return Response.json({ success: true });
     }
     if (input.action !== "send" || !['admin','super_admin'].includes(me.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
-    const title = clean(input.title, 100), message = clean(input.body, 500), url = clean(input.url, 500) || "/", audience = input.audience || "Semua warga";
+    const title = clean(input.title, 100), message = clean(input.body, 500), audience = input.audience || "Semua warga";
     if (!title || !message) return Response.json({ error: "Tajuk dan mesej notifikasi perlu diisi." }, { status: 400 });
+    const id = crypto.randomUUID();
+    const requestedUrl = clean(input.url, 500) || "/";
+    const url = requestedUrl === "__notification__" ? `/?notification=${encodeURIComponent(id)}` : requestedUrl;
     const userIds = Array.isArray(input.userIds) ? [...new Set(input.userIds.map(id => clean(id, 80)).filter(Boolean))].slice(0, 200) : [];
     if (audience === "Pengguna tertentu" && !userIds.length) return Response.json({ error: "Pilih sekurang-kurangnya seorang pengguna." }, { status: 400 });
     const where = audience === "Admin" ? "AND u.role IN ('admin','super_admin')" : audience === "Guru" ? "AND u.role='teacher'" : audience === "Pengguna tertentu" ? `AND u.id IN (${userIds.map(() => "?").join(",")})` : "";
@@ -90,7 +100,6 @@ export async function POST(request: Request) {
         } else sent++;
       } catch { failed++; }
     }));
-    const id = crypto.randomUUID();
     await env.DB.prepare("INSERT INTO push_notifications(id,title,body,url,audience,status,sent_count,failed_count,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)")
       .bind(id, title, message, url, audience === "Pengguna tertentu" ? `Pengguna tertentu (${userIds.length})` : audience, failed ? (sent ? "sebahagian" : "gagal") : "berjaya", sent, failed, me.email, now).run();
     return Response.json({ success: true, id, sent, failed });

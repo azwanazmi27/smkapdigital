@@ -113,12 +113,15 @@ export function LandingPortal() {
   const [profileOpen,setProfileOpen]=useState(false);
   const [staffAnnouncements,setStaffAnnouncements]=useState<Array<{id:string;title:string;body:string;publishedAt:string;endsAt:string;imageDataUrl?:string}>>([]);
   const [staffAnnouncementOpen,setStaffAnnouncementOpen]=useState(false);
+  const [pushNotice,setPushNotice]=useState<{id:string;title:string;body:string;createdAt:string}|null>(null);
   const [authError,setAuthError]=useState("");
   const [pushState,setPushState]=useState<"idle"|"loading"|"enabled"|"blocked"|"unsupported">("idle");
   const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement"];return allowed.includes(value as Folder)?value as Folder:null;};
-  const loadIdentity=async(showWelcome=false)=>{const [response,announcementResponse]=await Promise.all([fetch("/api/admin-users?resource=me",{cache:"no-store"}),fetch("/api/portal-content?view=staff",{cache:"no-store"})]),data=await response.json(),announcementData=await announcementResponse.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setStaffAnnouncements(announcementResponse.ok?announcementData.announcements||[]:[]);setAuthOpen(false);const target=requestedModule();if(target)setOpen(target);else if(showWelcome)setOpen("warga");if(showWelcome)setWelcome(true);};
+  const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
+  const openRequestedNotification=async()=>{const id=requestedNotificationId();if(!id)return;const response=await fetch(`/api/push?view=notification&id=${encodeURIComponent(id)}`,{cache:"no-store"}),data=await response.json();if(response.ok&&data.notification)setPushNotice(data.notification);};
+  const loadIdentity=async(showWelcome=false)=>{const [response,announcementResponse]=await Promise.all([fetch("/api/admin-users?resource=me",{cache:"no-store"}),fetch("/api/portal-content?view=staff",{cache:"no-store"})]),data=await response.json(),announcementData=await announcementResponse.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");setIdentity(data.me);setStaffAnnouncements(announcementResponse.ok?announcementData.announcements||[]:[]);setAuthOpen(false);const target=requestedModule();if(target)setOpen(target);else if(showWelcome&&!requestedNotificationId())setOpen("warga");if(showWelcome&&!requestedNotificationId())setWelcome(true);await openRequestedNotification();};
   const establishSession=async(credential:string)=>{const response=await fetch("/api/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential})}),data=await response.json();if(!response.ok)throw new Error(data.error||"Log masuk tidak berjaya.");await loadIdentity(true);};
-  useEffect(() => { void fetchOprIndex().catch(() => {});void loadIdentity(false).catch(()=>{if(requestedModule())setAuthOpen(true);}); }, []);
+  useEffect(() => { void fetchOprIndex().catch(() => {});void loadIdentity(false).catch(()=>{if(requestedModule()||requestedNotificationId())setAuthOpen(true);}); }, []);
   useEffect(() => {
     const resizeAll = () => document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(resizeAutoGrowTextarea);
     const resizeTarget = (event: Event) => {
@@ -226,6 +229,7 @@ export function LandingPortal() {
     {authOpen&&<div className="staff-auth-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setAuthOpen(false)}><section className="staff-auth-card" role="dialog" aria-modal="true"><button onClick={()=>setAuthOpen(false)} aria-label="Tutup">×</button><GlassIcon icon={ShieldCheck} size="lg"/><span>AKSES WARGA SEKOLAH</span><h2>Log masuk dengan ID DELIMa</h2><p>Gunakan akaun <b>@moe-dl.edu.my</b> yang didaftarkan oleh sekolah.</p><div id="google-staff-signin"></div>{authError&&<small>{authError}</small>}</section></div>}
     {welcome&&identity&&<LoginWelcome user={identity} pushState={pushState} enableNotifications={enableNotifications} close={()=>{setWelcome(false);if(unreadStaffAnnouncements().length)window.setTimeout(()=>setStaffAnnouncementOpen(true),180)}}/>}
     {staffAnnouncementOpen&&staffAnnouncements.length>0&&<StaffAnnouncementPopup items={staffAnnouncements} close={closeStaffAnnouncement}/>} 
+    {pushNotice&&<PushNoticePopup item={pushNotice} close={()=>{setPushNotice(null);const url=new URL(window.location.href);url.searchParams.delete("notification");history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}}/>}
     {profileOpen&&identity&&<ProfileCard user={identity} close={()=>setProfileOpen(false)} save={updateProfile} updatePhoto={updatePhoto} logout={logout} notify={notify} pushState={pushState} enableNotifications={enableNotifications}/>} 
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
@@ -243,6 +247,10 @@ function LoginWelcome({user,close,pushState,enableNotifications}:{user:PortalIde
 function StaffAnnouncementPopup({items,close}:{items:Array<{id:string;title:string;body:string;publishedAt:string;endsAt:string;imageDataUrl?:string}>;close:(readId?:string)=>void}){
   const [index,setIndex]=useState(0),item=items[index];
   return <div className="staff-announcement-backdrop" onMouseDown={event=>event.target===event.currentTarget&&close()}><section className="staff-announcement-card" role="dialog" aria-modal="true" aria-labelledby="staff-announcement-title"><button className="login-welcome-close" onClick={()=>close()} aria-label="Tutup">×</button><GlassIcon icon={Bell} size="lg"/><span className="modal-overline">PENGUMUMAN GURU & STAF</span>{item.imageDataUrl&&<img className="staff-announcement-image" src={item.imageDataUrl} alt={`Gambar pengumuman ${item.title}`}/>}<h2 id="staff-announcement-title">{item.title}</h2><p>{item.body}</p><small>{new Date(`${item.publishedAt}T12:00:00`).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})} – {new Date(`${item.endsAt||item.publishedAt}T12:00:00`).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})}</small>{items.length>1&&<div className="staff-announcement-pages"><button disabled={index===0} onClick={()=>setIndex(current=>current-1)}>‹ Sebelum</button><b>{index+1} / {items.length}</b><button disabled={index===items.length-1} onClick={()=>setIndex(current=>current+1)}>Seterusnya ›</button></div>}<button className="staff-announcement-done" onClick={()=>close(item.id)}>Saya sudah baca</button></section></div>;
+}
+
+function PushNoticePopup({item,close}:{item:{id:string;title:string;body:string;createdAt:string};close:()=>void}){
+  return <div className="push-notice-backdrop" onMouseDown={event=>event.target===event.currentTarget&&close()}><section className="push-notice-card" role="dialog" aria-modal="true" aria-labelledby="push-notice-title"><button className="login-welcome-close" onClick={close} aria-label="Tutup">×</button><GlassIcon icon={Bell} size="lg"/><span className="modal-overline">MAKLUMAN SMKAP</span><h2 id="push-notice-title">{item.title}</h2><p>{item.body}</p><small>{new Date(item.createdAt).toLocaleString("ms-MY",{day:"numeric",month:"long",year:"numeric",hour:"numeric",minute:"2-digit"})}</small><button className="staff-announcement-done" onClick={close}>Tutup notifikasi</button></section></div>;
 }
 
 function ProfileCard({user,close,save,updatePhoto,logout,notify,pushState,enableNotifications}:{user:PortalIdentity;close:()=>void;save:(profile:{name:string;position:string;grade:string})=>Promise<void>;updatePhoto:(file?:File)=>Promise<void>;logout:()=>void;notify:(message:string)=>void;pushState:string;enableNotifications:()=>Promise<void>}){
@@ -496,6 +504,7 @@ const orgChartLevel=(position="")=>position.toLowerCase().includes("pengetua")&&
 const orgChartDefaultOrder=(position="")=>{const index=orgChartPositions.indexOf(position);return index<0?900:index===0?0:index<5?90+index*10:150+index*10};
 const blankPortalUser=():PortalUser=>({id:"",email:"",name:"",position:"Guru Akademik Biasa",grade:"",role:"teacher",status:"active",showDirectory:true,showOrgChart:false,orgPosition:"",orgOrder:999});
 const pushDestinations=[
+  {id:"notification",label:"Buka notifikasi",url:"__notification__"},
   {id:"home",label:"Portal Utama",url:"/"},
   {id:"warga",label:"Guru & Staf",url:"/?module=warga"},
   {id:"opr-create",label:"Buat OPR",url:"/?module=oprgenerator"},
