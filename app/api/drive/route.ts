@@ -41,7 +41,8 @@ function binaryResponse(result:{base64?:string;mimeType?:string;name?:string},do
 async function scriptAction(payload:Record<string,unknown>){
   const webAppUrl=process.env.OPR_APPS_SCRIPT_URL,token=process.env.OPR_APPS_SCRIPT_TOKEN;
   if(!webAppUrl||!token)throw new Error("Sambungan Google Drive belum dikonfigurasi");
-  const response=await fetch(webAppUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,...payload}),redirect:"follow",cache:"no-store"});
+  // Never leave a phone waiting indefinitely when the Drive web app is cold or unavailable.
+  const response=await fetch(webAppUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,...payload}),redirect:"follow",cache:"no-store",signal:AbortSignal.timeout(15_000)});
   const result=await response.json() as {ok?:boolean;error?:string;base64?:string;mimeType?:string;name?:string};
   if(!response.ok||!result.ok)throw new Error(result.error||"Google Drive tidak dapat memproses permintaan");
   return result;
@@ -111,8 +112,9 @@ function validMagic(raw: Uint8Array, mimeType: string) {
 }
 
 export async function GET(request: Request) {
+  const url=new URL(request.url),fileId=url.searchParams.get("file");
   try {
-    const url=new URL(request.url),fileId=url.searchParams.get("file"),download=url.searchParams.get("download")==="1";
+    const download=url.searchParams.get("download")==="1";
     if(fileId){
       if(!/^[\w-]{10,120}$/.test(fileId))return Response.json({error:"ID fail tidak sah."},{status:400});
       return binaryResponse(await scriptAction({action:"download",id:fileId}),download);
@@ -141,7 +143,7 @@ export async function GET(request: Request) {
     return Response.json({ success: true, files, source: "drive" }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Google Drive list error", error instanceof Error ? error.message : error);
-    return Response.json({ error: "Senarai OPR tidak dapat dibaca daripada Google Drive sekarang." }, { status: 502 });
+    return Response.json({ error: fileId ? "PDF tidak dapat dicapai daripada Google Drive sekarang." : "Senarai OPR tidak dapat dibaca daripada Google Drive sekarang." }, { status: 502 });
   }
 }
 
