@@ -1,3 +1,5 @@
+import { portalActor, type PortalActor } from "../../server-auth";
+
 type BookingBody = Record<string, unknown>;
 
 const rooms = new Set(["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"]);
@@ -25,9 +27,21 @@ function normalizeBookings(value: unknown) {
     const row = entry as Record<string, unknown>;
     const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"];
     if (!required.every((key) => typeof row[key] === "string") || !rooms.has(String(row.room))) return [];
-    return [{ ...Object.fromEntries(required.map((key) => [key, row[key]])), participants: Number(row.participants) || 0 }];
+    const ownerEmail = clean(row.ownerEmail || row.createdByEmail || row.email || row.applicantEmail, 160).toLowerCase();
+    return [{ ...Object.fromEntries(required.map((key) => [key, row[key]])), participants: Number(row.participants) || 0, ownerEmail }];
   }) : [];
 }
+
+type NormalizedBooking = ReturnType<typeof normalizeBookings>[number];
+const isAdmin = (actor: PortalActor | null) => Boolean(actor && ["admin", "super_admin"].includes(actor.role));
+const samePerson = (booking: NormalizedBooking, actor: PortalActor | null) => Boolean(actor && (
+  (booking.ownerEmail && booking.ownerEmail === actor.email.toLowerCase()) ||
+  (!booking.ownerEmail && clean(booking.applicantName, 120).toLocaleLowerCase("ms-MY") === clean(actor.name, 120).toLocaleLowerCase("ms-MY"))
+));
+const presentBooking = (booking: NormalizedBooking, actor: PortalActor | null) => {
+  const { ownerEmail: _ownerEmail, ...safe } = booking;
+  return { ...safe, canDelete: isAdmin(actor) || samePerson(booking, actor) };
+};
 
 function datesBetween(from: string, to: string, maximum = 62) {
   const start = new Date(`${from}T12:00:00+08:00`), end = new Date(`${to}T12:00:00+08:00`);
@@ -39,6 +53,7 @@ function datesBetween(from: string, to: string, maximum = 62) {
 
 export async function GET(request: Request) {
   try {
+    const actor = await portalActor(request);
     const params = new URL(request.url).searchParams;
     const date = params.get("date") || "", from = params.get("from") || "", to = params.get("to") || "";
     if (from || to) {
@@ -48,12 +63,12 @@ export async function GET(request: Request) {
       const results = await Promise.all(dates.map((item) => callGoogle({ action: "etempahan_list", date: item })));
       const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
       results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
-      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)) }, { headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)).map((booking) => presentBooking(booking, actor)) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
     const result = await callGoogle({ action: "etempahan_list", date });
     const bookings = normalizeBookings(result.bookings);
-    return Response.json({ success: true, bookings }, { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json({ success: true, bookings: bookings.map((booking) => presentBooking(booking, actor)) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("E-Tempahan list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Status bilik tidak dapat dibaca sekarang." }, { status: 502 });
@@ -62,6 +77,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const actor = await portalActor(request);
     const body = await request.json() as BookingBody;
     const room = clean(body.room, 100), applicantName = clean(body.applicantName, 120), email = clean(body.email, 160).toLowerCase();
     const startDate = clean(body.startDate, 10), startTime = clean(body.startTime, 5), endDate = clean(body.endDate, 10), endTime = clean(body.endTime, 5), purpose = clean(body.purpose, 100);
@@ -77,7 +93,7 @@ export async function POST(request: Request) {
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Tarikh dan waktu akhir mestilah selepas tarikh dan waktu mula." }, { status: 400 });
     // Keep the original fields and send the legacy date/time aliases too. This
     // avoids a false overlap when the connected Sheet script still reads `date`.
-    const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
+    const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
     return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false });
   } catch (error) {
@@ -85,5 +101,34 @@ export async function POST(request: Request) {
     const conflict = /bertindih|ditempah|conflict/i.test(message);
     console.error("E-Tempahan create error", message);
     return Response.json({ error: conflict ? message : "Tempahan tidak dapat diproses sekarang. E-mel keputusan tidak dihantar." }, { status: conflict ? 409 : 502 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const actor = await portalActor(request);
+    if (!actor) return Response.json({ error: "Sila log masuk untuk membatalkan tempahan." }, { status: 401 });
+    const body = await request.json() as BookingBody;
+    const id = clean(body.id, 160), startDate = clean(body.startDate, 10);
+    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return Response.json({ error: "Maklumat tempahan tidak sah." }, { status: 400 });
+
+    const listed = await callGoogle({ action: "etempahan_list", date: startDate });
+    const booking = normalizeBookings(listed.bookings).find((item) => item.id === id);
+    if (!booking) return Response.json({ error: "Tempahan tidak ditemui atau telah dipadam." }, { status: 404 });
+    if (!isAdmin(actor) && !samePerson(booking, actor)) return Response.json({ error: "Anda hanya boleh memadam tempahan sendiri." }, { status: 403 });
+
+    const payload = { id, bookingId: id, startDate, requesterEmail: actor.email, isAdmin: isAdmin(actor) };
+    try {
+      await callGoogle({ action: "etempahan_delete", ...payload });
+    } catch (firstError) {
+      const message = firstError instanceof Error ? firstError.message : "";
+      if (!/action|tindakan|dikenali|unknown|sah/i.test(message)) throw firstError;
+      await callGoogle({ action: "etempahan_cancel", ...payload });
+    }
+    return Response.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Tempahan tidak dapat dipadam.";
+    console.error("E-Tempahan delete error", message);
+    return Response.json({ error: message }, { status: 502 });
   }
 }
