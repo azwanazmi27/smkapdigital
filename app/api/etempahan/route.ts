@@ -45,13 +45,7 @@ export async function GET(request: Request) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
       const dates = datesBetween(from, to);
       if (!dates.length || dates.length > 61) return Response.json({ error: "Julat senarai mestilah tidak melebihi 61 hari." }, { status: 400 });
-      // Limit simultaneous calls so Google Apps Script stays responsive when a
-      // teacher requests a multi-day list.
-      const results: Record<string, unknown>[] = [];
-      for (let index = 0; index < dates.length; index += 3) {
-        const batch = await Promise.all(dates.slice(index, index + 3).map((item) => callGoogle({ action: "etempahan_list", date: item })));
-        results.push(...batch);
-      }
+      const results = await Promise.all(dates.map((item) => callGoogle({ action: "etempahan_list", date: item })));
       const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
       results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
       return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)) }, { headers: { "Cache-Control": "private, no-store" } });
