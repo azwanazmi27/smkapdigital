@@ -1,11 +1,8 @@
 type BookingBody = Record<string, unknown>;
-type StoredBooking = ReturnType<typeof normalizeBookings>[number];
 
 const rooms = new Set(["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"]);
 const purposes = new Set(["PdPC", "Mesyuarat", "Taklimat", "Perjumpaan", "Latihan SPTS", "Program Sekolah", "Lain-lain"]);
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
-const bookingCache = new Map<string, { expiresAt: number; bookings: StoredBooking[] }>();
-const CACHE_MS = 90_000;
 
 function connection() {
   const url = process.env.ETEMPAHAN_APPS_SCRIPT_URL;
@@ -40,27 +37,6 @@ function datesBetween(from: string, to: string, maximum = 62) {
   return dates;
 }
 
-async function bookingsForDate(date: string) {
-  const cached = bookingCache.get(date);
-  if (cached && cached.expiresAt > Date.now()) return cached.bookings;
-  const result = await callGoogle({ action: "etempahan_list", date });
-  const bookings = normalizeBookings(result.bookings);
-  bookingCache.set(date, { bookings, expiresAt: Date.now() + CACHE_MS });
-  return bookings;
-}
-
-async function mapWithLimit<T, R>(items: T[], limit: number, callback: (item: T) => Promise<R>) {
-  const result = new Array<R>(items.length);
-  let index = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (index < items.length) {
-      const current = index++;
-      result[current] = await callback(items[current]);
-    }
-  }));
-  return result;
-}
-
 export async function GET(request: Request) {
   try {
     const params = new URL(request.url).searchParams;
@@ -69,16 +45,21 @@ export async function GET(request: Request) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
       const dates = datesBetween(from, to);
       if (!dates.length || dates.length > 61) return Response.json({ error: "Julat senarai mestilah tidak melebihi 61 hari." }, { status: 400 });
-      // Apps Script has limited concurrent executions. A small pool plus a brief
-      // server cache makes the list respond consistently when many users open it.
-      const results = await mapWithLimit(dates, 3, bookingsForDate);
-      const unique = new Map<string, StoredBooking>();
-      results.flat().forEach((booking) => unique.set(String(booking.id), booking));
-      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)) }, { headers: { "Cache-Control": "private, max-age=30" } });
+      // Limit simultaneous calls so Google Apps Script stays responsive when a
+      // teacher requests a multi-day list.
+      const results: Record<string, unknown>[] = [];
+      for (let index = 0; index < dates.length; index += 3) {
+        const batch = await Promise.all(dates.slice(index, index + 3).map((item) => callGoogle({ action: "etempahan_list", date: item })));
+        results.push(...batch);
+      }
+      const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
+      results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
+      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
-    const bookings = await bookingsForDate(date);
-    return Response.json({ success: true, bookings }, { headers: { "Cache-Control": "private, max-age=30" } });
+    const result = await callGoogle({ action: "etempahan_list", date });
+    const bookings = normalizeBookings(result.bookings);
+    return Response.json({ success: true, bookings }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("E-Tempahan list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Status bilik tidak dapat dibaca sekarang." }, { status: 502 });
@@ -102,10 +83,9 @@ export async function POST(request: Request) {
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Tarikh dan waktu akhir mestilah selepas tarikh dan waktu mula." }, { status: 400 });
     // Keep the original fields and send the legacy date/time aliases too. This
     // avoids a false overlap when the connected Sheet script still reads `date`.
-    const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants });
-    datesBetween(startDate, endDate).forEach((date) => bookingCache.delete(date));
+    const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
-    return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan" });
+    return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat diproses.";
     const conflict = /bertindih|ditempah|conflict/i.test(message);

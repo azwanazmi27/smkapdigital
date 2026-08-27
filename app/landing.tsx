@@ -688,18 +688,11 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const submit = async () => {
     setSaving(true); setError(""); setResult(null);
     try {
-      // The client check is immediate and explains a real clash before the Sheet
-      // receives a write request. The Sheet remains the final authority.
-      const checkUrl = `/api/etempahan?from=${encodeURIComponent(form.startDate)}&to=${encodeURIComponent(form.endDate)}`;
-      const existing = await readBookings(checkUrl);
-      const start = new Date(`${form.startDate}T${form.startTime}:00+08:00`).getTime();
-      const end = new Date(`${form.endDate}T${form.endTime}:00+08:00`).getTime();
-      const clash = existing.find((item) => item.room === form.room && item.status !== "Dibatalkan" && start < new Date(`${item.endDate}T${item.endTime}:00+08:00`).getTime() && end > new Date(`${item.startDate}T${item.startTime}:00+08:00`).getTime());
-      if (clash) throw new Error(`Bilik ini sudah ditempah pada ${new Date(`${clash.startDate}T12:00:00`).toLocaleDateString("ms-MY")} (${clash.startTime}–${clash.endTime}).`);
       const response = await fetch("/api/etempahan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, participants: Number(form.participants) }) });
-      const data = await response.json() as { success?: boolean; id?: string; count?: number; status?: string; error?: string };
+      const data = await response.json() as { success?: boolean; id?: string; count?: number; status?: string; emailSent?: boolean; error?: string };
       if (!response.ok || !data.success) throw new Error(data.error || "Tempahan tidak berjaya");
-      setResult({ success: true, id: data.id, count: data.count || 1, message: (data.count || 1) > 1 ? `${data.count} hari berjaya ditempah.` : "Tempahan diluluskan dan e-mel pengesahan telah dihantar." });
+      const confirmation = data.emailSent === false ? " Tempahan direkodkan tetapi e-mel pengesahan belum dapat dihantar." : " E-mel pengesahan telah dihantar.";
+      setResult({ success: true, id: data.id, count: data.count || 1, message: `${(data.count || 1) > 1 ? `${data.count} hari berjaya ditempah.` : "Tempahan berjaya diluluskan."}${confirmation}` });
       bookingClientCache.clear(); notify("Tempahan berjaya diluluskan"); await loadBookings(true);
     } catch (reason) { const message = reason instanceof Error ? reason.message : "Tempahan tidak berjaya"; setResult({ success: false, message }); }
     finally { setSaving(false); }
