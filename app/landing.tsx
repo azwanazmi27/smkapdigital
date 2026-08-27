@@ -625,16 +625,20 @@ const roomIcon = (room: string) => {
   return <Icon aria-hidden="true" />;
 };
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string };
+const bookingClientCache = new Map<string, { bookings: Booking[]; savedAt: number }>();
+const BOOKING_CACHE_MS = 45_000;
 
 function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null; initialTab?:"dashboard"|"form" }) {
   const today = new Date().toISOString().slice(0, 10);
-  const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const nextWeek = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
   const [tab, setTab] = useState<"dashboard" | "list" | "form">(initialTab);
   const [date, setDate] = useState(today);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [listBookings, setListBookings] = useState<Booking[]>([]);
   const [listFrom, setListFrom] = useState(today);
-  const [listTo, setListTo] = useState(nextMonth);
+  const [listTo, setListTo] = useState(nextWeek);
+  const [listRoom, setListRoom] = useState("Semua bilik");
+  const [printingList, setPrintingList] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -643,28 +647,37 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [result, setResult] = useState<{ success: boolean; message: string; id?: string; count?: number } | null>(null);
   const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  const loadBookings = async () => {
+  const readBookings = async (url: string) => {
+    const cached = bookingClientCache.get(url);
+    if (cached && Date.now() - cached.savedAt < BOOKING_CACHE_MS) return cached.bookings;
+    const response = await fetch(url, { cache: "default" });
+    const data = await response.json() as { bookings?: Booking[]; error?: string };
+    if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
+    const next = data.bookings || [];
+    bookingClientCache.set(url, { bookings: next, savedAt: Date.now() });
+    return next;
+  };
+  const loadBookings = async (force = false) => {
+    const url = `/api/etempahan?date=${encodeURIComponent(date)}`;
+    if (force) bookingClientCache.delete(url);
     setLoading(true); setError("");
     try {
-      const response = await fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" });
-      const data = await response.json() as { bookings?: Booking[]; error?: string };
-      if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
-      setBookings(data.bookings || []);
+      setBookings(await readBookings(url));
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
     finally { setLoading(false); }
   };
   useEffect(() => { void loadBookings(); }, [date]);
-  const loadBookingList = async () => {
+  const loadBookingList = async (force = false) => {
+    const url = `/api/etempahan?from=${encodeURIComponent(listFrom)}&to=${encodeURIComponent(listTo)}`;
+    if (force) bookingClientCache.delete(url);
     setListLoading(true); setListError("");
     try {
-      const response = await fetch(`/api/etempahan?from=${encodeURIComponent(listFrom)}&to=${encodeURIComponent(listTo)}`, { cache: "no-store" });
-      const data = await response.json() as { bookings?: Booking[]; error?: string };
-      if (!response.ok) throw new Error(data.error || "Senarai tempahan tidak dapat dibaca");
-      setListBookings(data.bookings || []);
+      setListBookings(await readBookings(url));
     } catch (reason) { setListError(reason instanceof Error ? reason.message : "Senarai tempahan tidak dapat dibaca"); }
     finally { setListLoading(false); }
   };
   const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan");
+  const visibleListBookings = listRoom === "Semua bilik" ? listBookings : listBookings.filter((item) => item.room === listRoom);
   const roomState = (room: string) => {
     const active = roomBookings(room);
     if (!active.length) return { label: "Kosong", tone: "available" };
@@ -675,13 +688,52 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const submit = async () => {
     setSaving(true); setError(""); setResult(null);
     try {
+      // The client check is immediate and explains a real clash before the Sheet
+      // receives a write request. The Sheet remains the final authority.
+      const checkUrl = `/api/etempahan?from=${encodeURIComponent(form.startDate)}&to=${encodeURIComponent(form.endDate)}`;
+      const existing = await readBookings(checkUrl);
+      const start = new Date(`${form.startDate}T${form.startTime}:00+08:00`).getTime();
+      const end = new Date(`${form.endDate}T${form.endTime}:00+08:00`).getTime();
+      const clash = existing.find((item) => item.room === form.room && item.status !== "Dibatalkan" && start < new Date(`${item.endDate}T${item.endTime}:00+08:00`).getTime() && end > new Date(`${item.startDate}T${item.startTime}:00+08:00`).getTime());
+      if (clash) throw new Error(`Bilik ini sudah ditempah pada ${new Date(`${clash.startDate}T12:00:00`).toLocaleDateString("ms-MY")} (${clash.startTime}–${clash.endTime}).`);
       const response = await fetch("/api/etempahan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, participants: Number(form.participants) }) });
       const data = await response.json() as { success?: boolean; id?: string; count?: number; status?: string; error?: string };
       if (!response.ok || !data.success) throw new Error(data.error || "Tempahan tidak berjaya");
       setResult({ success: true, id: data.id, count: data.count || 1, message: (data.count || 1) > 1 ? `${data.count} hari berjaya ditempah.` : "Tempahan diluluskan dan e-mel pengesahan telah dihantar." });
-      notify("Tempahan berjaya diluluskan"); await loadBookings();
+      bookingClientCache.clear(); notify("Tempahan berjaya diluluskan"); await loadBookings(true);
     } catch (reason) { const message = reason instanceof Error ? reason.message : "Tempahan tidak berjaya"; setResult({ success: false, message }); }
     finally { setSaving(false); }
+  };
+  const printBookingList = async () => {
+    if (!visibleListBookings.length) return notify("Pilih julat yang mempunyai rekod tempahan dahulu");
+    setPrintingList(true);
+    try {
+      const jsPDF = await loadJsPdf();
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
+      const width = pdf.internal.pageSize.getWidth();
+      const heading = "SENARAI PENGGUNAAN BILIK";
+      pdf.setFillColor(211, 239, 245); pdf.rect(0, 0, width, 30, "F");
+      pdf.setTextColor(18, 57, 77); pdf.setFont("helvetica", "bold"); pdf.setFontSize(17); pdf.text(heading, 14, 14);
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.text(`SMK Agama Pahang · ${listFrom} hingga ${listTo} · ${listRoom}`, 14, 22);
+      const columns = [14, 41, 88, 119, 161, 209, 240];
+      const labels = ["Tarikh", "Bilik", "Masa", "Pemohon", "Tujuan", "Peserta", "Status"];
+      let y = 39;
+      const tableHead = () => { pdf.setFillColor(22, 63, 82); pdf.rect(11, y - 6, width - 22, 8, "F"); pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); labels.forEach((label, index) => pdf.text(label, columns[index], y - 1)); y += 7; };
+      tableHead();
+      visibleListBookings.forEach((item) => {
+        const values = [new Date(`${item.startDate}T12:00:00`).toLocaleDateString("ms-MY"), item.room, `${item.startTime}–${item.endTime}`, item.applicantName, item.purpose, String(item.participants), item.status];
+        const lines = values.map((value, index) => pdf.splitTextToSize(value, [24, 43, 28, 38, 40, 24, 24][index]));
+        const height = Math.max(7, ...lines.map((line) => line.length * 4.1)) + 3;
+        if (y + height > 194) { pdf.addPage(); y = 20; tableHead(); }
+        pdf.setDrawColor(197, 215, 220); pdf.rect(11, y - 5, width - 22, height);
+        pdf.setTextColor(25, 52, 64); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5);
+        lines.forEach((line, index) => pdf.text(line, columns[index], y)); y += height;
+      });
+      pdf.setFontSize(7); pdf.setTextColor(80, 105, 116); pdf.text(`Dijana melalui Portal Rasmi SMK Agama Pahang · ${new Date().toLocaleString("ms-MY")}`, 14, 202);
+      pdf.save(`Senarai-Penggunaan-Bilik-${listFrom}-hingga-${listTo}.pdf`);
+      notify("PDF senarai penggunaan telah dimuat turun");
+    } catch { notify("PDF senarai penggunaan tidak dapat dijana sekarang"); }
+    finally { setPrintingList(false); }
   };
   if (result) return <div className="booking-centre"><span className="modal-overline">E-TEMPAHAN SMKAP</span><div className={`booking-result ${result.success ? "success" : "failed"}`}><span>{result.success ? "✓" : "!"}</span><h2>{result.success ? "TEMPAHAN BERJAYA" : "TEMPAHAN TIDAK BERJAYA"}</h2><p>{result.message}</p>{result.id && <small>Nombor rujukan: {result.id}{result.count && result.count > 1 ? ` · ${result.count} rekod` : ""}</small>}<div><button onClick={() => { setResult(null); setTab("list"); void loadBookingList(); }}>Lihat senarai tempahan</button><button className="booking-primary" onClick={() => { setResult(null); setTab("form"); }}>Buat tempahan lain</button></div></div></div>;
   return <div className="booking-centre">
@@ -691,8 +743,8 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
       <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
       {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => { setField("room", room); setField("startDate", date); setField("endDate", date); setTab("form"); }}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
     </> : tab === "list" ? <>
-      <div className="booking-list-filter"><label>Dari<input type="date" value={listFrom} onChange={(event) => setListFrom(event.target.value)} /></label><label>Hingga<input type="date" min={listFrom} value={listTo} onChange={(event) => setListTo(event.target.value)} /></label><button onClick={() => void loadBookingList()} disabled={listLoading}>{listLoading ? "Membaca..." : "Paparkan"}</button></div>
-      {listLoading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca senarai tempahan...</div> : listError ? <p className="visitor-error">{listError}</p> : !listBookings.length ? <div className="booking-empty"><strong>Tiada tempahan</strong><span>Tiada rekod dalam julat tarikh yang dipilih.</span></div> : <div className="booking-list">{listBookings.map((item) => <article key={`${item.id}-${item.startDate}`}><div className="booking-list-date"><strong>{new Date(`${item.startDate}T12:00:00`).toLocaleDateString("ms-MY", { day: "2-digit", month: "short" })}</strong><span>{new Date(`${item.startDate}T12:00:00`).toLocaleDateString("ms-MY", { weekday: "short" })}</span></div><div><h3>{item.room}</h3><p>{item.startTime}–{item.endTime} · {item.purpose}</p><small>{item.applicantName} · {item.participants} peserta</small></div><b>{item.status}</b></article>)}</div>}
+      <div className="booking-list-filter"><label>Dari<input type="date" value={listFrom} onChange={(event) => setListFrom(event.target.value)} /></label><label>Hingga<input type="date" min={listFrom} value={listTo} onChange={(event) => setListTo(event.target.value)} /></label><label>Bilik<select value={listRoom} onChange={(event) => setListRoom(event.target.value)}><option>Semua bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><button onClick={() => void loadBookingList(true)} disabled={listLoading}>{listLoading ? "Membaca..." : "Paparkan"}</button><button className="booking-print" onClick={() => void printBookingList()} disabled={printingList || listLoading || !visibleListBookings.length}>{printingList ? "Menjana PDF..." : "Muat turun PDF"}</button></div>
+      {listLoading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca senarai tempahan...</div> : listError ? <p className="visitor-error">{listError}</p> : !visibleListBookings.length ? <div className="booking-empty"><strong>Tiada tempahan</strong><span>Tiada rekod dalam julat dan bilik yang dipilih.</span></div> : <div className="booking-list">{visibleListBookings.map((item) => <article key={`${item.id}-${item.startDate}`}><div className="booking-list-date"><strong>{new Date(`${item.startDate}T12:00:00`).toLocaleDateString("ms-MY", { day: "2-digit", month: "short" })}</strong><span>{new Date(`${item.startDate}T12:00:00`).toLocaleDateString("ms-MY", { weekday: "short" })}</span></div><div><h3>{item.room}</h3><p>{item.startTime}–{item.endTime} · {item.purpose}</p><small>{item.applicantName} · {item.participants} peserta</small></div><b>{item.status}</b></article>)}</div>}
     </> : <form className="booking-form" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
       <div className="booking-note"><span>✓</span><div><strong>Lulus secara automatik jika slot kosong</strong><small>Sistem menyemak pertindihan sebelum menyimpan dan menghantar e-mel keputusan.</small></div></div>
       <div className="booking-form-grid"><label>Bilik yang ingin ditempah *<select value={form.room} onChange={(event) => setField("room", event.target.value)} required><option value="">Pilih bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><label>Tujuan penggunaan *<select value={form.purpose} onChange={(event) => setField("purpose", event.target.value)} required><option value="">Pilih tujuan</option><option>PdPC</option><option>Mesyuarat</option><option>Taklimat</option><option>Perjumpaan</option><option>Latihan SPTS</option><option>Program Sekolah</option><option>Lain-lain</option></select></label></div>
