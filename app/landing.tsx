@@ -48,10 +48,14 @@ function rememberOprReport(report: OprReport) {
 
 function DrivePdfPreview({ fileId, title }: { fileId: string; title: string }) {
   const [loading, setLoading] = useState(true);
-  const previewUrl = `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+  const [failed, setFailed] = useState(false);
+  // Serve the PDF through the portal. This avoids the Drive sign-in wall on
+  // phones while keeping the file itself in the school's Drive.
+  const previewUrl = `/api/drive?file=${encodeURIComponent(fileId)}`;
+  useEffect(() => { setLoading(true); setFailed(false); }, [fileId]);
   return <div className={`drive-pdf-frame drive-pdf-frame-safe${loading ? " is-loading" : ""}`} aria-busy={loading}>
     {loading && <div className="pdf-opening-state" role="status" aria-live="polite"><i aria-hidden="true"/><span><strong>Membuka pratonton PDF</strong><small>Sila tunggu sebentar…</small></span></div>}
-    <iframe src={previewUrl} title={title} loading="eager" onLoad={() => setLoading(false)} />
+    {failed ? <div className="pdf-preview-fallback"><strong>Pratonton belum dapat dibuka pada peranti ini.</strong><a href={`${previewUrl}&download=1`}>Muat turun PDF untuk dibuka</a></div> : <iframe src={previewUrl} title={title} loading="eager" onLoad={() => setLoading(false)} onError={() => { setLoading(false); setFailed(true); }} />}
   </div>;
 }
 
@@ -381,6 +385,7 @@ function MonitoringCentre({ notify, user }: { notify: (message:string)=>void; us
   const load=async(refresh=false)=>{setLoading(true);try{const all=await fetchOprIndex(refresh);setReports(all.filter(item=>item.category===monitoringCategory));}catch{notify("Rekod e-Pemantauan tidak dapat dibaca sekarang");}finally{setLoading(false);}};
   useEffect(()=>{void load(false);},[]);
   useEffect(()=>{if(user)setForm(current=>({...current,preparedBy:current.preparedBy||user.name,preparedRole:current.preparedRole||user.position}));},[user]);
+  useEffect(()=>{setForm(current=>{const uppercase=(value:string)=>value.toLocaleUpperCase("ms-MY");const next={...current,preparedBy:uppercase(current.preparedBy),preparedRole:uppercase(current.preparedRole),verifier:uppercase(current.verifier),verifierRole:uppercase(current.verifierRole)};return next.preparedBy===current.preparedBy&&next.preparedRole===current.preparedRole&&next.verifier===current.verifier&&next.verifierRole===current.verifierRole?current:next;});},[form.preparedBy,form.preparedRole,form.verifier,form.verifierRole]);
   const compressPhoto=async(file:File)=>{if(file.size<=3_000_000)return file;const image=await new Promise<HTMLImageElement>((resolve,reject)=>{const url=URL.createObjectURL(file),element=new Image();element.onload=()=>{URL.revokeObjectURL(url);resolve(element);};element.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Gambar tidak dapat dibaca"));};element.src=url;}),limit=1920,ratio=Math.min(1,limit/Math.max(image.width,image.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*ratio));canvas.height=Math.max(1,Math.round(image.height*ratio));const context=canvas.getContext("2d");if(!context)throw new Error("Gambar tidak dapat dimampatkan");context.drawImage(image,0,0,canvas.width,canvas.height);let quality=.86,blob:Blob|null=null;while(quality>=.42){blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));if(blob&&blob.size<=2_750_000)break;quality-=.08;}if(!blob||blob.size>3_000_000)throw new Error("Gambar masih terlalu besar selepas dimampatkan");return new File([blob],`${file.name.replace(/\.[^.]+$/,"")}.jpg`,{type:"image/jpeg"});};
   const preparePhotos=async(files:File[])=>{try{const compressed=await Promise.all(files.slice(0,2).map(compressPhoto));setPhotos(compressed);notify(files.some((file,index)=>file.size!==compressed[index].size)?"Gambar besar telah dimampatkan untuk PDF":"Gambar dipilih");}catch(error){notify(error instanceof Error?error.message:"Gambar tidak dapat diproses");}};
   useEffect(()=>{if(tab!=="form")return;const input=document.querySelector<HTMLInputElement>(".monitoring-form input[type=file][multiple]");const intercept=(event:Event)=>{event.stopPropagation();event.stopImmediatePropagation();const files=Array.from((event.currentTarget as HTMLInputElement).files||[]);if(files.length>2)notify("Maksimum 2 gambar sahaja");void preparePhotos(files);};input?.addEventListener("change",intercept,true);return()=>input?.removeEventListener("change",intercept,true);},[tab]);
@@ -1242,7 +1247,7 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
     }
 
     const signY = photoY + photoH + 9, signW = 90;
-    [["DISEDIAKAN OLEH", form.preparedBy, form.preparedRole], ["DISAHKAN OLEH", verifiedName, verifiedRole]].forEach(([label, name, role], index) => {
+    [["DISEDIAKAN OLEH", form.preparedBy.toLocaleUpperCase("ms-MY"), form.preparedRole.toLocaleUpperCase("ms-MY")], ["DISAHKAN OLEH", verifiedName.toLocaleUpperCase("ms-MY"), verifiedRole.toLocaleUpperCase("ms-MY")]].forEach(([label, name, role], index) => {
       const sx = x + index * 96; pdf.setDrawColor(220, 225, 230); pdf.roundedRect(sx, signY, signW, 25, 2, 2, "S");
       pdf.setTextColor(...maroon); pdf.setFont("helvetica", "bold"); pdf.setFontSize(6.8); pdf.text(label, sx + 4, signY + 6);
       pdf.setTextColor(...navy); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(name, signW - 8).slice(0, 2), sx + 4, signY + 12);

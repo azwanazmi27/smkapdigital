@@ -117,14 +117,19 @@ export async function DELETE(request: Request) {
     if (!booking) return Response.json({ error: "Tempahan tidak ditemui atau telah dipadam." }, { status: 404 });
     if (!isAdmin(actor) && !samePerson(booking, actor)) return Response.json({ error: "Anda hanya boleh memadam tempahan sendiri." }, { status: 403 });
 
-    const payload = { id, bookingId: id, startDate, requesterEmail: actor.email, isAdmin: isAdmin(actor) };
-    try {
-      await callGoogle({ action: "etempahan_delete", ...payload });
-    } catch (firstError) {
-      const message = firstError instanceof Error ? firstError.message : "";
-      if (!/action|tindakan|dikenali|unknown|sah/i.test(message)) throw firstError;
-      await callGoogle({ action: "etempahan_cancel", ...payload });
+    const payload = { id, bookingId: id, startDate, date: startDate, requesterEmail: actor.email, email: actor.email, isAdmin: isAdmin(actor) };
+    // The original Sheet script has existed in a few versions. Try only the
+    // supported delete aliases so older deployments remain compatible.
+    let lastError: unknown;
+    for (const action of ["etempahan_delete", "etempahan_cancel", "delete_booking", "deleteBooking"]) {
+      try { await callGoogle({ action, ...payload }); lastError = undefined; break; }
+      catch (error) {
+        lastError = error;
+        const message = error instanceof Error ? error.message : "";
+        if (!/action|tindakan|dikenali|unknown|sah/i.test(message)) throw error;
+      }
     }
+    if (lastError) throw lastError;
     return Response.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat dipadam.";
