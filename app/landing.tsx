@@ -1064,12 +1064,19 @@ function OprDutyCentre({ notify,user }:{ notify:(message:string)=>void;user:Port
   const dutyReportDay=(report:OprReport)=>new Intl.DateTimeFormat("ms-MY",{weekday:"long"}).format(new Date(`${dutyReportDate(report)}T12:00:00`));
   const dutyDailyMeta=(report:OprReport,reportWeek:number)=>`${new Intl.DateTimeFormat("ms-MY",{day:"numeric",month:"long",year:"numeric"}).format(new Date(`${dutyReportDate(report)}T12:00:00`))} | ${dutyReportDay(report)} | Minggu ${reportWeek} | ${reportPreparer(report)}`;
   const latestDutyPdfByDate=(items:OprReport[])=>{const latest=new globalThis.Map<string,OprReport>();for(const item of items){const date=dutyReportDate(item);const current=latest.get(date);if(!current||item.updatedAt>=current.updatedAt)latest.set(date,item);}return [...latest.values()];};
+  const isDutyReport=(report:OprReport)=>report.category.startsWith("Pengurusan · Laporan Guru Bertugas")||/Laporan-Guru-Bertugas/i.test(report.name);
+  const isDutyDailyReport=(report:OprReport)=>isDutyReport(report)&&!(report.category.endsWith("Laporan Mingguan")||/Laporan-Mingguan|Laporan Mingguan/i.test(report.name));
+  const activeDailyPdfsForWeek=(items:OprReport[],requestedYear:number,requestedWeek:number)=>latestDutyPdfByDate(items.filter((report)=>{
+    const reportWeek=Number(report.name.match(/Minggu[-_ ](\d{1,2})/i)?.[1]);
+    const reportYear=Number(report.name.match(/^(\d{4})-/)?.[1]);
+    return isDutyDailyReport(report)&&reportYear===requestedYear&&reportWeek===requestedWeek;
+  }));
 
   const loadDashboard=async(refresh=false)=>{
     setDashboardLoading(true); setDashboardError("");
     try {
       const files=await fetchOprIndex(refresh);
-      setDriveReports(files.filter((file)=>(file.category.startsWith("Pengurusan · Laporan Guru Bertugas")||/Laporan-Guru-Bertugas/i.test(file.name))&&!/^UJIAN-SISTEM-/i.test(file.name)));
+      setDriveReports(files.filter((file)=>isDutyReport(file)&&!/^UJIAN-SISTEM-/i.test(file.name)));
     } catch(error){setDashboardError(error instanceof Error?error.message:"Dashboard laporan tidak dapat dibaca");}
     finally{setDashboardLoading(false);}
   };
@@ -1095,8 +1102,14 @@ function OprDutyCentre({ notify,user }:{ notify:(message:string)=>void;user:Port
   const loadWeek=async()=>{
     setLoading(true); setSummary(""); setWeeklyPdfBase64(""); setWeeklySavedUrl(""); if(weeklyPreviewUrl) URL.revokeObjectURL(weeklyPreviewUrl); setWeeklyPreviewUrl("");
     try {
-      const response=await fetch(`/api/opr-duty?year=${year}&week=${week}`,{cache:"no-store"}); const data=await response.json() as {records?:DutyReport[];error?:string};
-      if(!response.ok||!data.records) throw new Error(data.error||"Laporan tidak tersedia"); const sorted=latestDutyRecordsByDate(data.records);setReports(sorted);
+      const [response,files]=await Promise.all([fetch(`/api/opr-duty?year=${year}&week=${week}`,{cache:"no-store"}),fetchOprIndex(true)]); const data=await response.json() as {records?:DutyReport[];error?:string};
+      if(!response.ok||!data.records) throw new Error(data.error||"Laporan tidak tersedia");
+      const dutyFiles=files.filter((file)=>isDutyReport(file)&&!/^UJIAN-SISTEM-/i.test(file.name));setDriveReports(dutyFiles);
+      const activePdfByDate=new globalThis.Map(activeDailyPdfsForWeek(dutyFiles,year,week).map((file)=>[dutyReportDate(file),file]));
+      const sorted=latestDutyRecordsByDate(data.records).map((record)=>{
+        const activePdf=activePdfByDate.get(record.reportDate);
+        return activePdf?{...record,preparedBy:reportPreparer(activePdf),updatedAt:activePdf.updatedAt}:record;
+      });setReports(sorted);
       const dates=dutyWeekDates(year,week,sorted);setDayStates((current)=>Object.fromEntries(dates.map((date)=>[date,sorted.some((record)=>record.reportDate===date)?"Lengkap":current[date]==="Cuti / Tiada persekolahan"?current[date]:"Belum lengkap"])));
     } catch(error){notify(error instanceof Error?error.message:"Laporan tidak dapat dibaca");}
     finally{setLoading(false);}
