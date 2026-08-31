@@ -1102,15 +1102,18 @@ function OprDutyCentre({ notify,user }:{ notify:(message:string)=>void;user:Port
   const loadWeek=async()=>{
     setLoading(true); setSummary(""); setWeeklyPdfBase64(""); setWeeklySavedUrl(""); if(weeklyPreviewUrl) URL.revokeObjectURL(weeklyPreviewUrl); setWeeklyPreviewUrl("");
     try {
-      const [response,files]=await Promise.all([fetch(`/api/opr-duty?year=${year}&week=${week}`,{cache:"no-store"}),fetchOprIndex(true)]); const data=await response.json() as {records?:DutyReport[];error?:string};
+      const response=await fetch(`/api/opr-duty?year=${year}&week=${week}`,{cache:"no-store"}); const data=await response.json() as {records?:DutyReport[];error?:string};
       if(!response.ok||!data.records) throw new Error(data.error||"Laporan tidak tersedia");
-      const dutyFiles=files.filter((file)=>isDutyReport(file)&&!/^UJIAN-SISTEM-/i.test(file.name));setDriveReports(dutyFiles);
-      const activePdfByDate=new globalThis.Map(activeDailyPdfsForWeek(dutyFiles,year,week).map((file)=>[dutyReportDate(file),file]));
-      const sorted=latestDutyRecordsByDate(data.records).map((record)=>{
-        const activePdf=activePdfByDate.get(record.reportDate);
-        return activePdf?{...record,preparedBy:reportPreparer(activePdf),updatedAt:activePdf.updatedAt}:record;
-      });setReports(sorted);
+      const sorted=latestDutyRecordsByDate(data.records);setReports(sorted);
       const dates=dutyWeekDates(year,week,sorted);setDayStates((current)=>Object.fromEntries(dates.map((date)=>[date,sorted.some((record)=>record.reportDate===date)?"Lengkap":current[date]==="Cuti / Tiada persekolahan"?current[date]:"Belum lengkap"])));
+      void fetchOprIndex(true).then((files)=>{
+        const dutyFiles=files.filter((file)=>isDutyReport(file)&&!/^UJIAN-SISTEM-/i.test(file.name));setDriveReports(dutyFiles);
+        const activePdfByDate=new globalThis.Map(activeDailyPdfsForWeek(dutyFiles,year,week).map((file)=>[dutyReportDate(file),file]));
+        setReports(sorted.map((record)=>{
+          const activePdf=activePdfByDate.get(record.reportDate);
+          return activePdf?{...record,preparedBy:reportPreparer(activePdf),updatedAt:activePdf.updatedAt}:record;
+        }));
+      }).catch(()=>{/* Rekod sistem kekal dipaparkan jika Google Drive lambat atau tidak tersedia. */});
     } catch(error){notify(error instanceof Error?error.message:"Laporan tidak dapat dibaca");}
     finally{setLoading(false);}
   };
