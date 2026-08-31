@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, Clock3, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HandCoins, HeartHandshake, Landmark, Mail, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Presentation, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Trophy, UserRound, Users, Video, X } from "lucide-react";
 import { oprCategoryGroups, oprFolderTree, type OprFolderNode } from "./opr-categories";
@@ -142,6 +142,7 @@ export function LandingPortal() {
   const [pushNotice,setPushNotice]=useState<{id:string;title:string;body:string;createdAt:string}|null>(null);
   const [authError,setAuthError]=useState("");
   const [pushState,setPushState]=useState<"idle"|"loading"|"enabled"|"blocked"|"unsupported">("idle");
+  const folderModalRef=useRef<HTMLElement|null>(null);
   const overlayActive=Boolean(open||authOpen||welcome||profileOpen||staffAnnouncementOpen||pushNotice);
   const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan"];return allowed.includes(value as Folder)?value as Folder:null;};
   const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
@@ -187,6 +188,21 @@ export function LandingPortal() {
     };
   },[overlayActive]);
   useEffect(()=>{if(!identityChecked||!pendingStaffOpen)return;setPendingStaffOpen(false);if(identity)setOpen("warga");else setAuthOpen(true);},[identityChecked,pendingStaffOpen,identity]);
+  useEffect(()=>{
+    if(!open)return;
+    const resetModalPosition=()=>{
+      const modal=folderModalRef.current;
+      if(!modal)return;
+      modal.scrollTop=0;
+      modal.scrollLeft=0;
+    };
+    resetModalPosition();
+    const firstFrame=requestAnimationFrame(()=>{
+      resetModalPosition();
+      requestAnimationFrame(resetModalPosition);
+    });
+    return()=>cancelAnimationFrame(firstFrame);
+  },[open]);
   useEffect(() => {
     const resizeAll = () => document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(resizeAutoGrowTextarea);
     const resizeTarget = (event: Event) => {
@@ -281,7 +297,7 @@ export function LandingPortal() {
     <footer className="landing-footer"><p>Portal ini disediakan untuk urusan rasmi warga SMK Agama Pahang.</p><span>© 2026 SMK Agama Pahang · Dibangunkan oleh BangWan</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
-      <section className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" ? "generator-modal" : ""} ${open === "orgchart" ? "org-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
+      <section ref={folderModalRef} className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" ? "generator-modal" : ""} ${open === "orgchart" ? "org-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
         <button className="portal-home-button" onClick={() => setOpen(null)}><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         {open!=="orgchart"&&<button className="folder-close" onClick={closeCurrentView} aria-label={open === "oprgenerator" ? "Kembali ke Pusat OPR" : open === "oprhub" ? "Kembali ke Guru & Staf" : "Tutup"}><X aria-hidden="true" /></button>}
         {identity&&open!=="admin"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
