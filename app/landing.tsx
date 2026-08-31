@@ -142,6 +142,7 @@ export function LandingPortal() {
   const [pushNotice,setPushNotice]=useState<{id:string;title:string;body:string;createdAt:string}|null>(null);
   const [authError,setAuthError]=useState("");
   const [pushState,setPushState]=useState<"idle"|"loading"|"enabled"|"blocked"|"unsupported">("idle");
+  const overlayActive=Boolean(open||authOpen||welcome||profileOpen||staffAnnouncementOpen||pushNotice);
   const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan"];return allowed.includes(value as Folder)?value as Folder:null;};
   const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
   const openRequestedNotification=async()=>{const id=requestedNotificationId();if(!id)return;const response=await fetch(`/api/push?view=notification&id=${encodeURIComponent(id)}`,{cache:"no-store"}),data=await response.json();if(response.ok&&data.notification)setPushNotice(data.notification);};
@@ -153,6 +154,38 @@ export function LandingPortal() {
     void loadIdentity(false).catch(()=>{setIdentity(null);setIdentityChecked(true);if(requestedModule()||requestedNotificationId())setAuthOpen(true);});
     return () => document.documentElement.classList.remove("portal-ready");
   }, []);
+  useEffect(()=>{
+    if(!overlayActive)return;
+    const scrollY=window.scrollY;
+    const html=document.documentElement;
+    const body=document.body;
+    const previous={
+      htmlOverflow:html.style.overflow,
+      htmlOverscroll:html.style.overscrollBehavior,
+      bodyOverflow:body.style.overflow,
+      bodyOverscroll:body.style.overscrollBehavior,
+      bodyPosition:body.style.position,
+      bodyTop:body.style.top,
+      bodyWidth:body.style.width,
+    };
+    html.style.overflow="hidden";
+    html.style.overscrollBehavior="none";
+    body.style.overflow="hidden";
+    body.style.overscrollBehavior="none";
+    body.style.position="fixed";
+    body.style.top=`-${scrollY}px`;
+    body.style.width="100%";
+    return()=>{
+      html.style.overflow=previous.htmlOverflow;
+      html.style.overscrollBehavior=previous.htmlOverscroll;
+      body.style.overflow=previous.bodyOverflow;
+      body.style.overscrollBehavior=previous.bodyOverscroll;
+      body.style.position=previous.bodyPosition;
+      body.style.top=previous.bodyTop;
+      body.style.width=previous.bodyWidth;
+      window.scrollTo(0,scrollY);
+    };
+  },[overlayActive]);
   useEffect(()=>{if(!identityChecked||!pendingStaffOpen)return;setPendingStaffOpen(false);if(identity)setOpen("warga");else setAuthOpen(true);},[identityChecked,pendingStaffOpen,identity]);
   useEffect(() => {
     const resizeAll = () => document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(resizeAutoGrowTextarea);

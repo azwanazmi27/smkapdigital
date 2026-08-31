@@ -818,6 +818,41 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .report-list>button,.folder-scroll-list>button{max-width:100%;overflow:hidden}.report-list>button>div,.folder-scroll-list>button>div{min-width:0}.report-list strong,.folder-scroll-list strong,.saved-opr-preview>header h2{overflow-wrap:anywhere;word-break:break-word}.saved-opr-preview>header h2{max-width:calc(100% - 48px);line-height:1.18}
 @media(max-width:700px){.report-list>button{width:100%;grid-template-columns:35px minmax(0,1fr) 18px}.report-list>button>b{width:max-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drive-pdf-frame{height:62dvh;min-height:430px}.saved-opr-preview>footer{grid-template-columns:1fr}.saved-opr-preview>footer a,.saved-opr-preview>footer button{width:100%;justify-content:center;text-align:center}}
 
+/* Keep every full-screen popup physically separate from the page beneath it.
+   The body lock in LandingPortal stops background movement; these rules keep
+   touch momentum inside the visible sheet/dialog on iOS and Android. */
+.folder-backdrop,
+.modal-backdrop,
+.staff-auth-backdrop,
+.welcome-backdrop,
+.staff-announcement-backdrop,
+.push-notice-backdrop,
+.admin-editor-backdrop,
+.achievement-confirm,
+.opr-folder-float-backdrop{
+  overscroll-behavior:none;
+  touch-action:none;
+}
+.folder-modal,
+.modal,
+.staff-auth-card,
+.login-welcome-card,
+.staff-announcement-card,
+.push-notice-card,
+.admin-editor,
+.achievement-confirm>section,
+.opr-folder-float{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+}
+.opr-folder-float-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:210;
+  border-radius:0;
+}
+
 /* iOS Safari mengezum kawalan borang yang saiz tulisannya kurang daripada 16px. */
 @media (max-width:900px), (hover:none) and (pointer:coarse) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
