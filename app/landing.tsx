@@ -1083,12 +1083,21 @@ function OprDutyCentre({ notify,user }:{ notify:(message:string)=>void;user:Port
     const reportYear=Number(report.name.match(/^(\d{4})-/)?.[1]);
     return isDutyDailyReport(report)&&reportYear===requestedYear&&reportWeek===requestedWeek;
   }));
+  const fetchDutyIndex=async(refresh=false)=>{
+    const response=await fetch(`/api/drive${refresh?"?refresh=1":""}`,{cache:"no-store"});
+    const data=await response.json() as {files?:OprReport[];error?:string};
+    if(!response.ok||!data.files)throw new Error(data.error||"Senarai laporan guru bertugas tidak dapat dibaca");
+    const active=data.files.filter((file)=>isDutyReport(file)&&!/^UJIAN-SISTEM-/i.test(file.name));
+    // Sinkronkan cache umum hanya selepas respons lengkap diterima. Dashboard
+    // guru bertugas sendiri tidak bergantung pada cache memori ini.
+    oprMemoryCache=data.files;
+    return active;
+  };
 
   const loadDashboard=async(refresh=false)=>{
     setDashboardLoading(true); setDashboardError("");
     try {
-      const files=await fetchOprIndex(refresh);
-      setDriveReports(files.filter((file)=>isDutyReport(file)&&!/^UJIAN-SISTEM-/i.test(file.name)));
+      setDriveReports(await fetchDutyIndex(refresh));
     } catch(error){setDashboardError(error instanceof Error?error.message:"PDF Google Drive tidak dapat dibaca");}
     finally{setDashboardLoading(false);}
   };
