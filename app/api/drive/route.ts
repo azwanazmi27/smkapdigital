@@ -38,12 +38,12 @@ function binaryResponse(result:{base64?:string;mimeType?:string;name?:string},do
   return new Response(bytes,{headers:{"Content-Type":result.mimeType||"application/octet-stream","Content-Disposition":`${download?"attachment":"inline"}; filename="${safe}"`,"Cache-Control":"private, max-age=300","X-Content-Type-Options":"nosniff"}});
 }
 
-async function scriptAction(payload:Record<string,unknown>){
+async function scriptAction(payload:Record<string,unknown>,timeoutMs=15_000){
   const webAppUrl=process.env.OPR_APPS_SCRIPT_URL,token=process.env.OPR_APPS_SCRIPT_TOKEN;
   if(!webAppUrl||!token)throw new Error("Sambungan Google Drive belum dikonfigurasi");
   // Never leave a phone waiting indefinitely when the Drive web app is cold or unavailable.
-  const response=await fetch(webAppUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,...payload}),redirect:"follow",cache:"no-store",signal:AbortSignal.timeout(15_000)});
-  const result=await response.json() as {ok?:boolean;error?:string;base64?:string;mimeType?:string;name?:string};
+  const response=await fetch(webAppUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,...payload}),redirect:"follow",cache:"no-store",signal:AbortSignal.timeout(timeoutMs)});
+  const result=await response.json() as {ok?:boolean;error?:string;base64?:string;mimeType?:string;name?:string;files?:unknown[];ensured?:number};
   if(!response.ok||!result.ok)throw new Error(result.error||"Google Drive tidak dapat memproses permintaan");
   return result;
 }
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
     }
 
-    const body = await request.json() as { category?: unknown; files?: unknown; action?:unknown; ids?:unknown; name?:unknown };
+    const body = await request.json() as { category?: unknown; files?: unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown };
     if(body.action==="bundle"){
       const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memuat turun bundle."},{status:403});
       const ids=Array.isArray(body.ids)?body.ids.filter((id):id is string=>typeof id==="string"&&/^[\w-]{10,120}$/.test(id)).slice(0,100):[];
@@ -163,6 +163,15 @@ export async function POST(request: Request) {
       const requestedName=typeof body.name==="string"?body.name:"Semua-Laporan-SMKAP.zip";
       const name=requestedName.replace(/[^a-zA-Z0-9 ._-]/g,"-").slice(0,120)||"Semua-Laporan-SMKAP.zip";
       return binaryResponse(await scriptAction({action:"bundle",ids,name}),true);
+    }
+    if(body.action==="ensure-folders"){
+      const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh menyediakan folder OPR."},{status:403});
+      const root=typeof body.root==="string"?body.root:"";
+      const roots=new Set(["Pengurusan","Kurikulum","HEM","Kokurikulum","Tingkatan Enam","Lain-lain"]);
+      if(!roots.has(root))return Response.json({error:"Bidang OPR tidak sah."},{status:400});
+      const categories=oprCategoryValues.filter((category)=>category===root||category.startsWith(`${root} · `));
+      const result=await scriptAction({action:"ensureFolders",categories},60_000);
+      return Response.json({success:true,root,ensured:result.ensured||0});
     }
     const category = typeof body.category === "string" ? body.category : "";
     if (!validCategory(category)) {
@@ -197,14 +206,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "PDF OPR diperlukan." }, { status: 400 });
     }
 
-    const response = await fetch(webAppUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, category: driveCategory(category), files }),
-      redirect: "follow",
-    });
-    const result = await response.json() as { ok?: boolean; files?: unknown[]; error?: string };
-    if (!response.ok || !result.ok) throw new Error(result.error || "Apps Script gagal menyimpan fail");
+    const result = await scriptAction({category,files},45_000);
     const saved = normalizeUploadedFiles(result.files, category, files);
     if (!saved.length) throw new Error("Google Drive tidak memulangkan ID fail yang telah disimpan");
     if (saved.length) {
