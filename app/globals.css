@@ -148,6 +148,29 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
   .pdf-review { padding:12px 9px; }.pdf-review-head { align-items:flex-start; }.pdf-review-head p { display:none; }.pdf-review-head>a { padding:9px; }.pdf-preview-stage,.pdf-preview-stage iframe { height:540px; min-height:540px; }
 }
 
+/* SK@S automatic mapping */
+.skas-live-mapping{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px;border:1px solid rgba(112,213,201,.28);border-radius:13px;background:linear-gradient(135deg,rgba(103,211,197,.12),rgba(102,174,220,.07))}
+.skas-live-mapping span,.skas-live-mapping strong,.skas-live-mapping small{display:block}
+.skas-live-mapping span{color:#72d5ca;font-size:7px;font-weight:950;letter-spacing:.13em}
+.skas-live-mapping strong{margin:4px 0;color:#eaf8f6;font-size:11px}
+.skas-live-mapping small{color:#91bbb9;font-size:8px}
+.skas-live-mapping p{margin:5px 0 0;color:#78999d;font-size:8px;line-height:1.4}
+.skas-live-mapping button{min-height:36px;padding:0 11px;color:#082f38;border:0;border-radius:9px;background:#79d5ca;font-size:8px;font-weight:900}
+.skas-map-result{margin-top:9px;padding:10px;border:1px solid rgba(114,213,202,.18);border-radius:11px;background:rgba(87,185,180,.07)}
+.skas-map-result>span{color:#70d3c8!important;font-size:7px!important;font-weight:900;letter-spacing:.08em}
+.skas-map-result>b,.skas-map-result>em{display:block}
+.skas-map-result>b{margin:5px 0 3px;color:#dff5f2;font-size:10px}
+.skas-map-result>em{color:#9dc1bf;font-size:8px;font-style:normal}
+.skas-map-result>p{margin:6px 0 0;color:#78979b;font-size:8px;line-height:1.4}
+.skas-map-result>small{margin-top:6px;color:#e5bd63!important}
+.skas-candidates>article{padding-block:14px}
+.skas-candidates article>button:disabled{opacity:.5}
+
+@media(max-width:760px){
+  .skas-live-mapping{grid-template-columns:1fr}
+  .skas-live-mapping button{width:100%}
+}
+
 /* Dashboard OPR */
 .opr-dashboard { animation:oprReveal .38s cubic-bezier(.2,.75,.25,1) both; }
 .opr-dash-head { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:18px; }

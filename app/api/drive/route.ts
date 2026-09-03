@@ -1,10 +1,9 @@
 import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 import { portalActor } from "../../server-auth";
+import { suggestSkasMappings } from "../../skas-catalog";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
-type GoogleIdentity={aud:string;email:string;email_verified:string|boolean};
-const CLIENT_ID="700702672944-20sjvug0albitl36cm671s7h19k57pc4.apps.googleusercontent.com";
 
 type OprIntakeMetadata = {
   title: string;
@@ -92,21 +91,7 @@ function normalizeOprMetadata(value: unknown): OprIntakeMetadata | null {
 }
 
 function suggestedSkas(category: string, metadata: OprIntakeMetadata) {
-  const suggestions = new Set<string>();
-  if (category.startsWith("Pengurusan")) suggestions.add("Standard 1 / Standard 2");
-  else if (category.includes("Kokurikulum")) suggestions.add("3.2");
-  else if (category.startsWith("HEM") || category.includes("Hal Ehwal Murid")) suggestions.add("3.3");
-  else if (category.startsWith("Kurikulum") || category.startsWith("Tingkatan Enam")) suggestions.add("3.1");
-
-  const officialLevel = ["Daerah", "Negeri", "Kebangsaan", "Antarabangsa"].includes(metadata.competition.level);
-  const recognized = metadata.competition.recognitionStatus.toLowerCase().startsWith("diiktiraf");
-  const officialResult = metadata.competition.officialResultStatus.toLowerCase().startsWith("telah diterima");
-  if (metadata.competition.enabled && officialLevel && recognized && officialResult) {
-    if (metadata.competition.participantType === "Guru") suggestions.add("5.4.1");
-    if (["Sekolah", "Pasukan sekolah"].includes(metadata.competition.participantType) && metadata.competition.representsSchool === "Ya") suggestions.add("5.4.2");
-  }
-  if (metadata.external.enabled) suggestions.add("A9");
-  return [...suggestions];
+  return suggestSkasMappings({ category, title: metadata.title, metadata }).map((item) => item.standardCode);
 }
 
 const allowedCategories = new Set<string>([...legacyOprCategories, ...oprCategoryValues]);

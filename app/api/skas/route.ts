@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { portalActor, type PortalActor } from "../../server-auth";
-import { skasDomains, skasEvidenceTypes, skasStandards } from "../../skas-catalog";
+import { skasDomains, skasEvidenceTypes, skasStandards, suggestSkasMappings, type SkasMappingSuggestion } from "../../skas-catalog";
 
 type EvidenceRow = {
   id:string; schoolYear:number; domain:string; unitName:string; evidenceType:string; title:string; standardCode:string;
@@ -37,8 +37,12 @@ async function requireAdmin(request:Request):Promise<PortalActor|null>{
 
 function denied(){return Response.json({error:"Pusat SK@S hanya boleh diakses oleh pentadbir."},{status:403});}
 function safeKeyPart(value:string){return value.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80)||"fail";}
-function mapDomain(category:string){if(category.startsWith("HEM")||category.includes("Hal Ehwal Murid"))return "Hal Ehwal Murid";if(category.startsWith("Kokurikulum")||category.includes("Kokurikulum"))return "Kokurikulum";if(category.startsWith("Kurikulum")||category.startsWith("Tingkatan Enam"))return "Kurikulum";if(category.startsWith("Pengurusan"))return "Pengurusan";return "Kekuatan Sekolah";}
-function mapUnit(category:string,domain:string){const pieces=category.split(" · ").filter(Boolean);return pieces.at(-1)||skasDomains.find(item=>item.name===domain)?.units[0]||"Lain-lain";}
+
+function parseJson(value:unknown,fallback:unknown){try{return JSON.parse(clean(value,20_000)||"");}catch{return fallback;}}
+
+function candidateMappings(category:string,title:string,payload:Record<string,unknown>,stored:unknown){
+  return suggestSkasMappings({category,title,metadata:payload,storedSuggestions:stored});
+}
 
 async function dashboard(year:number){
   const [years,evidence,candidates]=await Promise.all([
@@ -46,7 +50,7 @@ async function dashboard(year:number){
     env.DB.prepare("SELECT id,school_year AS schoolYear,domain,unit_name AS unitName,evidence_type AS evidenceType,title,standard_code AS standardCode,source_type AS sourceType,source_url AS sourceUrl,storage_key AS storageKey,mime_type AS mimeType,original_name AS originalName,notes,status,submitted_by_email AS submittedByEmail,submitted_by_name AS submittedByName,verified_by_email AS verifiedByEmail,verified_by_name AS verifiedByName,verified_at AS verifiedAt,created_at AS createdAt,updated_at AS updatedAt,source_module AS sourceModule,source_record_id AS sourceRecordId FROM skas_evidence WHERE school_year=? ORDER BY created_at DESC").bind(year).all<EvidenceRow>(),
     env.DB.prepare("SELECT r.id AS reportId,r.category,COALESCE(m.suggested_skas_json,'[]') AS suggestedSkasJson,COALESCE(m.payload_json,'{}') AS payloadJson,r.created_at AS createdAt,r.name,r.view_url AS viewUrl FROM opr_reports r LEFT JOIN opr_intake_metadata m ON m.report_id=r.id WHERE NOT EXISTS (SELECT 1 FROM skas_evidence s WHERE s.source_module='OPR' AND s.source_record_id=r.id) AND (m.review_status IS NULL OR m.review_status='pending') ORDER BY r.created_at DESC LIMIT 80").all<Record<string,string>>().catch(()=>({results:[]})),
   ]);
-  return {years:years.results,evidence:evidence.results,candidates:candidates.results.map((row:Record<string,string>)=>{let payload:Record<string,unknown>={},suggestions:string[]=[];try{payload=JSON.parse(row.payloadJson||"{}");}catch{payload={};}try{suggestions=JSON.parse(row.suggestedSkasJson||"[]");}catch{suggestions=[];}return {...row,title:clean(payload.title,180)||row.name,suggestions};})};
+  return {years:years.results,evidence:evidence.results,candidates:candidates.results.map((row:Record<string,string>)=>{const payload=parseJson(row.payloadJson,{}) as Record<string,unknown>,stored=parseJson(row.suggestedSkasJson,[]),title=clean(payload.title,180)||row.name;return {...row,title,mappings:candidateMappings(row.category,title,payload,stored)};})};
 }
 
 export async function GET(request:Request){
@@ -100,8 +104,13 @@ export async function POST(request:Request){
     }
     if(action==="import_candidate"){
       const reportId=clean(input.reportId,120),row=await env.DB.prepare("SELECT r.category,COALESCE(m.suggested_skas_json,'[]') AS suggestions,COALESCE(m.payload_json,'{}') AS payload,r.name,r.view_url AS viewUrl FROM opr_reports r LEFT JOIN opr_intake_metadata m ON m.report_id=r.id WHERE r.id=? AND NOT EXISTS (SELECT 1 FROM skas_evidence s WHERE s.source_module='OPR' AND s.source_record_id=r.id)").bind(reportId).first<Record<string,string>>();
-      if(!row)return Response.json({error:"Calon OPR tidak ditemui atau telah diproses."},{status:404});let payload:Record<string,unknown>={},suggestions:string[]=[];try{payload=JSON.parse(row.payload||"{}");}catch{payload={};}try{suggestions=JSON.parse(row.suggestions||"[]");}catch{suggestions=[];}const domain=mapDomain(row.category),year=Number(input.schoolYear)||currentYear(),standard=clean(input.standardCode,20)||suggestions.find(value=>allowedStandards.has(value))||skasDomains.find(item=>item.name===domain)?.standard.split(" ")[0]||"2",id=crypto.randomUUID();
-      await env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,storage_key,mime_type,original_name,notes,status,submitted_by_email,submitted_by_name,verified_by_email,verified_by_name,verified_at,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,'','','','Cadangan automatik daripada OPR','pending',?,?,'','','','OPR',?,?,?)").bind(id,year,domain,mapUnit(row.category,domain),"Program, aktiviti atau OPR",clean(payload.title,180)||row.name,standard,row.viewUrl,me.email,me.name,reportId,now,now).run();
+      if(!row)return Response.json({error:"Calon OPR tidak ditemui atau telah diproses."},{status:404});
+      const payload=parseJson(row.payload,{}) as Record<string,unknown>,stored=parseJson(row.suggestions,[]),title=clean(payload.title,180)||row.name,mappings=candidateMappings(row.category,title,payload,stored);
+      const requested=input.mapping&&typeof input.mapping==="object"?input.mapping as Partial<SkasMappingSuggestion>:null,chosen=requested&&allowedStandards.has(clean(requested.standardCode,20))&&allowedDomains.has(clean(requested.domain,80))?requested:mappings[0];
+      if(!chosen)return Response.json({error:"Cadangan pemetaan tidak dapat ditentukan."},{status:400});
+      const domain=clean(chosen.domain,80),unitName=clean(chosen.unitName,120),evidenceType=clean(chosen.evidenceType,120),standard=clean(chosen.standardCode,20),reason=clean(chosen.reason,500),year=Number(input.schoolYear)||currentYear(),id=crypto.randomUUID();
+      if(!allowedDomains.has(domain)||!allowedStandards.has(standard)||!allowedEvidenceTypes.has(evidenceType))return Response.json({error:"Cadangan pemetaan tidak sah."},{status:400});
+      await env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,storage_key,mime_type,original_name,notes,status,submitted_by_email,submitted_by_name,verified_by_email,verified_by_name,verified_at,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,'','','',?,'pending',?,?,'','','','OPR',?,?,?)").bind(id,year,domain,unitName,evidenceType,title,standard,row.viewUrl,`Pemetaan automatik: ${reason}`,me.email,me.name,reportId,now,now).run();
       await env.DB.prepare("UPDATE opr_intake_metadata SET review_status='imported',updated_at=? WHERE report_id=?").bind(now,reportId).run();return Response.json({success:true,id});
     }
     const id=await addEvidence(me,input);return Response.json({success:true,id});
