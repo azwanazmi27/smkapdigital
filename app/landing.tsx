@@ -1236,8 +1236,9 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
   const [aiMessage, setAiMessage] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<Array<{ id:string; file:File; previewUrl:string; kind:string }>>([]);
+  const [competition,setCompetition]=useState({enabled:false,name:"",participantType:"Pasukan sekolah",representsSchool:"Ya",participantName:"",level:"Daerah",achievement:"Penyertaan",recognitionStatus:"Belum pasti",officialResultStatus:"Belum diterima"});
+  const [external,setExternal]=useState({enabled:false,partyType:"Ibu bapa / penjaga",partyName:"",involvementType:"Kehadiran program",invitedCount:"",attendanceCount:"",contributionType:"Tiada",contributionValue:""});
   const [form, setForm] = useState({
     title: "", category: "Kurikulum · Bahasa · Bahasa Melayu", manualCategory: "", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
     preparedBy: user?.name||"", preparedRole: user?.position||"", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
@@ -1255,9 +1256,13 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
   const categoryOptions = oprCategoryGroups.flatMap((group) => group.options.map((option) => ({ value:group.label === "Lain-lain" ? option : `${group.label} · ${option}`, label:group.label === "Lain-lain" ? option : `${group.label} › ${option}` })));
   const categoryMatches = categorySearch.trim() ? categoryOptions.filter((option) => option.label.toLowerCase().includes(categorySearch.trim().toLowerCase())) : categoryOptions;
   const effectiveCategory = form.category === "Lain-lain" && form.manualCategory.trim() ? `Lain-lain · ${tidyTitleCase(form.manualCategory).replace(/[<>]/g,"").slice(0,80)}` : form.category;
+  const imageMedia=mediaFiles.filter((item)=>item.file.type.startsWith("image/"));
+  const documentMedia=mediaFiles.filter((item)=>item.file.type==="application/pdf");
 
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const tidyField = (field: keyof typeof form) => setForm((current) => ({ ...current, [field]: tidyTitleCase(current[field]) }));
+  const setCompetitionField=(field:keyof typeof competition,value:string|boolean)=>setCompetition((current)=>({...current,[field]:value}));
+  const setExternalField=(field:keyof typeof external,value:string|boolean)=>setExternal((current)=>({...current,[field]:value}));
   const enhance = async () => {
     if (!details.trim()) return notify("Masukkan ringkasan program dahulu");
     setAiMessage("");
@@ -1279,7 +1284,9 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
     }
   };
 
-  const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole && (form.category !== "Lain-lain" || form.manualCategory.trim()));
+  const competitionComplete=!competition.enabled||Boolean(competition.name&&competition.participantType&&competition.participantName&&competition.level&&competition.achievement&&form.organiser);
+  const externalComplete=!external.enabled||Boolean(external.partyType&&external.partyName&&external.involvementType);
+  const complete = Boolean(form.title && form.date && form.venue && details && form.preparedBy && form.preparedRole && verifiedName && verifiedRole && (form.category !== "Lain-lain" || form.manualCategory.trim())&&competitionComplete&&externalComplete);
   const safeName = (value: string) => value.normalize("NFKD").replace(/[^a-zA-Z0-9 -]/g, "").replace(/\s+/g, " ").trim() || "OPR";
   const fileToDataUrl = (file: Blob) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
   const fileToBase64 = async (file: Blob) => (await fileToDataUrl(file)).split(",")[1] || "";
@@ -1296,6 +1303,20 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
     image.onerror = () => { URL.revokeObjectURL(source); reject(new Error("Gambar tidak dapat dibaca")); };
     image.src = source;
   });
+  const selectMedia=async(files:File[])=>{
+    const selected=files.slice(0,6);
+    if(files.length>6)notify("Maksimum 6 fail dipilih");
+    if(selected.some((file)=>!(["application/pdf","image/jpeg","image/png"].includes(file.type))))return notify("Hanya fail PDF, JPG dan PNG dibenarkan");
+    if(selected.some((file)=>file.size>6_000_000))return notify("Setiap fail mestilah 6 MB atau kurang");
+    try{
+      const processed=await Promise.all(selected.map(async(file)=>{
+        const prepared=file.type==="application/pdf"?file:await optimisePhoto(file);
+        return{id:crypto.randomUUID(),file:prepared,previewUrl:prepared.type.startsWith("image/")?URL.createObjectURL(prepared):"",kind:prepared.type==="application/pdf"?"Sijil / dokumen PDF":"Gambar aktiviti"};
+      }));
+      setMediaFiles((current)=>{current.forEach((item)=>item.previewUrl&&URL.revokeObjectURL(item.previewUrl));return processed;});
+      notify(`${processed.length} fail telah disediakan untuk laporan`);
+    }catch{notify("Satu atau lebih fail tidak dapat diproses");}
+  };
   const makePdf = async () => {
     const jsPDF = await loadJsPdf();
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
@@ -1344,24 +1365,35 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
       const lines = pdf.splitTextToSize(value || "Belum dinyatakan.", sw - 6);
       pdf.text(lines.slice(0, Math.max(2, Math.floor((sh - 12) / 4.1))), sx + 3, sy + 13, { lineHeightFactor: 1.25 });
     };
-    const contentY = metaY + 21;
+    const extraInformation:string[]=[];
+    if(competition.enabled)extraInformation.push(`PERTANDINGAN: ${competition.name} · ${competition.participantType}: ${competition.participantName} · ${competition.level} · ${competition.achievement}`);
+    if(external.enabled)extraInformation.push(`PELIBATAN LUAR: ${external.partyType} · ${external.partyName} · ${external.involvementType}${external.contributionType!=="Tiada"?` · ${external.contributionType}`:""}`);
+    const extraHeight=extraInformation.length?20:0;
+    if(extraInformation.length){
+      const extraY=metaY+21;
+      pdf.setDrawColor(183,214,224);pdf.setFillColor(235,248,249);pdf.roundedRect(x,extraY,contentWidth,16,2,2,"FD");
+      pdf.setTextColor(...maroon);pdf.setFont("helvetica","bold");pdf.setFontSize(6.8);pdf.text("MAKLUMAT TAMBAHAN",x+3,extraY+5);
+      pdf.setTextColor(...navy);pdf.setFont("helvetica","normal");pdf.setFontSize(7.1);
+      pdf.text(pdf.splitTextToSize(extraInformation.join("\n"),contentWidth-6).slice(0,3),x+3,extraY+10,{lineHeightFactor:1.15});
+    }
+    const contentY = metaY + 21 + extraHeight;
     section("PELAKSANAAN PROGRAM", details, x, contentY, contentWidth, 45);
     section("OBJEKTIF", form.objective, x, contentY + 49, 91, 32);
     section("HASIL / IMPAK", form.outcome, x + 95, contentY + 49, 91, 32);
 
-    const photoY = contentY + 85, photoH = 80;
-    pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); pdf.text("DOKUMENTASI PROGRAM", x, photoY);
+    const photoY = contentY + 85, photoH = 80-extraHeight;
+    pdf.setTextColor(...navy); pdf.setFont("helvetica", "bold"); pdf.setFontSize(8); pdf.text(documentMedia.length?`DOKUMENTASI PROGRAM · ${documentMedia.length} LAMPIRAN PDF DISERTAKAN`:"DOKUMENTASI PROGRAM", x, photoY);
     pdf.setDrawColor(220, 225, 230); pdf.setFillColor(...pale); pdf.roundedRect(x, photoY + 3, contentWidth, photoH, 2, 2, "FD");
-    if (photoFiles.length) {
-      const shown = photoFiles.slice(0, 4), cols = shown.length === 1 ? 1 : 2, rows = Math.ceil(shown.length / cols);
+    if (imageMedia.length) {
+      const shown = imageMedia.slice(0, 4), cols = shown.length === 1 ? 1 : 2, rows = Math.ceil(shown.length / cols);
       const cellW = (contentWidth - 6 - (cols - 1) * 3) / cols, cellH = (photoH - 6 - (rows - 1) * 3) / rows;
       for (let index = 0; index < shown.length; index++) {
-        const data = await fileToDataUrl(shown[index]); const px = x + 3 + (index % cols) * (cellW + 3); const py = photoY + 6 + Math.floor(index / cols) * (cellH + 3);
+        const data = await fileToDataUrl(shown[index].file); const px = x + 3 + (index % cols) * (cellW + 3); const py = photoY + 6 + Math.floor(index / cols) * (cellH + 3);
         pdf.setFillColor(255, 255, 255); pdf.setDrawColor(203, 210, 216); pdf.roundedRect(px, py, cellW, cellH, 1.5, 1.5, "FD");
         const innerW = cellW - 4, innerH = cellH - 4;
         const props = pdf.getImageProperties(data); const ratio = Math.min(innerW / props.width, innerH / props.height);
         const iw = props.width * ratio, ih = props.height * ratio;
-        pdf.addImage(data, shown[index].type === "image/png" ? "PNG" : "JPEG", px + (cellW - iw) / 2, py + (cellH - ih) / 2, iw, ih, undefined, "FAST");
+        pdf.addImage(data, shown[index].file.type === "image/png" ? "PNG" : "JPEG", px + (cellW - iw) / 2, py + (cellH - ih) / 2, iw, ih, undefined, "FAST");
         pdf.setFillColor(...maroon); pdf.circle(px + 4, py + 4, 2.6, "F"); pdf.setTextColor(255, 255, 255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(6); pdf.text(String(index + 1), px + 4, py + 4.8, { align: "center" });
       }
     } else {
@@ -1390,7 +1422,30 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
     } catch { notify("Pratonton PDF tidak dapat dijana"); }
     finally { setRendering(false); }
   };
-  const sendToDrive = async () => { if (!pdfBase64 || !pdfPreviewUrl) return notify("Sila jana dan semak pratonton PDF dahulu"); setSending(true); setDriveUrl(""); try { const base = `${form.date}-${safeName(form.title)}`; const pdfBase = `${base}__PENYEDIA__${safeName(form.preparedBy)}`; const files = [{ name: `${pdfBase}.pdf`, mimeType: "application/pdf", base64: pdfBase64 }]; for (let index = 0; index < photoFiles.length; index++) files.push({ name: `${base}-gambar-${index + 1}.${photoFiles[index].type === "image/png" ? "png" : "jpg"}`, mimeType: photoFiles[index].type || "image/jpeg", base64: await fileToBase64(photoFiles[index]) }); const response = await fetch("/api/drive", { method: "POST", headers:{"Content-Type":"application/json"},body:JSON.stringify({ category:effectiveCategory,files }) }); const result = await response.json() as { error?:string;files?:OprReport[] }; if(!response.ok||!result.files?.[0]) throw new Error(result.error||"Penghantaran tidak berjaya"); const saved=result.files[0]; rememberOprReport(saved); setDriveUrl(saved.viewUrl); notify("OPR berjaya disimpan ke Google Drive sekolah"); } catch(error){notify(error instanceof Error?error.message:"OPR tidak dapat dihantar");} finally{setSending(false);} };
+  const sendToDrive = async () => {
+    if (!pdfBase64 || !pdfPreviewUrl) return notify("Sila jana dan semak pratonton PDF dahulu");
+    setSending(true);setDriveUrl("");
+    try{
+      const base=`${form.date}-${safeName(form.title)}`;
+      const pdfBase=`${base}__PENYEDIA__${safeName(form.preparedBy)}`;
+      const files=[{name:`${pdfBase}.pdf`,mimeType:"application/pdf",base64:pdfBase64}];
+      for(let index=0;index<mediaFiles.length;index++){
+        const media=mediaFiles[index],extension=media.file.type==="application/pdf"?"pdf":media.file.type==="image/png"?"png":"jpg";
+        files.push({name:`${base}-${safeName(media.kind)}-${index+1}.${extension}`,mimeType:media.file.type||"application/octet-stream",base64:await fileToBase64(media.file)});
+      }
+      const metadata={
+        title:form.title,createdBy:user?.email||"",
+        competition:{...competition},
+        external:{...external},
+        attachments:mediaFiles.map((item)=>({name:item.file.name,type:item.file.type,kind:item.kind})),
+      };
+      const response=await fetch("/api/drive",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category:effectiveCategory,files,metadata})});
+      const result=await response.json() as{error?:string;files?:OprReport[]};
+      if(!response.ok||!result.files?.[0])throw new Error(result.error||"Penghantaran tidak berjaya");
+      const saved=result.files[0];rememberOprReport(saved);setDriveUrl(saved.viewUrl);notify("OPR berjaya disimpan ke Google Drive sekolah");
+    }catch(error){notify(error instanceof Error?error.message:"OPR tidak dapat dihantar");}
+    finally{setSending(false);}
+  };
   return <div className="opr-generator">
     <span className="modal-overline">PENJANA OPR RASMI SMKAP</span>
     <h2 id="folder-title">Cipta OPR baharu</h2>
@@ -1409,6 +1464,16 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
         <label>Tempat<input value={form.venue} onChange={(e) => setField("venue", e.target.value)} onBlur={() => tidyField("venue")} placeholder="Dewan / lokasi" required /></label>
         <label>Anjuran<input value={form.organiser} onChange={(e) => setField("organiser", e.target.value)} onBlur={() => tidyField("organiser")} placeholder="Unit / panitia" /></label>
       </div>
+      <fieldset className={`opr-conditional-card${competition.enabled?" is-open":""}`}><legend>Maklumat aktiviti</legend><label className="opr-form-switch"><input type="checkbox" checked={competition.enabled} onChange={(event)=>setCompetitionField("enabled",event.target.checked)}/><span><strong>Aktiviti ini melibatkan pertandingan atau pencapaian</strong><small>Tandakan hanya jika terdapat penyertaan, keputusan atau anugerah.</small></span></label>{competition.enabled&&<div className="opr-conditional-fields">
+        <label>Nama pertandingan *<input value={competition.name} onChange={(event)=>setCompetitionField("name",event.target.value)} onBlur={()=>setCompetition((current)=>({...current,name:tidyTitleCase(current.name)}))} placeholder="Contoh: Pertandingan Inovasi STEAM" required/></label>
+        <label>Jenis peserta *<select value={competition.participantType} onChange={(event)=>setCompetitionField("participantType",event.target.value)}><option>Guru</option><option>Murid</option><option>Pasukan sekolah</option><option>Sekolah</option></select></label>
+        <label>Nama peserta / pasukan *<input value={competition.participantName} onChange={(event)=>setCompetitionField("participantName",event.target.value)} onBlur={()=>setCompetition((current)=>({...current,participantName:tidyTitleCase(current.participantName)}))} placeholder="Nama peserta atau pasukan" required/></label>
+        <label>Mewakili sekolah?<select value={competition.representsSchool} onChange={(event)=>setCompetitionField("representsSchool",event.target.value)}><option>Ya</option><option>Tidak</option></select></label>
+        <label>Peringkat *<select value={competition.level} onChange={(event)=>setCompetitionField("level",event.target.value)}><option>Sekolah</option><option>Zon</option><option>Daerah</option><option>Negeri</option><option>Kebangsaan</option><option>Antarabangsa</option></select></label>
+        <label>Pencapaian *<select value={competition.achievement} onChange={(event)=>setCompetitionField("achievement",event.target.value)}><option>Johan</option><option>Naib Johan</option><option>Tempat Ketiga</option><option>Saguhati</option><option>Penyertaan</option><option>Anugerah Khas</option><option>Lain-lain</option></select></label>
+        <label>Pengiktirafan pertandingan<select value={competition.recognitionStatus} onChange={(event)=>setCompetitionField("recognitionStatus",event.target.value)}><option>Diiktiraf KPM / agensi berkaitan</option><option>Belum pasti</option><option>Tidak berkaitan</option></select></label>
+        <label>Status keputusan rasmi<select value={competition.officialResultStatus} onChange={(event)=>setCompetitionField("officialResultStatus",event.target.value)}><option>Belum diterima</option><option>Telah diterima</option><option>Tidak berkaitan</option></select></label>
+      </div>}</fieldset>
       <label>Ringkasan pelaksanaan<textarea rows={5} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Terangkan aktiviti yang dijalankan, kumpulan sasaran dan perjalanan program..." required /></label>
       <button type="button" className="generator-ai" onClick={enhance} disabled={enhancing}><span>✦</span><span>{enhancing ? "Gemini sedang menulis..." : "Jana pelaksanaan, objektif & hasil dengan Gemini AI"}<small>AI mengekalkan fakta asal dan mengemaskan ketiga-tiga bahagian</small></span></button>
       {aiMessage && <p className={`ai-status ${aiMessage.startsWith("✓") ? "success" : "error"}`} role="status">{aiMessage}</p>}
@@ -1416,8 +1481,17 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
         <label>Objektif<textarea rows={2} value={form.objective} onChange={(e) => setField("objective", e.target.value)} placeholder="Objektif utama program" /></label>
         <label>Hasil / impak<textarea rows={2} value={form.outcome} onChange={(e) => setField("outcome", e.target.value)} placeholder="Hasil yang dicapai" /></label>
       </div>
-      <label className="photo-drop">Gambar program<input type="file" accept="image/jpeg,image/png" multiple onChange={async (event) => { const selected = Array.from(event.target.files || []).slice(0, 6); if ((event.target.files?.length || 0) > 6) notify("Maksimum 6 gambar dipilih"); try { const files = await Promise.all(selected.map(optimisePhoto)); setPhotos((current) => { current.forEach((url) => URL.revokeObjectURL(url)); return files.map((file) => URL.createObjectURL(file)); }); setPhotoFiles(files); notify("Gambar telah dioptimumkan untuk laporan"); } catch { notify("Satu atau lebih gambar tidak dapat diproses"); } }} /><span>＋ Pilih gambar daripada peranti</span><small>Maksimum 6 gambar · JPG atau PNG · dioptimumkan secara automatik</small></label>
-      {photos.length > 0 && <div className="photo-preview-strip">{photos.map((src, index) => <div key={src}><img src={src} alt={`Pratonton gambar program ${index + 1}`} /><button type="button" onClick={() => { setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index)); setPhotoFiles((current) => current.filter((_, photoIndex) => photoIndex !== index)); }} aria-label={`Buang gambar ${index + 1}`}>×</button></div>)}</div>}
+      <fieldset className={`opr-conditional-card${external.enabled?" is-open":""}`}><legend>Pelibatan pihak luar</legend><label className="opr-form-switch"><input type="checkbox" checked={external.enabled} onChange={(event)=>setExternalField("enabled",event.target.checked)}/><span><strong>Aktiviti ini melibatkan ibu bapa, komuniti atau pihak luar</strong><small>Tandakan jika terdapat kehadiran, kepakaran, tajaan atau sumbangan.</small></span></label>{external.enabled&&<div className="opr-conditional-fields">
+        <label>Kategori pihak terlibat *<select value={external.partyType} onChange={(event)=>setExternalField("partyType",event.target.value)}><option>Ibu bapa / penjaga</option><option>PIBG / KSIB</option><option>Alumni</option><option>Agensi awam</option><option>Syarikat swasta</option><option>NGO / pertubuhan</option><option>Institusi pendidikan</option><option>Komuniti</option><option>Individu</option></select></label>
+        <label>Nama pihak / organisasi *<input value={external.partyName} onChange={(event)=>setExternalField("partyName",event.target.value)} onBlur={()=>setExternal((current)=>({...current,partyName:tidyTitleCase(current.partyName)}))} placeholder="Nama organisasi atau kumpulan" required/></label>
+        <label>Bentuk pelibatan *<select value={external.involvementType} onChange={(event)=>setExternalField("involvementType",event.target.value)}><option>Kehadiran program</option><option>Khidmat kepakaran</option><option>Kerjasama program</option><option>Penajaan</option><option>Sumbangan</option><option>Biasiswa / bantuan</option><option>Lain-lain</option></select></label>
+        <label>Jenis sumbangan<select value={external.contributionType} onChange={(event)=>setExternalField("contributionType",event.target.value)}><option>Tiada</option><option>Material</option><option>Bukan material</option><option>Kewangan</option><option>Perkhidmatan</option></select></label>
+        <label>Bilangan dijemput<input type="number" min="0" inputMode="numeric" value={external.invitedCount} onChange={(event)=>setExternalField("invitedCount",event.target.value)} placeholder="Contoh: 120"/></label>
+        <label>Bilangan hadir<input type="number" min="0" inputMode="numeric" value={external.attendanceCount} onChange={(event)=>setExternalField("attendanceCount",event.target.value)} placeholder="Contoh: 95"/></label>
+        {external.contributionType!=="Tiada"&&<label>Nilai / keterangan sumbangan<input value={external.contributionValue} onChange={(event)=>setExternalField("contributionValue",event.target.value)} placeholder="Contoh: RM1,000 atau 10 buah komputer"/></label>}
+      </div>}</fieldset>
+      <label className="photo-drop">Gambar aktiviti, sijil atau dokumen<input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" multiple onChange={(event)=>void selectMedia(Array.from(event.target.files||[]))}/><span>＋ Pilih fail daripada peranti</span><small>Maksimum 6 fail · PDF, JPG atau PNG · gambar dioptimumkan automatik</small></label>
+      {mediaFiles.length>0&&<div className="opr-media-list">{mediaFiles.map((media,index)=><article key={media.id}>{media.previewUrl?<img src={media.previewUrl} alt={`Pratonton ${media.file.name}`}/>:<span className="opr-pdf-badge">PDF</span>}<div><strong>{media.file.name}</strong><small>{(media.file.size/1_000_000).toFixed(2)} MB</small><select value={media.kind} onChange={(event)=>setMediaFiles((current)=>current.map((item)=>item.id===media.id?{...item,kind:event.target.value}:item))} aria-label={`Jenis fail ${media.file.name}`}><option>Gambar aktiviti</option><option>Sijil pencapaian</option><option>Keputusan rasmi</option><option>Surat pengesahan</option><option>Dokumen lain</option><option>Sijil / dokumen PDF</option></select></div><button type="button" onClick={()=>setMediaFiles((current)=>current.filter((item)=>{if(item.id===media.id&&item.previewUrl)URL.revokeObjectURL(item.previewUrl);return item.id!==media.id;}))} aria-label={`Buang ${media.file.name}`}>×</button><b>{index+1}</b></article>)}</div>}
       <fieldset className="signatory-fields"><legend>Penyedia dan pengesah OPR</legend><div className="generator-row"><label>Nama penyedia<input value={form.preparedBy} onChange={(e) => setField("preparedBy", e.target.value)} onBlur={() => tidyField("preparedBy")} placeholder="Nama penuh penyedia" required /></label><label>Jawatan penyedia<input value={form.preparedRole} onChange={(e) => setField("preparedRole", e.target.value)} onBlur={() => tidyField("preparedRole")} placeholder="Contoh: Guru Mata Pelajaran" required /></label></div><label>Pilih pengesah<select value={form.verifier} onChange={(e) => setField("verifier", e.target.value)}>{verifiers.map(([name, role]) => <option key={name} value={`${name}|${role}`}>{name} — {role}</option>)}<option value="manual">Isi pengesah secara manual</option></select></label>{form.verifier === "manual" && <div className="generator-row manual-verifier"><label>Nama pengesah<input value={form.manualVerifier} onChange={(e) => setField("manualVerifier", e.target.value)} onBlur={() => tidyField("manualVerifier")} placeholder="Nama penuh pengesah" required /></label><label>Jawatan pengesah<input value={form.manualVerifierRole} onChange={(e) => setField("manualVerifierRole", e.target.value)} onBlur={() => tidyField("manualVerifierRole")} placeholder="Jawatan pengesah" required /></label></div>}</fieldset>
       <div className="generator-actions"><button type="button" onClick={close}>Kembali</button><button className="save" disabled={!complete || rendering}>{rendering ? "Menjana PDF..." : "Pratonton PDF"} <span>→</span></button></div>
     </form> : <article className="opr-preview pdf-review">

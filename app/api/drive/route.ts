@@ -6,6 +6,109 @@ type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 type GoogleIdentity={aud:string;email:string;email_verified:string|boolean};
 const CLIENT_ID="700702672944-20sjvug0albitl36cm671s7h19k57pc4.apps.googleusercontent.com";
 
+type OprIntakeMetadata = {
+  title: string;
+  createdBy: string;
+  competition: {
+    enabled: boolean;
+    name: string;
+    participantType: string;
+    representsSchool: string;
+    participantName: string;
+    level: string;
+    achievement: string;
+    recognitionStatus: string;
+    officialResultStatus: string;
+  };
+  external: {
+    enabled: boolean;
+    partyType: string;
+    partyName: string;
+    involvementType: string;
+    invitedCount: string;
+    attendanceCount: string;
+    contributionType: string;
+    contributionValue: string;
+  };
+  attachments: Array<{ name: string; type: string; kind: string }>;
+};
+
+let metadataPreparation: Promise<void> | null = null;
+
+function prepareOprMetadata() {
+  if (!metadataPreparation) {
+    metadataPreparation = env.DB.batch([
+      env.DB.prepare("CREATE TABLE IF NOT EXISTS opr_intake_metadata (report_id TEXT PRIMARY KEY NOT NULL, created_by_email TEXT NOT NULL DEFAULT '', category TEXT NOT NULL, competition_status TEXT NOT NULL DEFAULT '0', external_involvement_status TEXT NOT NULL DEFAULT '0', suggested_skas_json TEXT NOT NULL DEFAULT '[]', payload_json TEXT NOT NULL DEFAULT '{}', review_status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
+      env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_opr_intake_review_status ON opr_intake_metadata (review_status)"),
+    ]).then(() => undefined).catch((error) => {
+      metadataPreparation = null;
+      throw error;
+    });
+  }
+  return metadataPreparation;
+}
+
+function clean(value: unknown, max = 160) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function normalizeOprMetadata(value: unknown): OprIntakeMetadata | null {
+  if (!value || typeof value !== "object") return null;
+  const input = value as Record<string, unknown>;
+  const competitionInput = input.competition && typeof input.competition === "object" ? input.competition as Record<string, unknown> : {};
+  const externalInput = input.external && typeof input.external === "object" ? input.external as Record<string, unknown> : {};
+  const attachments = Array.isArray(input.attachments) ? input.attachments.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const file = entry as Record<string, unknown>;
+    const name = clean(file.name, 180), type = clean(file.type, 80), kind = clean(file.kind, 80);
+    return name && ["application/pdf", "image/jpeg", "image/png"].includes(type) ? [{ name, type, kind }] : [];
+  }).slice(0, 6) : [];
+  return {
+    title: clean(input.title, 180),
+    createdBy: clean(input.createdBy, 180).toLowerCase(),
+    competition: {
+      enabled: competitionInput.enabled === true,
+      name: clean(competitionInput.name),
+      participantType: clean(competitionInput.participantType, 60),
+      representsSchool: clean(competitionInput.representsSchool, 20),
+      participantName: clean(competitionInput.participantName),
+      level: clean(competitionInput.level, 40),
+      achievement: clean(competitionInput.achievement, 60),
+      recognitionStatus: clean(competitionInput.recognitionStatus, 80),
+      officialResultStatus: clean(competitionInput.officialResultStatus, 80),
+    },
+    external: {
+      enabled: externalInput.enabled === true,
+      partyType: clean(externalInput.partyType, 80),
+      partyName: clean(externalInput.partyName),
+      involvementType: clean(externalInput.involvementType, 80),
+      invitedCount: clean(externalInput.invitedCount, 12),
+      attendanceCount: clean(externalInput.attendanceCount, 12),
+      contributionType: clean(externalInput.contributionType, 80),
+      contributionValue: clean(externalInput.contributionValue, 80),
+    },
+    attachments,
+  };
+}
+
+function suggestedSkas(category: string, metadata: OprIntakeMetadata) {
+  const suggestions = new Set<string>();
+  if (category.startsWith("Pengurusan")) suggestions.add("Standard 1 / Standard 2");
+  else if (category.includes("Kokurikulum")) suggestions.add("3.2");
+  else if (category.startsWith("HEM") || category.includes("Hal Ehwal Murid")) suggestions.add("3.3");
+  else if (category.startsWith("Kurikulum") || category.startsWith("Tingkatan Enam")) suggestions.add("3.1");
+
+  const officialLevel = ["Daerah", "Negeri", "Kebangsaan", "Antarabangsa"].includes(metadata.competition.level);
+  const recognized = metadata.competition.recognitionStatus.toLowerCase().startsWith("diiktiraf");
+  const officialResult = metadata.competition.officialResultStatus.toLowerCase().startsWith("telah diterima");
+  if (metadata.competition.enabled && officialLevel && recognized && officialResult) {
+    if (metadata.competition.participantType === "Guru") suggestions.add("5.4.1");
+    if (["Sekolah", "Pasukan sekolah"].includes(metadata.competition.participantType) && metadata.competition.representsSchool === "Ya") suggestions.add("5.4.2");
+  }
+  if (metadata.external.enabled) suggestions.add("A9");
+  return [...suggestions];
+}
+
 const allowedCategories = new Set<string>([...legacyOprCategories, ...oprCategoryValues]);
 
 function driveCategory(category: string) {
@@ -155,7 +258,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
     }
 
-    const body = await request.json() as { category?: unknown; files?: unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown };
+    const body = await request.json() as { category?: unknown; files?: unknown; metadata?:unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown };
     if(body.action==="bundle"){
       const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memuat turun bundle."},{status:403});
       const ids=Array.isArray(body.ids)?body.ids.filter((id):id is string=>typeof id==="string"&&/^[\w-]{10,120}$/.test(id)).slice(0,100):[];
@@ -206,12 +309,21 @@ export async function POST(request: Request) {
       return Response.json({ error: "PDF OPR diperlukan." }, { status: 400 });
     }
 
+    const metadata = normalizeOprMetadata(body.metadata);
     const result = await scriptAction({category,files},45_000);
     const saved = normalizeUploadedFiles(result.files, category, files);
     if (!saved.length) throw new Error("Google Drive tidak memulangkan ID fail yang telah disimpan");
     if (saved.length) {
       const syncedAt = new Date().toISOString();
       await env.DB.batch(saved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,created_at=excluded.created_at,updated_at=excluded.updated_at,view_url=excluded.view_url,preview_url=excluded.preview_url,download_url=excluded.download_url,synced_at=excluded.synced_at").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)));
+    }
+    if (metadata && saved[0]) {
+      await prepareOprMetadata();
+      const actor = await portalActor(request);
+      const now = new Date().toISOString();
+      const suggestions = suggestedSkas(category, metadata);
+      await env.DB.prepare("INSERT INTO opr_intake_metadata (report_id,created_by_email,category,competition_status,external_involvement_status,suggested_skas_json,payload_json,review_status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(report_id) DO UPDATE SET created_by_email=excluded.created_by_email,category=excluded.category,competition_status=excluded.competition_status,external_involvement_status=excluded.external_involvement_status,suggested_skas_json=excluded.suggested_skas_json,payload_json=excluded.payload_json,review_status='pending',updated_at=excluded.updated_at")
+        .bind(saved[0].id, actor?.email || metadata.createdBy, category, metadata.competition.enabled ? "1" : "0", metadata.external.enabled ? "1" : "0", JSON.stringify(suggestions), JSON.stringify(metadata), "pending", now, now).run();
     }
     return Response.json({ success: true, files: saved });
   } catch (error) {
@@ -227,6 +339,8 @@ export async function DELETE(request:Request){
     if(!/^[\w-]{10,120}$/.test(id))return Response.json({error:"ID fail tidak sah."},{status:400});
     await scriptAction({action:"delete",id});
     await env.DB.prepare("DELETE FROM opr_reports WHERE id=?").bind(id).run();
+    await prepareOprMetadata();
+    await env.DB.prepare("DELETE FROM opr_intake_metadata WHERE report_id=?").bind(id).run();
     return Response.json({success:true});
   }catch(error){console.error("Google Drive delete error",error);return Response.json({error:"Laporan tidak dapat dipadam daripada Google Drive sekarang."},{status:502});}
 }
