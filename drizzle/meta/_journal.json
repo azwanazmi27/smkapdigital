@@ -22,6 +22,13 @@
       "when": 1787539243869,
       "tag": "0002_fat_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788431417251,
+      "tag": "0007_skas_mapping_rules",
+      "breakpoints": true
     }
   ]
 }

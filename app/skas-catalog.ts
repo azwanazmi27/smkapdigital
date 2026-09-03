@@ -141,6 +141,15 @@ function storedCodes(value: unknown) {
   });
 }
 
+export function skasSignalProfile(input: MappingInput) {
+  const text = fold(`${tidy(input.category)} ${tidy(input.title)}`);
+  const signals = [];
+  if (metadataFlag(input.metadata, "competition") || /pertandingan|kejohanan|johan|naib johan|tempat ketiga|anugerah|pingat|pencapaian|sijil/.test(text)) signals.push("competition");
+  if ((/pemantauan|pencerapan|observasi/.test(text)) && (/pdp|pengajaran|pembelajaran|kelas/.test(text))) signals.push("monitoring_pdp");
+  if (metadataFlag(input.metadata, "external")) signals.push("external");
+  return signals.length ? signals.join("+") : "regular";
+}
+
 /** Deterministic fallback used for new and historic portal records. */
 export function suggestSkasMappings(input: MappingInput): SkasMappingSuggestion[] {
   const category = tidy(input.category);
@@ -151,14 +160,14 @@ export function suggestSkasMappings(input: MappingInput): SkasMappingSuggestion[
   const leadership = /kepimpinan|pengetua|peneraju/.test(text);
   const baseCode = domainDefinition.standard === "Pelengkap" ? "2" : domain === "Pengurusan" ? (leadership ? "1" : "2") : domainDefinition.standard.split(" ")[0];
   const baseUnit = unitFromCategory(category, domain);
-  const competition = metadataFlag(input.metadata, "competition") || /pertandingan|kejohanan|johan|naib johan|tempat ketiga|anugerah|pingat|pencapaian|sijil/.test(text);
+  const profile = skasSignalProfile(input);
+  const competition = profile.includes("competition");
   const external = metadataFlag(input.metadata, "external");
-  const monitoring = /pemantauan|pencerapan|observasi/.test(text);
-  const teaching = /pdp|pengajaran|pembelajaran|kelas/.test(text);
+  const monitoringPdp = profile.includes("monitoring_pdp");
   const suggestions: SkasMappingSuggestion[] = [];
 
   if (competition) suggestions.push(makeSuggestion("5.4", "Pencapaian", "Pertandingan dan Pengiktirafan", "Sijil, keputusan atau pengiktirafan", "Maklumat menunjukkan pertandingan, keputusan, sijil atau pencapaian sekolah.", "tinggi"));
-  if (monitoring && teaching) suggestions.push(makeSuggestion("4", "Pengajaran dan Pembelajaran", "Pencerapan dan Pemantauan", "Pemantauan dan penambahbaikan", "Tajuk menunjukkan pemantauan atau pencerapan berkaitan PdP.", "tinggi"));
+  if (monitoringPdp) suggestions.push(makeSuggestion("4", "Pengajaran dan Pembelajaran", "Pencerapan dan Pemantauan", "Pemantauan dan penambahbaikan", "Tajuk menunjukkan pemantauan atau pencerapan berkaitan PdP.", "tinggi"));
   suggestions.push(makeSuggestion(baseCode, domain, baseUnit, "Program, aktiviti atau OPR", category ? `Kategori OPR “${category}” dipadankan dengan bidang dan unit berkaitan.` : "Bidang dan unit yang dipilih digunakan sebagai pemetaan asas.", category ? "tinggi" : "sederhana"));
   if (external) suggestions.push(makeSuggestion("2", "Pengurusan", "PIBG, Sarana dan PIBK", "Program, aktiviti atau OPR", "Rekod menyatakan pelibatan ibu bapa, komuniti atau pihak luar.", "tinggi"));
 

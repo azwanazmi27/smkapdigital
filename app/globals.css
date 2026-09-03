@@ -165,10 +165,27 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
 .skas-map-result>small{margin-top:6px;color:#e5bd63!important}
 .skas-candidates>article{padding-block:14px}
 .skas-candidates article>button:disabled{opacity:.5}
+.skas-candidate-actions{display:grid;gap:7px}
+.skas-candidate-actions button{min-height:38px;padding:0 12px;color:#082f38;border:0;border-radius:10px;background:#79d5ca;font-size:9px;font-weight:850;white-space:nowrap}
+.skas-candidate-actions button.manual{color:#a9dcd7;border:1px solid rgba(123,214,204,.2);background:rgba(255,255,255,.035)}
+.skas-candidate-actions button:disabled{opacity:.5}
+.skas-manual-map{grid-column:1/-1;display:grid;gap:12px;margin:2px 0 4px;padding:14px;border:1px solid rgba(232,190,99,.27);border-radius:13px;background:linear-gradient(145deg,rgba(232,190,99,.08),rgba(80,178,170,.055))}
+.skas-manual-map>div:first-child>span{color:#efc66d;font-size:7px;font-weight:950;letter-spacing:.13em}
+.skas-manual-map h4{margin:4px 0 2px;color:#edf8f6;font-size:13px}
+.skas-manual-map>div:first-child>p{margin:0;color:#819da0;font-size:8px}
+.skas-manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.skas-manual-grid label{display:grid;gap:5px;color:#9db7b8;font-size:8px;font-weight:850}
+.skas-manual-grid select{width:100%;min-height:42px;padding:8px 10px;color:#edf8f6;border:1px solid rgba(120,213,203,.16);border-radius:10px;background:#083443;font-size:10px}
+.skas-remember{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:8px;padding:10px;border-radius:10px;background:rgba(255,255,255,.025);cursor:pointer}
+.skas-remember input{width:18px;height:18px;margin:0;accent-color:#79d5ca}
+.skas-remember strong,.skas-remember small{display:block}.skas-remember strong{color:#d9eeeb;font-size:9px}.skas-remember small{margin-top:3px;color:#789599;font-size:8px;line-height:1.35}
+.skas-manual-save{min-height:42px;color:#082f38;border:0;border-radius:10px;background:linear-gradient(135deg,#efc76e,#7bd6cc);font-size:9px;font-weight:900}
 
 @media(max-width:760px){
   .skas-live-mapping{grid-template-columns:1fr}
   .skas-live-mapping button{width:100%}
+  .skas-candidate-actions{grid-column:1/-1;grid-template-columns:1fr 1fr}
+  .skas-manual-grid{grid-template-columns:1fr}
 }
 
 /* Dashboard OPR */

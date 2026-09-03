@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { portalActor, type PortalActor } from "../../server-auth";
-import { skasDomains, skasEvidenceTypes, skasStandards, suggestSkasMappings, type SkasMappingSuggestion } from "../../skas-catalog";
+import { skasDomains, skasEvidenceTypes, skasSignalProfile, skasStandards, suggestSkasMappings, type SkasMappingSuggestion } from "../../skas-catalog";
 
 type EvidenceRow = {
   id:string; schoolYear:number; domain:string; unitName:string; evidenceType:string; title:string; standardCode:string;
@@ -8,12 +8,15 @@ type EvidenceRow = {
   submittedByEmail:string; submittedByName:string; verifiedByEmail:string; verifiedByName:string; verifiedAt:string;
   createdAt:string; updatedAt:string; sourceModule:string; sourceRecordId:string;
 };
+type MappingRuleRow={category:string;signalProfile:string;domain:string;unitName:string;evidenceType:string;standardCode:string};
 
 const clean=(value:unknown,max=220)=>typeof value==="string"?value.trim().slice(0,max):"";
 const allowedStatus=new Set(["pending","approved","needs_info","rejected"]);
 const allowedDomains=new Set<string>(skasDomains.map(item=>item.name));
 const allowedEvidenceTypes=new Set<string>(skasEvidenceTypes);
 const allowedStandards=new Set<string>(skasStandards.map(item=>item[0]));
+const allowedUnit=(domain:string,unitName:string)=>skasDomains.some(item=>item.name===domain&&item.units.some(unit=>unit===unitName));
+const allowedStandardDomain=(standard:string,domain:string)=>standard==="1"?domain==="Pengurusan":standard==="2"?["Pengurusan","Kekuatan Sekolah"].includes(domain):standard==="3.1"?domain==="Kurikulum":standard==="3.2"?domain==="Kokurikulum":standard==="3.3"?domain==="Hal Ehwal Murid":standard==="4"?domain==="Pengajaran dan Pembelajaran":standard.startsWith("5.")?domain==="Pencapaian":false;
 const currentYear=()=>new Date().getFullYear();
 
 let ready:Promise<void>|null=null;
@@ -40,17 +43,22 @@ function safeKeyPart(value:string){return value.normalize("NFKD").replace(/[^a-z
 
 function parseJson(value:unknown,fallback:unknown){try{return JSON.parse(clean(value,20_000)||"");}catch{return fallback;}}
 
-function candidateMappings(category:string,title:string,payload:Record<string,unknown>,stored:unknown){
-  return suggestSkasMappings({category,title,metadata:payload,storedSuggestions:stored});
+function candidateMappings(category:string,title:string,payload:Record<string,unknown>,stored:unknown,rule?:MappingRuleRow){
+  const automatic=suggestSkasMappings({category,title,metadata:payload,storedSuggestions:stored});
+  if(!rule)return automatic;
+  const learned:SkasMappingSuggestion={standardCode:rule.standardCode,standardLabel:skasStandards.find(([code])=>code===rule.standardCode)?.[1]||"Standard sekolah",domain:rule.domain as SkasMappingSuggestion["domain"],unitName:rule.unitName,evidenceType:rule.evidenceType as SkasMappingSuggestion["evidenceType"],reason:"Mengikut pemetaan manual pentadbir terdahulu bagi kategori dan jenis rekod yang sama.",confidence:"tinggi"};
+  return [learned,...automatic.filter(item=>`${item.standardCode}|${item.domain}|${item.unitName}`!==`${learned.standardCode}|${learned.domain}|${learned.unitName}`)].slice(0,3);
 }
 
 async function dashboard(year:number){
-  const [years,evidence,candidates]=await Promise.all([
+  const [years,evidence,candidates,rules]=await Promise.all([
     env.DB.prepare("SELECT school_year AS schoolYear,status,prepared_from AS preparedFrom,activation_date AS activationDate,closed_at AS closedAt,created_at AS createdAt FROM skas_years ORDER BY school_year DESC").all(),
     env.DB.prepare("SELECT id,school_year AS schoolYear,domain,unit_name AS unitName,evidence_type AS evidenceType,title,standard_code AS standardCode,source_type AS sourceType,source_url AS sourceUrl,storage_key AS storageKey,mime_type AS mimeType,original_name AS originalName,notes,status,submitted_by_email AS submittedByEmail,submitted_by_name AS submittedByName,verified_by_email AS verifiedByEmail,verified_by_name AS verifiedByName,verified_at AS verifiedAt,created_at AS createdAt,updated_at AS updatedAt,source_module AS sourceModule,source_record_id AS sourceRecordId FROM skas_evidence WHERE school_year=? ORDER BY created_at DESC").bind(year).all<EvidenceRow>(),
     env.DB.prepare("SELECT r.id AS reportId,r.category,COALESCE(m.suggested_skas_json,'[]') AS suggestedSkasJson,COALESCE(m.payload_json,'{}') AS payloadJson,r.created_at AS createdAt,r.name,r.view_url AS viewUrl FROM opr_reports r LEFT JOIN opr_intake_metadata m ON m.report_id=r.id WHERE NOT EXISTS (SELECT 1 FROM skas_evidence s WHERE s.source_module='OPR' AND s.source_record_id=r.id) AND (m.review_status IS NULL OR m.review_status='pending') ORDER BY r.created_at DESC LIMIT 80").all<Record<string,string>>().catch(()=>({results:[]})),
+    env.DB.prepare("SELECT category,signal_profile AS signalProfile,domain,unit_name AS unitName,evidence_type AS evidenceType,standard_code AS standardCode FROM skas_mapping_rules").all<MappingRuleRow>(),
   ]);
-  return {years:years.results,evidence:evidence.results,candidates:candidates.results.map((row:Record<string,string>)=>{const payload=parseJson(row.payloadJson,{}) as Record<string,unknown>,stored=parseJson(row.suggestedSkasJson,[]),title=clean(payload.title,180)||row.name;return {...row,title,mappings:candidateMappings(row.category,title,payload,stored)};})};
+  const ruleMap=new Map(rules.results.map(rule=>[`${rule.category}|${rule.signalProfile}`,rule]));
+  return {years:years.results,evidence:evidence.results,candidates:candidates.results.map((row:Record<string,string>)=>{const payload=parseJson(row.payloadJson,{}) as Record<string,unknown>,stored=parseJson(row.suggestedSkasJson,[]),title=clean(payload.title,180)||row.name,profile=skasSignalProfile({category:row.category,title,metadata:payload}),rule=ruleMap.get(`${row.category}|${profile}`);return {...row,title,mappings:candidateMappings(row.category,title,payload,stored,rule)};})};
 }
 
 export async function GET(request:Request){
@@ -108,10 +116,12 @@ export async function POST(request:Request){
       const payload=parseJson(row.payload,{}) as Record<string,unknown>,stored=parseJson(row.suggestions,[]),title=clean(payload.title,180)||row.name,mappings=candidateMappings(row.category,title,payload,stored);
       const requested=input.mapping&&typeof input.mapping==="object"?input.mapping as Partial<SkasMappingSuggestion>:null,chosen=requested&&allowedStandards.has(clean(requested.standardCode,20))&&allowedDomains.has(clean(requested.domain,80))?requested:mappings[0];
       if(!chosen)return Response.json({error:"Cadangan pemetaan tidak dapat ditentukan."},{status:400});
-      const domain=clean(chosen.domain,80),unitName=clean(chosen.unitName,120),evidenceType=clean(chosen.evidenceType,120),standard=clean(chosen.standardCode,20),reason=clean(chosen.reason,500),year=Number(input.schoolYear)||currentYear(),id=crypto.randomUUID();
-      if(!allowedDomains.has(domain)||!allowedStandards.has(standard)||!allowedEvidenceTypes.has(evidenceType))return Response.json({error:"Cadangan pemetaan tidak sah."},{status:400});
-      await env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,storage_key,mime_type,original_name,notes,status,submitted_by_email,submitted_by_name,verified_by_email,verified_by_name,verified_at,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,'','','',?,'pending',?,?,'','','','OPR',?,?,?)").bind(id,year,domain,unitName,evidenceType,title,standard,row.viewUrl,`Pemetaan automatik: ${reason}`,me.email,me.name,reportId,now,now).run();
-      await env.DB.prepare("UPDATE opr_intake_metadata SET review_status='imported',updated_at=? WHERE report_id=?").bind(now,reportId).run();return Response.json({success:true,id});
+      const domain=clean(chosen.domain,80),unitName=clean(chosen.unitName,120),evidenceType=clean(chosen.evidenceType,120),standard=clean(chosen.standardCode,20),manual=input.manual===true,remember=manual&&input.remember===true,reason=manual?"Pemetaan manual oleh pentadbir.":clean(chosen.reason,500),year=Number(input.schoolYear)||currentYear(),id=crypto.randomUUID();
+      if(!allowedDomains.has(domain)||!allowedUnit(domain,unitName)||!allowedStandards.has(standard)||!allowedStandardDomain(standard,domain)||!allowedEvidenceTypes.has(evidenceType))return Response.json({error:"Pemetaan tidak sah atau standard, bidang dan unit tidak sepadan."},{status:400});
+      const writes=[env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,storage_key,mime_type,original_name,notes,status,submitted_by_email,submitted_by_name,verified_by_email,verified_by_name,verified_at,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,'','','',?,'pending',?,?,'','','','OPR',?,?,?)").bind(id,year,domain,unitName,evidenceType,title,standard,row.viewUrl,`${manual?"Pemetaan manual":"Pemetaan automatik"}: ${reason}`,me.email,me.name,reportId,now,now),env.DB.prepare("UPDATE opr_intake_metadata SET review_status='imported',updated_at=? WHERE report_id=?").bind(now,reportId)];
+      if(remember){const profile=skasSignalProfile({category:row.category,title,metadata:payload});writes.push(env.DB.prepare("INSERT INTO skas_mapping_rules(id,category,signal_profile,domain,unit_name,evidence_type,standard_code,updated_by_email,updated_by_name,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(category,signal_profile) DO UPDATE SET domain=excluded.domain,unit_name=excluded.unit_name,evidence_type=excluded.evidence_type,standard_code=excluded.standard_code,updated_by_email=excluded.updated_by_email,updated_by_name=excluded.updated_by_name,updated_at=excluded.updated_at").bind(crypto.randomUUID(),row.category,profile,domain,unitName,evidenceType,standard,me.email,me.name,now,now));}
+      await env.DB.batch(writes);
+      return Response.json({success:true,id});
     }
     const id=await addEvidence(me,input);return Response.json({success:true,id});
   }catch(error){console.error("SKAS create",error);return Response.json({error:error instanceof Error?error.message:"Evidens tidak dapat disimpan."},{status:400});}
