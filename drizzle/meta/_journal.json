@@ -29,6 +29,13 @@
       "when": 1788431417251,
       "tag": "0007_skas_mapping_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788584779018,
+      "tag": "0008_management_materials",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,14 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
+export const managementMaterials = sqliteTable("management_materials", {
+ id:text("id").primaryKey(),schoolYear:integer("school_year").notNull(),folderId:text("folder_id").notNull(),
+ title:text("title").notNull(),documentType:text("document_type").notNull(),sourceUrl:text("source_url").notNull().default(""),
+ storageKey:text("storage_key").notNull().default(""),mimeType:text("mime_type").notNull().default(""),originalName:text("original_name").notNull().default(""),
+ notes:text("notes").notNull().default(""),visibility:text("visibility").notNull().default("private"),
+ ownerEmail:text("owner_email").notNull(),ownerName:text("owner_name").notNull(),createdAt:text("created_at").notNull(),
+},table=>[index("idx_management_year_folder").on(table.schoolYear,table.folderId)]);
+
 export const teachers = sqliteTable("teachers", { id: text("id").primaryKey(), name: text("name").notNull(), category: text("category").notNull(), createdAt: text("created_at").notNull() });
 export const absences = sqliteTable("absences", { id: text("id").primaryKey(), teacherId: text("teacher_id").notNull(), teacherName: text("teacher_name").notNull(), category: text("category").notNull(), absenceDate: text("absence_date").notNull(), endDate: text("end_date"), reason: text("reason").notNull(), duration: text("duration").notNull(), startTime: text("start_time"), endTime: text("end_time"), note: text("note").notNull().default(""), reliefStatus: text("relief_status").notNull().default("pending"), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull() });
 export const reliefSchedules = sqliteTable("relief_schedules", { id: text("id").primaryKey(), fileName: text("file_name").notNull(), sourceLabel: text("source_label").notNull(), teacherCount: text("teacher_count").notNull(), isActive: text("is_active").notNull(), teachersJson: text("teachers_json").notNull(), createdAt: text("created_at").notNull() });
