@@ -1029,3 +1029,73 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
   .module-preview-close{top:14px;right:14px}
   .achievement-preview>.module-preview-close{top:14px;right:14px}
 }
+/* SK@S evidence explorer: scoped to avoid changing other school modules. */
+.skas-hero p{font-size:16px}.skas-hero>div:first-child>span,.skas-year label,.skas-year-note>span{font-size:14px}.skas-year select{font-size:16px;min-height:48px}.skas-year button{width:48px;height:48px}
+.skas-explorer{color:#ecf6f8;font-size:16px;line-height:1.55;margin-top:24px;min-width:0}
+.skas-explorer *{box-sizing:border-box;min-width:0}
+.skas-explorer button,.skas-explorer input,.skas-explorer select,.skas-source-open a{font:inherit;min-height:48px;border:1px solid #426775;border-radius:12px;padding:12px 16px;background:#123440;color:#ecf6f8}
+.skas-explorer button{cursor:pointer;text-align:left}
+.skas-explorer button:hover{background:#204b58}
+.skas-explorer button:focus-visible,.skas-explorer a:focus-visible,.skas-explorer input:focus-visible,.skas-explorer select:focus-visible{outline:3px solid #f4ce70;outline-offset:3px}
+.skas-explorer button[aria-pressed=true]{border-color:#81d8cf;background:#20525b}
+.skas-explorer svg{width:22px;height:22px;flex-shrink:0;vertical-align:middle}
+.skas-explorer h3{font-size:clamp(23px,3vw,32px);line-height:1.3;margin:12px 0;scroll-margin-top:24px;overflow-wrap:anywhere}
+.skas-explorer h4{font-size:19px;line-height:1.4;margin:0 0 8px;overflow-wrap:anywhere}
+.skas-explorer p{font-size:16px;line-height:1.55;margin:8px 0;color:#bdd2d9;overflow-wrap:anywhere}
+.skas-view-controls,.skas-breadcrumb{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.skas-view-controls button{display:flex;align-items:center;gap:10px}
+.skas-explorer .skas-monitor-note{display:flex;align-items:center;gap:12px;background:#174942;color:#d3fff3;padding:16px;border-radius:12px;margin:18px 0}
+.skas-breadcrumb{margin:24px 0 12px;font-size:15px;gap:6px}
+.skas-breadcrumb button{background:transparent;border-color:transparent;padding:8px}
+.skas-explorer-heading{margin-bottom:24px}
+.skas-explorer-heading>button{display:inline-flex;gap:8px;align-items:center}
+.skas-summary-buttons,.skas-standard-cards,.skas-unit-cards,.skas-type-cards{display:grid;gap:14px;margin:16px 0}
+.skas-summary-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}
+.skas-summary-buttons button{display:flex;flex-direction:column;gap:8px}
+.skas-summary-buttons strong{font-size:32px}
+.skas-summary-buttons small{font-size:14px}
+.skas-standard-cards,.skas-unit-cards,.skas-type-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.skas-standard-cards>button,.skas-unit-cards>button,.skas-record-cards>button{display:flex;gap:16px;padding:20px;align-items:flex-start}
+.skas-standard-number{display:grid;place-items:center;flex:0 0 56px;min-height:56px;border-radius:12px;background:#81d8cf;color:#052631;font-size:22px;font-weight:800}
+.skas-standard-cards button div>span,.skas-record-cards button div>span:last-child{color:#8fe0d8;display:inline-block;margin-top:8px}
+.skas-unit-cards span{display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere}
+.skas-unit-cards small{font-size:14px;color:#bdd2d9}
+.skas-type-cards button{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.skas-type-cards strong{border-radius:8px;background:#062631;padding:3px 10px}
+.skas-unit-section,.skas-type-section,.skas-record-section{margin-top:28px}
+.skas-explorer .skas-coverage-note{font-size:14px;color:#b9cbd1}
+.skas-explorer-filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:16px}
+.skas-explorer-filters label{display:flex;flex-direction:column;gap:8px;font-size:16px}
+.skas-explorer-filters input,.skas-explorer-filters select{width:100%;background:#062631}
+.skas-reset-filter{margin:16px 0 0}
+.skas-result-count{padding:10px 0}
+.skas-record-cards{display:grid;gap:14px}
+.skas-record-cards>button{width:100%}
+.skas-record-cards>button>svg{margin-top:6px}
+.skas-record-cards h4{margin-top:12px}
+.skas-explorer .skas-status-label{display:inline-block;font-size:14px;font-weight:700;padding:5px 10px;border-radius:8px;color:#fff3c3;background:#55441d}
+.skas-explorer .skas-status-label.approved{background:#1b5144;color:#ceffeb}
+.skas-explorer .skas-status-label.rejected,.skas-explorer .skas-status-label.needs_info{background:#633d38;color:#ffe2dc}
+.skas-empty-message,.skas-load-state{padding:24px;background:#0b2834;border:1px solid #426775;border-radius:14px}
+.skas-load-state{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.skas-load-state.error{border-color:#e58e80}
+.skas-load-state.error span{flex-basis:100%}
+.skas-document-detail{padding:24px;background:#0b2834;border:1px solid #426775;border-radius:16px}
+.skas-document-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:24px 0}
+.skas-document-detail dt{font-size:14px;color:#bdd2d9}
+.skas-document-detail dd{font-size:17px;margin:4px 0 0;overflow-wrap:anywhere}
+.skas-detail-notes p{white-space:pre-wrap}
+.skas-source-open{border-top:1px solid #426775;padding-top:20px;margin-top:24px}
+.skas-source-open a{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;background:#81d8cf;color:#052631;font-weight:700;text-decoration:none}
+.skas-source-open a span{font-size:14px}
+.skas-management-back{min-height:48px;margin:20px 0;font-size:16px}
+@media(max-width:640px){
+ .skas-standard-cards,.skas-unit-cards,.skas-explorer-filters,.skas-document-detail dl{grid-template-columns:1fr}
+ .skas-summary-buttons{grid-template-columns:1fr}
+ .skas-summary-buttons button{display:grid;grid-template-columns:1fr auto;align-items:center}
+ .skas-summary-buttons small{grid-column:1/-1}
+ .skas-type-cards{grid-template-columns:1fr}
+ .skas-view-controls button{width:100%}
+ .skas-standard-cards>button,.skas-unit-cards>button,.skas-record-cards>button,.skas-document-detail{padding:16px}
+ .skas-standard-number{flex-basis:46px;min-height:46px;font-size:19px}
+}
