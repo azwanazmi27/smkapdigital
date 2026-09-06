@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { portalActor, type PortalActor } from "../../server-auth";
+import {resolveOprManagement,oprSchoolYear} from '../../opr-management-routing';
 import { skasDomains, skasEvidenceTypes, skasSignalProfile, skasStandards, suggestSkasMappings, type SkasMappingSuggestion } from "../../skas-catalog";
 
 type EvidenceRow = {
@@ -45,6 +46,9 @@ function parseJson(value:unknown,fallback:unknown){try{return JSON.parse(clean(v
 
 function candidateMappings(category:string,title:string,payload:Record<string,unknown>,stored:unknown,rule?:MappingRuleRow){
   const automatic=suggestSkasMappings({category,title,metadata:payload,storedSuggestions:stored});
+  const destination=resolveOprManagement(category,title);
+  if(destination?.id==='hem-9')automatic.unshift({standardCode:'3.3',standardLabel:'Pengurusan Hal Ehwal Murid',domain:'Hal Ehwal Murid',unitName:'Kantin dan Pemakanan',evidenceType:'Program, aktiviti atau OPR',reason:'Kategori pengurusan kantin dipilih dalam OPR; bukan berdasarkan lokasi program.',confidence:'tinggi'});
+  if(destination?.id==='enam-2-3')automatic.unshift({standardCode:'3.1',standardLabel:'Pengurusan Kurikulum',domain:'Kurikulum',unitName:'Intervensi Akademik',evidenceType:'Program, aktiviti atau OPR',reason:'Tujuan program ialah kecemerlangan akademik Tingkatan Enam; lokasi program tidak digunakan untuk pemetaan.',confidence:'tinggi'});
   if(!rule)return automatic;
   const learned:SkasMappingSuggestion={standardCode:rule.standardCode,standardLabel:skasStandards.find(([code])=>code===rule.standardCode)?.[1]||"Standard sekolah",domain:rule.domain as SkasMappingSuggestion["domain"],unitName:rule.unitName,evidenceType:rule.evidenceType as SkasMappingSuggestion["evidenceType"],reason:"Mengikut pemetaan manual pentadbir terdahulu bagi kategori dan jenis rekod yang sama.",confidence:"tinggi"};
   return [learned,...automatic.filter(item=>`${item.standardCode}|${item.domain}|${item.unitName}`!==`${learned.standardCode}|${learned.domain}|${learned.unitName}`)].slice(0,3);
@@ -117,6 +121,8 @@ export async function POST(request:Request){
       const requested=input.mapping&&typeof input.mapping==="object"?input.mapping as Partial<SkasMappingSuggestion>:null,chosen=requested&&allowedStandards.has(clean(requested.standardCode,20))&&allowedDomains.has(clean(requested.domain,80))?requested:mappings[0];
       if(!chosen)return Response.json({error:"Cadangan pemetaan tidak dapat ditentukan."},{status:400});
       const domain=clean(chosen.domain,80),unitName=clean(chosen.unitName,120),evidenceType=clean(chosen.evidenceType,120),standard=clean(chosen.standardCode,20),manual=input.manual===true,remember=manual&&input.remember===true,reason=manual?"Pemetaan manual oleh pentadbir.":clean(chosen.reason,500),year=Number(input.schoolYear)||currentYear(),id=crypto.randomUUID();
+      const sourceYear=oprSchoolYear(payload,row.name);
+      if(sourceYear!==null&&sourceYear!==year)return Response.json({error:'Tahun pemetaan mesti sama dengan tahun program OPR ('+sourceYear+').'}, {status:400});
       if(!allowedDomains.has(domain)||!allowedUnit(domain,unitName)||!allowedStandards.has(standard)||!allowedStandardDomain(standard,domain)||!allowedEvidenceTypes.has(evidenceType))return Response.json({error:"Pemetaan tidak sah atau standard, bidang dan unit tidak sepadan."},{status:400});
       const writes=[env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,storage_key,mime_type,original_name,notes,status,submitted_by_email,submitted_by_name,verified_by_email,verified_by_name,verified_at,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,'','','',?,'pending',?,?,'','','','OPR',?,?,?)").bind(id,year,domain,unitName,evidenceType,title,standard,row.viewUrl,`${manual?"Pemetaan manual":"Pemetaan automatik"}: ${reason}`,me.email,me.name,reportId,now,now),env.DB.prepare("UPDATE opr_intake_metadata SET review_status='imported',updated_at=? WHERE report_id=?").bind(now,reportId)];
       if(remember){const profile=skasSignalProfile({category:row.category,title,metadata:payload});writes.push(env.DB.prepare("INSERT INTO skas_mapping_rules(id,category,signal_profile,domain,unit_name,evidence_type,standard_code,updated_by_email,updated_by_name,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(category,signal_profile) DO UPDATE SET domain=excluded.domain,unit_name=excluded.unit_name,evidence_type=excluded.evidence_type,standard_code=excluded.standard_code,updated_by_email=excluded.updated_by_email,updated_by_name=excluded.updated_by_name,updated_at=excluded.updated_at").bind(crypto.randomUUID(),row.category,profile,domain,unitName,evidenceType,standard,me.email,me.name,now,now));}

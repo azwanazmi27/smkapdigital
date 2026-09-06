@@ -1442,7 +1442,7 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
         files.push({name:`${base}-${safeName(media.kind)}-${index+1}.${extension}`,mimeType:media.file.type||"application/octet-stream",base64:await fileToBase64(media.file)});
       }
       const metadata={
-        title:form.title,createdBy:user?.email||"",
+        title:form.title,programDate:form.date,createdBy:user?.email||"",
         competition:{...competition},
         external:{...external},
         attachments:mediaFiles.map((item)=>({name:item.file.name,type:item.file.type,kind:item.kind})),
