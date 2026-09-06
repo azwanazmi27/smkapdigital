@@ -4,6 +4,18 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 function url(path){let code=readFileSync(new URL(path,import.meta.url),'utf8');code=code.replace(/from '\.\/(management-catalog|skas-catalog|monitoring-mapping|achievement-mapping)'/g,(_,name)=>'from '+JSON.stringify(url('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
 const {resolveOprManagement:route,oprSchoolYear}=await import(url('../app/opr-management-routing.ts'));
+const {linkedManagementFolder,resolveSkasManagement}=await import(url('../app/opr-management-routing.ts'));
+test('manual mapping moves the reference, not the source file',()=>{
+ const chosen=linkedManagementFolder('hem-9',{domain:'Hal Ehwal Murid',unit:'Asrama',notes:'Pemetaan manual: oleh pentadbir',status:'approved'});
+ assert.equal(chosen.folderId,'hem-14');assert.equal(chosen.basis,'manual');
+ assert.equal(resolveSkasManagement('Kokurikulum','Badan Beruniform · Kadet Remaja Sekolah').name,'Kadet Remaja Sekolah');
+});
+test('unknown manual unit needs review and rejected mappings do not override',()=>{
+ const mapping={domain:'Hal Ehwal Murid',unit:'Unit tidak wujud',notes:'Pemetaan manual: semakan',status:'pending'};
+ assert.equal(linkedManagementFolder('hem-9',mapping).folderId,'');
+ assert.equal(linkedManagementFolder('hem-9',{...mapping,status:'rejected'}).folderId,'hem-9');
+ assert.equal(linkedManagementFolder('koko-6',{...mapping,domain:'Pencapaian',unit:'Kokurikulum'}).folderId,'koko-6');
+});
 const {sixthFormMappings,suggestSkasMappings,skasDomains}=await import(url('../app/skas-catalog.ts'));
 const {achievementCategory,achievementInfo,achievementFolder}=await import(url('../app/achievement-mapping.ts'));
 test('archive legacy fields exclude venue and preserve international result',()=>{

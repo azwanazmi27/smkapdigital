@@ -41,3 +41,40 @@ export function oprSchoolYear(payload:Record<string,unknown>,name:string):number
  const match=(date||name).match(/^(20\d{2})-\d{2}-\d{2}(?:\D|$)/);
  return match?Number(match[1]):null;
 }
+
+/** Exact saved SK@S unit to Management, without guessing from programme titles. */
+export function resolveSkasManagement(domain:string,unit:string){
+ const sixth=sixthFormMapping(unit);
+ if(sixth&&sixth[2]===domain)return managementFolders.find(f=>f.id===sixth[1])||null;
+ const known:Record<string,string>={
+  'Hal Ehwal Murid|Kantin dan Pemakanan':'hem-9',
+  'Hal Ehwal Murid|Disiplin dan Pengawas':'hem-3',
+  'Hal Ehwal Murid|Kehadiran dan Keciciran':'hem-6',
+  'Hal Ehwal Murid|Bimbingan dan Kaunseling':'hem-12',
+  'Hal Ehwal Murid|Kebajikan dan Bantuan':'hem-8',
+  'Hal Ehwal Murid|Kesihatan, 3K dan Keselamatan':'hem-10',
+  'Hal Ehwal Murid|Asrama':'hem-14',
+  'Hal Ehwal Murid|Pengurusan HEM':'hem-1',
+  'Pengurusan|Data dan Dokumentasi':'pengurusan-9',
+  'Pengurusan|Pengurusan Induk':'pengurusan-1',
+  'Kurikulum|Pengurusan Kurikulum':'kurikulum-1',
+  'Kurikulum|Intervensi Akademik':'kurikulum-4',
+  'Kurikulum|Pentaksiran dan Peperiksaan':'kurikulum-5',
+  'Kurikulum|Jadual Waktu':'kurikulum-7',
+  'Pengajaran dan Pembelajaran|Pencerapan dan Pemantauan':'kurikulum-2',
+  'Kokurikulum|Pengurusan Kokurikulum':'koko-1',
+  'Kokurikulum|Kejohanan dan Pencapaian':'koko-6',
+ };
+ const id=known[domain+'|'+unit];
+ if(id)return managementFolders.find(f=>f.id===id)||null;
+ const root=domain==='Hal Ehwal Murid'?'HEM':domain;
+ const category=domain==='Kurikulum'?root+' · '+unit.replace(/^Panitia · /,''):root+' · '+unit;
+ return resolveOprManagement(category,'');
+}
+
+export function linkedManagementFolder(automatic:string,mapping:{domain:string;unit:string;notes:string;status:string}){
+ const manual=/^Pemetaan manual\b/i.test(mapping.notes||'')&&['pending','approved','needs_info'].includes(mapping.status);
+ // Outcome standards classify the achievement, not the organisational owner.
+ if(!manual||mapping.domain==='Pencapaian')return {folderId:automatic,basis:'source'};
+ return {folderId:resolveSkasManagement(mapping.domain,mapping.unit)?.id||'',basis:'manual'};
+}
