@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {DatabaseSync} from 'node:sqlite';
-function url(name){let code=readFileSync(new URL('../app/'+name+'.ts',import.meta.url),'utf8');code=code.replace(/from '\.\/(monitoring-mapping|skas-catalog)'/g,(_,dep)=>'from '+JSON.stringify(url(dep)));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
+function url(name){let code=readFileSync(new URL('../app/'+name+'.ts',import.meta.url),'utf8');code=code.replace(/from '\.\/(monitoring-mapping|skas-catalog|achievement-mapping)'/g,(_,dep)=>'from '+JSON.stringify(url(dep)));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
 const {monitoringCategory:category,monitoringTopics,resolveMonitoring,monitoringTitle}=await import(url('monitoring-mapping'));
 const {suggestSkasMappings,skasSignalProfile,skasDomains}=await import(url('skas-catalog'));
 const {managementFolders}=await import(url('management-catalog'));

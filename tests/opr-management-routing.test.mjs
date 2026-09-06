@@ -2,9 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-function url(path){let code=readFileSync(new URL(path,import.meta.url),'utf8');code=code.replace(/from '\.\/(management-catalog|skas-catalog|monitoring-mapping)'/g,(_,name)=>'from '+JSON.stringify(url('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
+function url(path){let code=readFileSync(new URL(path,import.meta.url),'utf8');code=code.replace(/from '\.\/(management-catalog|skas-catalog|monitoring-mapping|achievement-mapping)'/g,(_,name)=>'from '+JSON.stringify(url('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
 const {resolveOprManagement:route,oprSchoolYear}=await import(url('../app/opr-management-routing.ts'));
 const {sixthFormMappings,suggestSkasMappings,skasDomains}=await import(url('../app/skas-catalog.ts'));
+const {achievementCategory,achievementInfo,achievementFolder}=await import(url('../app/achievement-mapping.ts'));
+test('archive legacy fields exclude venue and preserve international result',()=>{
+ const info=achievementInfo('2026-08-31-ARKIB-Kejayaan KRS__TEMPAT__Kantin__PERINGKAT__Antarabangsa__BIDANG__Kokurikulum__PENCAPAIAN__Johan__PENYEDIA__Azwan.pdf',{});
+ assert.equal(info.title,'Kejayaan KRS');assert.equal(info.field,'Kokurikulum');assert.equal(info.level,'Antarabangsa');assert.equal(info.result,'Johan');
+ assert.equal(achievementFolder(info.field),'koko-6');
+ assert.equal(achievementFolder('Lain-lain'),'');
+});
+test('archive structured unit routes to KRS and achievement suggestion stays pending-candidate data',()=>{
+ const metadata={achievementField:'Kokurikulum',achievementLevel:'Negeri',achievementResult:'Johan',achievementUnit:'Kokurikulum · Badan Beruniform · Kadet Remaja Sekolah'};
+ const info=achievementInfo('fail.pdf',metadata);
+ assert.equal(route(info.unitCategory,'Kejayaan di kantin').name,'Kadet Remaja Sekolah');
+ const [suggestion]=suggestSkasMappings({category:achievementCategory,title:'Kejayaan KRS',metadata});
+ assert.equal(suggestion.standardCode,'5.4');assert.equal(suggestion.unitName,'Kokurikulum');
+ assert.match(suggestion.reason,/Negeri/);assert.match(suggestion.reason,/Johan/);
+});
 test('all Sixth Form mappings resolve existing folders and registered specific SKAS units',()=>{
  for(const [name,id,domain] of sixthFormMappings){
   const category='Tingkatan Enam · '+name;

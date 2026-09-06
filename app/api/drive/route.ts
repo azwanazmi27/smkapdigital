@@ -8,6 +8,10 @@ type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 type OprIntakeMetadata = {
   title: string;
   programDate: string;
+  achievementField: string;
+  achievementLevel: string;
+  achievementResult: string;
+  achievementUnit: string;
   monitoringFocus: string;
   monitoringNotes: string;
   monitoringAction: string;
@@ -68,6 +72,10 @@ function normalizeOprMetadata(value: unknown): OprIntakeMetadata | null {
   }).slice(0, 6) : [];
   return {
     title: clean(input.title, 180),
+    achievementField: clean(input.achievementField,60),
+    achievementLevel: clean(input.achievementLevel,40),
+    achievementResult: clean(input.achievementResult,160),
+    achievementUnit: clean(input.achievementUnit,240),
     monitoringFocus: clean(input.monitoringFocus,40),
     monitoringNotes: clean(input.monitoringNotes,8000),
     monitoringAction: clean(input.monitoringAction,4000),
@@ -335,7 +343,7 @@ export async function DELETE(request:Request){
     await env.DB.batch([
       env.DB.prepare("DELETE FROM opr_reports WHERE id=?").bind(id),
       env.DB.prepare("DELETE FROM opr_intake_metadata WHERE report_id=?").bind(id),
-      env.DB.prepare("UPDATE skas_evidence SET status='source_deleted',updated_at=? WHERE source_module IN ('OPR','e-Pemantauan') AND source_record_id=?").bind(new Date().toISOString(),id),
+      env.DB.prepare("UPDATE skas_evidence SET status='source_deleted',updated_at=? WHERE source_module IN ('OPR','e-Pemantauan','Arkib Kejayaan') AND source_record_id=?").bind(new Date().toISOString(),id),
     ]);
     return Response.json({success:true});
   }catch(error){console.error("Google Drive delete error",error);return Response.json({error:"Laporan tidak dapat dipadam daripada Google Drive sekarang."},{status:502});}

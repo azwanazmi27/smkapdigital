@@ -6,7 +6,7 @@ import ts from 'typescript';
 import {DatabaseSync} from 'node:sqlite';
 import {validSchoolYear,canReadMaterial,canDeleteMaterial,isManagementAdmin,safeMaterialUrl,mappingDomain,managementSource} from '../app/management-model.ts';
 
-function moduleUrl(path){let source=readFileSync(new URL(path,import.meta.url),'utf8');source=source.replace(/from '\.\/(skas-catalog|monitoring-mapping)'/g,(_,name)=>'from '+JSON.stringify(moduleUrl('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
+function moduleUrl(path){let source=readFileSync(new URL(path,import.meta.url),'utf8');source=source.replace(/from '\.\/(skas-catalog|monitoring-mapping|achievement-mapping)'/g,(_,name)=>'from '+JSON.stringify(moduleUrl('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
 const catalog=await import(moduleUrl('../app/management-catalog.ts'));
 test('five divisions; unique folders and complete ancestry',()=>{
  assert.equal(catalog.managementSections.length,5);

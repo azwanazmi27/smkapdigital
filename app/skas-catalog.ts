@@ -1,3 +1,4 @@
+import {achievementCategory,achievementInfo} from './achievement-mapping';
 import {monitoringCategory,resolveMonitoring} from './monitoring-mapping';
 
 /** Shared internal units; these are not new SK@S standards. */
@@ -177,6 +178,7 @@ function storedCodes(value: unknown) {
 }
 
 export function skasSignalProfile(input: MappingInput) {
+  if(tidy(input.category)===achievementCategory){const info=achievementInfo(tidy(input.title),input.metadata);return 'achievement:'+info.field+':'+info.unitCategory;}
   if(tidy(input.category)===monitoringCategory)return 'monitoring:'+ (resolveMonitoring(tidy(input.title),input.metadata)?.id||'review');
   const text = fold(`${tidy(input.category)} ${tidy(input.title)}`);
   const signals = [];
@@ -189,6 +191,11 @@ export function skasSignalProfile(input: MappingInput) {
 /** Deterministic fallback used for new and historic portal records. */
 export function suggestSkasMappings(input: MappingInput): SkasMappingSuggestion[] {
   const category = tidy(input.category);
+  if(category===achievementCategory){
+    const info=achievementInfo(tidy(input.title),input.metadata);
+    const unit=info.field==='Akademik'?'Akademik':info.field==='Sahsiah'?'Sahsiah':['Kokurikulum','Sukan'].includes(info.field)?'Kokurikulum':'Arkib Kejayaan';
+    return [makeSuggestion('5.4','Pencapaian',unit,'Sijil, keputusan atau pengiktirafan',`Rekod Arkib Kejayaan: ${info.field||'bidang perlu disemak'}; ${info.level||'peringkat belum dinyatakan'}; ${info.result||'pencapaian perlu disemak'}. ${info.unitCategory||''} Perlu perakuan pentadbir.`,'sederhana')];
+  }
   if(category===monitoringCategory){
     const topic=resolveMonitoring(tidy(input.title),input.metadata);
     return topic?[makeSuggestion(topic.standard,topic.domain,topic.unit,'Pemantauan dan penambahbaikan','Perkara yang dipantau dipadankan dengan unit berkaitan; lokasi tidak digunakan sebagai asas pemetaan.','sederhana')]:[];
