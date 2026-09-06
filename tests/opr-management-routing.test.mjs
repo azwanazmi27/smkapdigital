@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-function url(path){let code=readFileSync(new URL(path,import.meta.url),'utf8');code=code.replace(/from '\.\/(management-catalog|skas-catalog)'/g,(_,name)=>'from '+JSON.stringify(url('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
+function url(path){let code=readFileSync(new URL(path,import.meta.url),'utf8');code=code.replace(/from '\.\/(management-catalog|skas-catalog|monitoring-mapping)'/g,(_,name)=>'from '+JSON.stringify(url('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
 const {resolveOprManagement:route,oprSchoolYear}=await import(url('../app/opr-management-routing.ts'));
 const {sixthFormMappings,suggestSkasMappings,skasDomains}=await import(url('../app/skas-catalog.ts'));
 test('all Sixth Form mappings resolve existing folders and registered specific SKAS units',()=>{
