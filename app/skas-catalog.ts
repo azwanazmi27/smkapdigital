@@ -1,3 +1,31 @@
+/** Shared internal units; these are not new SK@S standards. */
+export const sixthFormMappings = [
+  ['Pengurusan Tingkatan Enam','enam-1','Pengurusan'],
+  ['Kerja Kursus','enam-2-2','Kurikulum'],
+  ['Pentaksiran & Peperiksaan STPM','enam-2-1','Kurikulum'],
+  ['Kecemerlangan Akademik Tingkatan Enam','enam-2-3','Kurikulum'],
+  ['Jadual Waktu Tingkatan Enam','enam-2-4','Kurikulum'],
+  ['Pengajian Am','enam-2-5','Kurikulum'],
+  ['Syariah','enam-2-6','Kurikulum'],
+  ['Bahasa Arab','enam-2-7','Kurikulum'],
+  ['Bahasa Melayu','enam-2-8','Kurikulum'],
+  ['Sejarah','enam-2-9','Kurikulum'],
+  ['Ekonomi','enam-2-10','Kurikulum'],
+  ['MUET','enam-2-11','Kurikulum'],
+  ['Disiplin Tingkatan Enam','enam-3-1','Hal Ehwal Murid'],
+  ['Biasiswa','enam-3-2','Hal Ehwal Murid'],
+  ['Kebajikan Pelajar Tingkatan Enam','enam-3-3','Hal Ehwal Murid'],
+  ['Guru Kelas','enam-3-4','Hal Ehwal Murid'],
+  ['Persatuan Tingkatan Enam','enam-4-1','Kokurikulum'],
+  // Generic uniformed units are not assumed to be JPAM.
+  ['Unit Beruniform Tingkatan Enam','enam-4','Kokurikulum'],
+  ['Sukan & Permainan Tingkatan Enam','enam-4-3','Kokurikulum'],
+] as const;
+export function sixthFormMapping(category:string) {
+  const parts=category.split(' · ').map(s=>s.trim().toLowerCase());
+  return parts[0]==='tingkatan enam' ? sixthFormMappings.find(([name])=>name.toLowerCase()===parts.at(-1)) : undefined;
+}
+
 export const skasStandards = [
   ["1", "Kepimpinan"],
   ["2", "Pengurusan organisasi"],
@@ -23,7 +51,7 @@ export const skasEvidenceTypes = [
   "Dokumen sokongan lain",
 ] as const;
 
-export const skasDomains = [
+const baseSkasDomains = [
   {
     name: "Pengurusan",
     standard: "1 / 2",
@@ -61,6 +89,7 @@ export const skasDomains = [
   },
 ] as const;
 
+export const skasDomains = baseSkasDomains.map(domain=>({...domain,units:[...domain.units,...sixthFormMappings.filter(row=>row[2]===domain.name).map(row=>`Tingkatan Enam · ${row[0]}`)]}));
 export type SkasDomainName = (typeof skasDomains)[number]["name"];
 
 export type SkasMappingSuggestion = {
@@ -91,6 +120,8 @@ function metadataFlag(metadata: unknown, group: "competition" | "external") {
 }
 
 function domainFromCategory(category: string): SkasDomainName {
+  const sixth=sixthFormMapping(category);
+  if(sixth)return sixth[2];
   const value = fold(category);
   if (value.includes("kokurikulum")) return "Kokurikulum";
   if (value.startsWith("hem") || value.includes(" · hem") || value.includes("hal ehwal murid")) return "Hal Ehwal Murid";
@@ -110,6 +141,8 @@ function availableUnit(domain: SkasDomainName, preferred: string) {
 }
 
 function unitFromCategory(category: string, domain: SkasDomainName) {
+  const sixth=sixthFormMapping(category);
+  if(sixth)return `Tingkatan Enam · ${sixth[0]}`;
   const parts = category.split(" · ").map((part) => part.trim()).filter(Boolean);
   const tail = parts.at(-1) || "";
   if (domain === "Kokurikulum" && parts.length >= 3) {

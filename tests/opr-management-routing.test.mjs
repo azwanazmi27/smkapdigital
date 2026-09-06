@@ -4,6 +4,27 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 function url(path){let code=readFileSync(new URL(path,import.meta.url),'utf8');code=code.replace(/from '\.\/(management-catalog|skas-catalog)'/g,(_,name)=>'from '+JSON.stringify(url('../app/'+name+'.ts')));return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(code,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64');}
 const {resolveOprManagement:route,oprSchoolYear}=await import(url('../app/opr-management-routing.ts'));
+const {sixthFormMappings,suggestSkasMappings,skasDomains}=await import(url('../app/skas-catalog.ts'));
+test('all Sixth Form mappings resolve existing folders and registered specific SKAS units',()=>{
+ for(const [name,id,domain] of sixthFormMappings){
+  const category='Tingkatan Enam · '+name;
+  assert.equal(route(category,'Perjumpaan mingguan').id,id);
+  const suggestion=suggestSkasMappings({category,title:'Perjumpaan mingguan'})[0];
+  assert.equal(suggestion.domain,domain);
+  assert.equal(suggestion.unitName,'Tingkatan Enam · '+name);
+  assert.ok(skasDomains.find(d=>d.name===domain).units.includes(suggestion.unitName));
+ }
+});
+test('Sixth Form association meeting is not achievement or a canteen activity',()=>{
+ const category='Tingkatan Enam · Kokurikulum Tingkatan Enam · Persatuan Tingkatan Enam';
+ assert.equal(route(category,'Perjumpaan mingguan di kantin').id,'enam-4-1');
+ const result=suggestSkasMappings({category,title:'Perjumpaan mingguan di kantin'});
+ assert.equal(result[0].standardCode,'3.2');
+ assert.equal(result[0].unitName,'Tingkatan Enam · Persatuan Tingkatan Enam');
+ assert.ok(!result.some(s=>s.standardCode==='5.4'));
+ assert.ok(suggestSkasMappings({category,metadata:{competition:{enabled:true}}}).some(s=>s.standardCode==='5.4'));
+});
+test('STPM examination stays in examination folder, not excellence',()=>assert.equal(route('Tingkatan Enam · Pentaksiran & Peperiksaan STPM','Taklimat STPM').id,'enam-2-1'));
 test('canteen category routes to HEM canteen',()=>assert.equal(route('HEM · Kantin','Mesyuarat kantin').id,'hem-9'));
 test('sixth form excellence at canteen stays academic',()=>assert.equal(route('Tingkatan Enam · Subjek Tingkatan Enam · Pengajian Am','Program Kecemerlangan Tingkatan Enam di kantin').id,'enam-2-3'));
 test('venue never routes a generic programme into canteen',()=>assert.equal(route('Pengurusan','Majlis di kantin'),null));

@@ -1,4 +1,5 @@
 import {managementFolders} from './management-catalog';
+import {sixthFormMapping} from './skas-catalog';
 
 const normal=(s:string)=>s.toLowerCase().replace(/&/g,'dan').replace(/^(kelab|persatuan|panitia)\s+/,'').replace(/[^a-z0-9]+/g,' ').trim();
 const aliases:Record<string,string>={
@@ -18,8 +19,10 @@ export function resolveOprManagement(category:string,title:string){
  if(!prefix)return null;
  // The activity purpose refines a Sixth Form academic programme; a venue in
  // the title does not change its owning division.
- if(root==='tingkatan enam'&&/kecemerlangan|akademik|stpm/i.test(title)&&!/kokurikulum|hal ehwal murid/i.test(category))return managementFolders.find(f=>f.id==='enam-2-3')!;
+ if(root==='tingkatan enam'&&/kecemerlangan/i.test(title)&&!/kokurikulum|hal ehwal murid/i.test(category))return managementFolders.find(f=>f.id==='enam-2-3')!;
  const explicit=aliases[category.toLowerCase()];
+ const sixth=sixthFormMapping(category);
+ if(sixth)return managementFolders.find(f=>f.id===sixth[1])||null;
  if(explicit)return managementFolders.find(f=>f.id===explicit)||null;
  if(parts.length<2)return null;
  const tail=normal(parts.at(-1)||'');
