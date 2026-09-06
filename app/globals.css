@@ -1117,3 +1117,4 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
  .skas-standard-cards>button,.skas-unit-cards>button,.skas-record-cards>button,.skas-document-detail{padding:16px}
  .skas-standard-number{flex-basis:46px;min-height:46px;font-size:19px}
 }
+.management-centre .management-delete{color:#ffb4a9;border-color:#9e504a;background:#522a2a;}

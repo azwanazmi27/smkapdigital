@@ -7,6 +7,7 @@ export const managementMaterials = sqliteTable("management_materials", {
  storageKey:text("storage_key").notNull().default(""),mimeType:text("mime_type").notNull().default(""),originalName:text("original_name").notNull().default(""),
  notes:text("notes").notNull().default(""),visibility:text("visibility").notNull().default("private"),
  ownerEmail:text("owner_email").notNull(),ownerName:text("owner_name").notNull(),createdAt:text("created_at").notNull(),
+ deletedAt:text("deleted_at").notNull().default(""),deletedBy:text("deleted_by").notNull().default(""),
 },table=>[index("idx_management_year_folder").on(table.schoolYear,table.folderId)]);
 
 export const teachers = sqliteTable("teachers", { id: text("id").primaryKey(), name: text("name").notNull(), category: text("category").notNull(), createdAt: text("created_at").notNull() });

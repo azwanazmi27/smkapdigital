@@ -1,6 +1,7 @@
 export const managementSource='PENGURUSAN SEKOLAH';
 export const validSchoolYear=(value:unknown)=>Number.isInteger(Number(value))&&Number(value)>=2020&&Number(value)<=2100;
 export const isManagementAdmin=(role:string)=>['admin','super_admin'].includes(role);
+export function canDeleteMaterial(row:{ownerEmail:string},actor:{email:string;role:string}){return row.ownerEmail===actor.email||isManagementAdmin(actor.role);}
 export function canReadMaterial(row:{visibility:string;ownerEmail:string},actor:{email:string;role:string}){
  return row.visibility==='staff'||row.ownerEmail===actor.email||isManagementAdmin(actor.role);
 }

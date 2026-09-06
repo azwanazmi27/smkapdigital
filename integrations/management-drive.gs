@@ -1,5 +1,14 @@
 // Add dispatch after the existing OPR token check. Existing OPR handlers are unchanged.
 function managementDrive_(body) {
+  if(body.action==='management_trash') {
+    var target=DriveApp.getFileById(String(body.id||''));
+    if(!/^[-a-f0-9]{36}$/i.test(String(body.requestId))||target.getName().indexOf(String(body.requestId)+' - ')!==0)throw new Error('Fail pengurusan tidak sah');
+    if(target.isTrashed())return json_({ok:true});
+    var ancestors=target.getParents(),current=ancestors.hasNext()?ancestors.next():null,valid=false;
+    for(var n=0;current&&n<20;n++){if(current.getId()==='1KHC_CcBhuiInffmJj5mXJzFYh0X1ClCE'){valid=true;break;}var parents=current.getParents();current=parents.hasNext()?parents.next():null;}
+    if(!valid)throw new Error('Fail bukan dalam Drive portal sekolah');
+    target.setTrashed(true);return json_({ok:true});
+  }
   if (body.action === 'management_health') return json_({ok:true,service:'management-v1',rootName:DriveApp.getFolderById('1KHC_CcBhuiInffmJj5mXJzFYh0X1ClCE').getName()});
   if (body.action === 'management_download') {
     var item=DriveApp.getFileById(String(body.id||'')),parents=item.getParents(),inside=false,folder=parents.hasNext()?parents.next():null;
