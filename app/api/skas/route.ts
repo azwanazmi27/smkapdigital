@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { portalActor, type PortalActor } from "../../server-auth";
 import {resolveOprManagement,oprSchoolYear} from '../../opr-management-routing';
+import {isPrimaryReport} from '../../report-kind';
 import {achievementCategory,achievementInfo} from '../../achievement-mapping';
 import {monitoringCategory,monitoringTitle} from "../../monitoring-mapping";
 import { skasDomains, skasEvidenceTypes, skasSignalProfile, skasStandards, suggestSkasMappings, type SkasMappingSuggestion } from "../../skas-catalog";
@@ -64,7 +65,7 @@ async function dashboard(year:number){
     env.DB.prepare("SELECT category,signal_profile AS signalProfile,domain,unit_name AS unitName,evidence_type AS evidenceType,standard_code AS standardCode FROM skas_mapping_rules").all<MappingRuleRow>(),
   ]);
   const ruleMap=new Map(rules.results.map(rule=>[`${rule.category}|${rule.signalProfile}`,rule]));
-  return {years:years.results,evidence:evidence.results,candidates:candidates.results.filter(row=>{const y=oprSchoolYear(parseJson(row.payloadJson,{}) as Record<string,unknown>,row.name);return y===null||y===year;}).map((row:Record<string,string>)=>{const payload=parseJson(row.payloadJson,{}) as Record<string,unknown>,stored=parseJson(row.suggestedSkasJson,[]),title=clean(payload.title,180)||(row.category===monitoringCategory?monitoringTitle(row.name):row.name),profile=skasSignalProfile({category:row.category,title,metadata:payload}),rule=ruleMap.get(`${row.category}|${profile}`);return {...row,title:row.category===achievementCategory?achievementInfo(row.name,payload).title:title,mappings:candidateMappings(row.category,title,payload,stored,rule)};})};
+  return {years:years.results,evidence:evidence.results,candidates:candidates.results.filter(isPrimaryReport).filter(row=>{const y=oprSchoolYear(parseJson(row.payloadJson,{}) as Record<string,unknown>,row.name);return y===null||y===year;}).map((row:Record<string,string>)=>{const payload=parseJson(row.payloadJson,{}) as Record<string,unknown>,stored=parseJson(row.suggestedSkasJson,[]),title=clean(payload.title,180)||(row.category===monitoringCategory?monitoringTitle(row.name):row.name),profile=skasSignalProfile({category:row.category,title,metadata:payload}),rule=ruleMap.get(`${row.category}|${profile}`);return {...row,title:row.category===achievementCategory?achievementInfo(row.name,payload).title:title,mappings:candidateMappings(row.category,title,payload,stored,rule)};})};
 }
 
 export async function GET(request:Request){
@@ -118,7 +119,7 @@ export async function POST(request:Request){
     }
     if(action==="import_candidate"){
       const reportId=clean(input.reportId,120),row=await env.DB.prepare("SELECT r.category,COALESCE(m.suggested_skas_json,'[]') AS suggestions,COALESCE(m.payload_json,'{}') AS payload,r.name,r.view_url AS viewUrl FROM opr_reports r LEFT JOIN opr_intake_metadata m ON m.report_id=r.id WHERE r.id=? AND NOT EXISTS (SELECT 1 FROM skas_evidence s WHERE s.source_module IN ('OPR','e-Pemantauan','Arkib Kejayaan') AND s.source_record_id=r.id)").bind(reportId).first<Record<string,string>>();
-      if(!row)return Response.json({error:"Calon laporan tidak ditemui atau telah diproses."},{status:404});
+      if(!row||!isPrimaryReport(row as {name:string;category:string}))return Response.json({error:"Calon laporan tidak ditemui atau telah diproses."},{status:404});
       const payload=parseJson(row.payload,{}) as Record<string,unknown>,stored=parseJson(row.suggestions,[]),title=clean(payload.title,180)||(row.category===monitoringCategory?monitoringTitle(row.name):row.name),mappings=candidateMappings(row.category,title,payload,stored);
       const requested=input.mapping&&typeof input.mapping==="object"?input.mapping as Partial<SkasMappingSuggestion>:null,chosen=requested&&allowedStandards.has(clean(requested.standardCode,20))&&allowedDomains.has(clean(requested.domain,80))?requested:mappings[0];
       if(!chosen)return Response.json({error:"Cadangan pemetaan tidak dapat ditentukan."},{status:400});

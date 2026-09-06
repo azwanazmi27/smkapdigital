@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, Clock3, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HandCoins, HeartHandshake, Landmark, Mail, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Presentation, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Trophy, UserRound, Users, Video, X } from "lucide-react";
 import { oprCategoryGroups, oprCategoryValues, oprFolderTree, type OprFolderNode } from "./opr-categories";
 import {achievementCategory} from './achievement-mapping';
+import {isPrimaryReport} from './report-kind';
 import { SkasCentre } from "./skas-centre";
 import {monitoringCategory,monitoringTopics} from './monitoring-mapping';
 import { ManagementCentre } from "./management-centre";
@@ -606,7 +607,7 @@ function OprDashboard({ create, openDuty, notify, user }: { create: () => void; 
   const reportTitle = (report: OprReport) => report.name.replace(/\.pdf$/i, "").replace(/__(?:TEMPAT|PERINGKAT|BIDANG|PENCAPAIAN|PENYEDIA)__.*/i, "").replace(/^\d{4}-\d{2}-\d{2}-/, "").replace(/^ARKIB-/i, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
   const reportPreparer = (report: OprReport) => report.name.match(/__PENYEDIA__(.+)\.pdf$/i)?.[1] || "Nama penyedia tidak direkodkan";
   const reportDate = (report: OprReport) => new Intl.DateTimeFormat("ms-MY", { day: "numeric", month: "long", year: "numeric" }).format(new Date(report.updatedAt));
-  const oprReports = reports.filter((report) => !report.category.toLowerCase().includes("arkib kejayaan") && !/^\d{4}-\d{2}-\d{2}-ARKIB-/i.test(report.name));
+  const oprReports = reports.filter((report) => isPrimaryReport(report) && !report.category.toLowerCase().includes("arkib kejayaan") && !/^\d{4}-\d{2}-\d{2}-ARKIB-/i.test(report.name));
   const belongsTo = (report: OprReport, category: string) => report.category === category || report.category.startsWith(`${category} · `) || (category === "Pengurusan" && ["Laporan Guru Bertugas","Laporan Perhimpunan"].includes(report.category));
   const categoryCount = (category: string) => oprReports.filter((report) => belongsTo(report, category)).length;
   const visible = oprReports.slice(0, 3);
@@ -1441,7 +1442,7 @@ function OprGenerator({ notify, close, user }: { notify: (message: string) => vo
       const files=[{name:`${pdfBase}.pdf`,mimeType:"application/pdf",base64:pdfBase64}];
       for(let index=0;index<mediaFiles.length;index++){
         const media=mediaFiles[index],extension=media.file.type==="application/pdf"?"pdf":media.file.type==="image/png"?"png":"jpg";
-        files.push({name:`${base}-${safeName(media.kind)}-${index+1}.${extension}`,mimeType:media.file.type||"application/octet-stream",base64:await fileToBase64(media.file)});
+        files.push({name:`${base}__LAMPIRAN__${safeName(media.kind)}-${index+1}.${extension}`,mimeType:media.file.type||"application/octet-stream",base64:await fileToBase64(media.file)});
       }
       const metadata={
         title:form.title,programDate:form.date,createdBy:user?.email||"",

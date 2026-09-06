@@ -1,3 +1,4 @@
+import {isPrimaryReport} from '../../report-kind';
 import {achievementCategory,achievementInfo,achievementFolder} from '../../achievement-mapping';
 import {monitoringCategory,monitoringTitle,resolveMonitoring} from '../../monitoring-mapping';
 import {portalActor} from '../../server-auth';
@@ -12,7 +13,7 @@ export async function GET(request:Request){
  if(!validSchoolYear(year))return Response.json({error:'Tahun tidak sah.'},{status:400});
  try{
   const rows=await managementStore().db.prepare("SELECT r.id,r.name,r.category,r.view_url AS viewUrl,COALESCE(m.payload_json,'{}') AS payload,s.status AS mappingStatus,s.standard_code AS standardCode FROM opr_reports r LEFT JOIN opr_intake_metadata m ON m.report_id=r.id LEFT JOIN skas_evidence s ON s.source_module IN ('OPR','e-Pemantauan','Arkib Kejayaan') AND s.source_record_id=r.id WHERE (r.category NOT LIKE 'Lain-lain%' OR r.category='Lain-lain · e-Pemantauan' OR r.category='Lain-lain · Arkib Kejayaan') AND (m.report_id IS NOT NULL OR r.name LIKE '%.pdf' OR r.category='Lain-lain · Arkib Kejayaan') ORDER BY r.created_at DESC").all<{id:string;name:string;category:string;viewUrl:string;payload:string;mappingStatus:string;standardCode:string}>();
-  const reports=rows.results.flatMap(row=>{
+  const reports=rows.results.filter(isPrimaryReport).flatMap(row=>{
    let payload:Record<string,unknown>={};try{payload=JSON.parse(row.payload);}catch{}
    const schoolYear=oprSchoolYear(payload,row.name);
    if(schoolYear!==year)return [];
