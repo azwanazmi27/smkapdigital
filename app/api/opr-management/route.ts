@@ -47,7 +47,10 @@ export async function GET(request:Request){
    const destination=isMonitoring?null:resolveOprManagement(isAchievement?achievement.unitCategory:row.category,title);
    const folderId=isMonitoring?resolveMonitoring(title,payload)?.folderId:destination?.id||(isAchievement&&!achievement.unitCategory?achievementFolder(achievement.field):'');
    const chosen={folderId:managementFolders.some(f=>f.id===row.manualFolder)?row.manualFolder:folderId||'',basis:row.manualFolder?'manual':'source'};
-   return [{documentType:managementDocumentTypes.includes(row.documentType)?row.documentType:isAchievement?'Sijil, keputusan atau pengiktirafan':isMonitoring?'Pemantauan dan penambahbaikan':'Program, aktiviti atau OPR',id:row.id,title:isAchievement?achievement.title:title,category:row.category,folderId:chosen.folderId,mappingBasis:chosen.basis,sourceModule:isAchievement?'Arkib Kejayaan':isMonitoring?'e-Pemantauan':'OPR',openUrl:safeMaterialUrl(row.viewUrl)}];
+   const duty=/laporan guru bertugas/i.test(row.category)||/laporan[- ](?:harian|mingguan)[- ]guru[- ]bertugas/i.test(title);
+   const assembly=/laporan perhimpunan/i.test(row.category);
+   const sourceModule=isAchievement?'Arkib Kejayaan':isMonitoring?'e-Pemantauan':assembly?'Laporan Perhimpunan':duty?/mingguan/i.test(row.category+' '+title)?'Guru Bertugas Mingguan':'Guru Bertugas Harian':'OPR';
+   return [{documentType:managementDocumentTypes.includes(row.documentType)?row.documentType:isAchievement?'Sijil, keputusan atau pengiktirafan':isMonitoring?'Pemantauan dan penambahbaikan':duty||assembly?'Analisis, laporan atau keberhasilan':'Program, aktiviti atau OPR',id:row.id,title:isAchievement?achievement.title:title,category:row.category,folderId:chosen.folderId,mappingBasis:chosen.basis,sourceModule,openUrl:safeMaterialUrl(row.viewUrl)}];
   });
   return Response.json({reports},{headers:{'Cache-Control':'private, no-store'}});
  }catch(error){console.error('Linked OPR read',error);return Response.json({error:'Rujukan OPR belum dapat dibaca. Cuba semula.'},{status:500});}

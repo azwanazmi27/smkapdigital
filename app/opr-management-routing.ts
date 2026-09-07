@@ -14,8 +14,15 @@ const aliases:Record<string,string>={
 
 /** Subject/category only. Deliberately never consumes location or venue fields. */
 export function resolveOprManagement(category:string,title:string){
- const parts=category.split(' · ').map(s=>s.trim()),root=parts[0]?.toLowerCase();
- const prefix=({'pengurusan':'pengurusan-','kurikulum':'kurikulum-','hem':'hem-','kokurikulum':'koko-','tingkatan enam':'enam-'} as Record<string,string>)[root];
+  const parts=category.split(' · ').map(s=>s.trim()),root=parts[0]?.toLowerCase();
+  // Duty and assembly reports have a fixed administrative owner.  Their
+  // report type, rather than the venue named in the report, chooses the folder.
+  if(/laporan perhimpunan/i.test(category))return managementFolders.find(f=>f.id==='pengurusan-17-3')||null;
+  if(/laporan guru bertugas/i.test(category)||/laporan[- ](?:harian|mingguan)[- ]guru[- ]bertugas/i.test(title)){
+   const weekly=/mingguan/i.test(category)||/mingguan/i.test(title);
+   return managementFolders.find(f=>f.id===(weekly?'pengurusan-17-2':'pengurusan-17-1'))||null;
+  }
+  const prefix=({'pengurusan':'pengurusan-','kurikulum':'kurikulum-','hem':'hem-','kokurikulum':'koko-','tingkatan enam':'enam-'} as Record<string,string>)[root];
  if(!prefix)return null;
  // The activity purpose refines a Sixth Form academic programme; a venue in
  // the title does not change its owning division.
@@ -38,7 +45,7 @@ export function resolveOprManagement(category:string,title:string){
 
 export function oprSchoolYear(payload:Record<string,unknown>,name:string):number|null{
  const date=typeof payload.programDate==='string'?payload.programDate:'';
- const match=(date||name).match(/^(20\d{2})-\d{2}-\d{2}(?:\D|$)/);
+ const match=(date||name).match(/^(20\d{2})(?:-\d{2}-\d{2}(?:\D|$)|-Minggu-)/);
  return match?Number(match[1]):null;
 }
 

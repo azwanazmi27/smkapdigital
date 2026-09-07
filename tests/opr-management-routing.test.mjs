@@ -53,8 +53,13 @@ test('Sixth Form association meeting is not achievement or a canteen activity',(
 });
 test('STPM examination stays in examination folder, not excellence',()=>assert.equal(route('Tingkatan Enam · Pentaksiran & Peperiksaan STPM','Taklimat STPM').id,'enam-2-1'));
 test('canteen category routes to HEM canteen',()=>assert.equal(route('HEM · Kantin','Mesyuarat kantin').id,'hem-9'));
+test('duty and assembly reports have fixed management folders',()=>{
+ assert.equal(route('Pengurusan · Laporan Guru Bertugas · Laporan Harian','Laporan harian').id,'pengurusan-17-1');
+ assert.equal(route('Pengurusan · Laporan Guru Bertugas · Laporan Mingguan','Laporan mingguan').id,'pengurusan-17-2');
+ assert.equal(route('Laporan Perhimpunan','Perhimpunan mingguan di kantin').id,'pengurusan-17-3');
+});
 test('sixth form excellence at canteen stays academic',()=>assert.equal(route('Tingkatan Enam · Subjek Tingkatan Enam · Pengajian Am','Program Kecemerlangan Tingkatan Enam di kantin').id,'enam-2-3'));
 test('venue never routes a generic programme into canteen',()=>assert.equal(route('Pengurusan','Majlis di kantin'),null));
 test('unknown and ambiguous categories need review',()=>{assert.equal(route('Lain-lain','Pemantauan kantin'),null);assert.equal(route('Kurikulum','Program akademik'),null);});
 test('explicit unit routes without title guesses',()=>{assert.equal(route('Kurikulum · Bahasa · Bahasa Melayu','Program di kantin').id,'kurikulum-3-1-1');assert.equal(route('HEM · SPBT','Taklimat').id,'hem-5');});
-test('school year comes from programme date or dated filename, not upload time',()=>{assert.equal(oprSchoolYear({programDate:'2027-01-03'},'2026-12-31-old.pdf'),2027);assert.equal(oprSchoolYear({},'2026-08-31-program.pdf'),2026);assert.equal(oprSchoolYear({},'undated.pdf'),null);});
+test('school year comes from programme date, dated filename or weekly duty filename, not upload time',()=>{assert.equal(oprSchoolYear({programDate:'2027-01-03'},'2026-12-31-old.pdf'),2027);assert.equal(oprSchoolYear({},'2026-08-31-program.pdf'),2026);assert.equal(oprSchoolYear({},'2026-Minggu-30-Laporan-Guru-Bertugas-Mingguan.pdf'),2026);assert.equal(oprSchoolYear({},'undated.pdf'),null);});

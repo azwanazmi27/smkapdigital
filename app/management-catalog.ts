@@ -24,6 +24,7 @@ const add=(parent:string,names:string[],domain?:string,standard?:string)=>{
  names.forEach((name,i)=>managementFolders.push({id:parent+'-'+(i+1),parent,name,domain:domain||owner.domain,standard:standard||owner.standard}));
 };
 add('kurikulum-1',['Carta Organisasi Kurikulum','Headcount','Perancangan Strategik','Mesyuarat Kurikulum','Dialog Prestasi','Dialog Kecemerlangan','Cakna Pengetua Bersama Pelajar','Rekod Laporan Kurikulum']);
+add('pengurusan-17',['Laporan Harian Guru Bertugas','Laporan Mingguan Guru Bertugas','Laporan Perhimpunan']);
 add('kurikulum-3',['Bidang Bahasa','Bidang Sains dan Matematik','Bidang Pendidikan Islam','Bidang Kemanusiaan','Bidang Teknik dan Vokasional']);
 add('kurikulum-3-1',['Bahasa Melayu','Bahasa Inggeris','Bahasa Arab']);
 add('kurikulum-3-2',['Sains','Matematik','Matematik Tambahan','Fizik','Kimia','Biologi']);

@@ -36,6 +36,13 @@ test('actual handlers persist a folder independently, count ancestors, retain UR
  assert.equal((await post('hem-14','Program, aktiviti atau OPR')).status,200);
  data=await get();assert.equal(data.reports[0].documentType,'Program, aktiviti atau OPR');
  assert.equal((await post('hem-14','invalid')).status,400);
+ db.prepare('INSERT INTO opr_reports VALUES(?,?,?,?,?)').run('d1','2026-08-24-Laporan-Harian-Guru-Bertugas.pdf','Pengurusan · Laporan Guru Bertugas · Laporan Harian','https://drive.google.com/daily','2026-08-24');
+ db.prepare('INSERT INTO opr_reports VALUES(?,?,?,?,?)').run('w1','2026-Minggu-30-Laporan-Guru-Bertugas-Mingguan.pdf','Pengurusan · Laporan Guru Bertugas · Laporan Mingguan','https://drive.google.com/weekly','2026-08-28');
+ db.prepare('INSERT INTO opr_reports VALUES(?,?,?,?,?)').run('a1','2026-08-25-Laporan-Perhimpunan.pdf','Laporan Perhimpunan','https://drive.google.com/assembly','2026-08-25');
+ data=await get();
+ assert.deepEqual(data.reports.filter(r=>r.id==='d1').map(r=>[r.folderId,r.documentType,r.sourceModule]),[['pengurusan-17-1','Analisis, laporan atau keberhasilan','Guru Bertugas Harian']]);
+ assert.deepEqual(data.reports.filter(r=>r.id==='w1').map(r=>[r.folderId,r.documentType,r.sourceModule]),[['pengurusan-17-2','Analisis, laporan atau keberhasilan','Guru Bertugas Mingguan']]);
+ assert.deepEqual(data.reports.filter(r=>r.id==='a1').map(r=>[r.folderId,r.documentType,r.sourceModule]),[['pengurusan-17-3','Analisis, laporan atau keberhasilan','Laporan Perhimpunan']]);
  // No SKAS table exists: both actions must succeed without it.
  assert.equal((await post('unknown')).status,400);
  globalThis.folderTestActor={role:'teacher',email:'teacher@example.com'};
@@ -45,6 +52,6 @@ test('actual handlers persist a folder independently, count ancestors, retain UR
  db.exec("UPDATE skas_years SET status='closed'");
  assert.equal((await post('hem-9')).status,409);
  db.exec("DELETE FROM opr_reports WHERE id='r1'");
- assert.deepEqual((await get()).reports,[]);
+ assert.equal((await get()).reports.some(r=>r.id==='r1'),false);
  db.close();
 });
