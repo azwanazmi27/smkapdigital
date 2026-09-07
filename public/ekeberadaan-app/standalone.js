@@ -1,5 +1,6 @@
 const root = document.getElementById("relief-root");
 import { createTeacherReview } from './teacher-review.js';
+import { createAttendanceControls } from './attendance-controls.js';
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
@@ -113,11 +114,12 @@ document.head.append(summaryStyle);
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=mobile-attendance-1"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();
   window.SMKAPTeacherReview = createTeacherReview(React);
+  window.SMKAPAttendanceControls = createAttendanceControls(React);
   const ReactDOMModule = framework.t();
   const ReactDOM = ReactDOMModule.default || ReactDOMModule;
   ReactDOM.hydrateRoot(root, React.createElement(App));

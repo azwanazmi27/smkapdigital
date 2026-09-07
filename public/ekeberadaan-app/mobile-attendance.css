@@ -1,0 +1,59 @@
+/* Extend the original attendance theme; all other portal modules retain their layout. */
+.attendance-portal .smk-teacher-picker{min-width:0;position:relative}
+.attendance-portal .smk-picker-input{display:flex;align-items:stretch;gap:6px}
+.attendance-portal .smk-picker-input input{min-width:0;flex:1;font-size:16px;height:auto;min-height:48px}
+.attendance-portal .smk-picker-input button{min-width:44px;border:1px solid #b5d2c8;border-radius:10px;background:#edf7f2;color:#104d42;font-size:20px}
+.attendance-portal .smk-selected-teacher{font-size:14px;line-height:1.5;color:#225347;margin:0 0 8px;overflow-wrap:anywhere}
+.attendance-portal .smk-picker-results{margin-top:8px;border:1px solid #b5d2c8;border-radius:12px;overflow:hidden;background:white}
+.attendance-portal .smk-picker-results [role=listbox]{max-height:240px;max-height:min(240px,35dvh);overflow:auto;overscroll-behavior:contain}
+.attendance-portal .smk-picker-results button{display:block;width:100%;min-height:48px;padding:12px;text-align:left;border:0;border-bottom:1px solid #e1ece7;background:white;color:#173e36;font-size:15px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.attendance-portal .smk-picker-results button:hover,.attendance-portal .smk-picker-results button.is-active{background:#eaf6f0}
+.attendance-portal .smk-picker-results .smk-picker-done{text-align:center;font-weight:700;background:#eef5f2}
+.attendance-portal .smk-picker-results p{padding:12px;font-size:15px}
+.attendance-portal .smk-reason-admin{padding:24px;margin:20px 0;background:white;border:1px solid #cadfd6;border-radius:16px;color:#173e36}
+.attendance-portal .smk-reason-admin h2{font-size:22px;margin:0 0 8px}
+.attendance-portal .smk-reason-admin p{font-size:16px;line-height:1.5}
+.attendance-portal .smk-reason-admin label{font-size:14px;font-weight:700;display:block;margin-bottom:8px}
+.attendance-portal .smk-reason-add{display:flex;gap:10px}
+.attendance-portal .smk-reason-add input{flex:1;min-width:0;min-height:48px;border:1px solid #9ebdb2;border-radius:10px;padding:10px;font-size:16px}
+.attendance-portal .smk-reason-admin button{min-height:44px;border:1px solid #12664f;border-radius:9px;padding:10px 14px;background:#12664f;color:white;font-size:14px;font-weight:700;cursor:pointer}
+.attendance-portal .smk-reason-admin button:disabled{opacity:.55;cursor:default}
+.attendance-portal .smk-reason-admin ul{padding:0;list-style:none}
+.attendance-portal .smk-reason-admin li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #dce9e3;font-size:16px}
+.attendance-portal .smk-reason-admin li span{overflow-wrap:anywhere;min-width:0}
+.attendance-portal .smk-reason-admin li button{background:white;color:#a12c23;border-color:#dcb5af;flex:none}
+.attendance-portal .smk-reason-confirm{padding:16px;border:1px solid #dcb5af;border-radius:12px;background:#fff8f6;font-size:16px}
+.attendance-portal .smk-reason-confirm>div{display:flex;gap:10px}
+.attendance-portal :is(button,input,select):focus-visible{outline:3px solid #188276;outline-offset:3px}
+@media(max-width:620px){
+ .attendance-portal .topbar{display:flex;flex-direction:column;gap:12px;padding:12px;position:static}
+ .attendance-portal .nav-tabs{display:flex;width:100%;max-width:100%;overflow-x:auto;gap:6px;padding:2px 0 6px;scrollbar-width:thin}
+ .attendance-portal .nav-tabs button{flex:0 0 auto;min-height:44px;height:auto;padding:10px 12px;font-size:14px;white-space:nowrap}
+ .attendance-portal .brand-copy small{font-size:12px}
+ .attendance-portal .report-page{width:calc(100% - 24px);padding:16px 0 28px;gap:18px}
+ .attendance-portal .hero-copy{text-align:left}
+ .attendance-portal .live-pill{margin:0;font-size:12px}
+ .attendance-portal .hero-copy h1{font-size:26px;line-height:1.2;margin:10px 0}
+ .attendance-portal .hero-copy>p{font-size:16px;margin:8px 0}
+ .attendance-portal .hero-assurances{display:none}
+ .attendance-portal .card-head{padding:16px;gap:10px;flex-wrap:wrap}
+ .attendance-portal .card-head h2{font-size:19px}
+ .attendance-portal .required-note{font-size:12px}
+ .attendance-portal .form-grid{padding:18px 16px 4px;gap:18px}
+ .attendance-portal .field{min-width:0}
+ .attendance-portal .field label,.attendance-portal .duration-field legend{font-size:14px}
+ .attendance-portal .field input,.attendance-portal .field select,.attendance-portal textarea{font-size:16px;min-width:0;max-width:100%;min-height:48px}
+ .attendance-portal .duration-field{margin:14px 16px 0;min-width:0}
+ .attendance-portal .segmented.three{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .attendance-portal .segmented label{padding:12px 5px;min-width:0;min-height:76px;justify-content:center;text-align:center;gap:4px}
+ .attendance-portal .segmented label .segment-icon,.attendance-portal .segmented label small,.attendance-portal .segmented label>i{display:none}
+ .attendance-portal .segmented label strong{font-size:14px;line-height:1.4;white-space:normal}
+ .attendance-portal .time-row{margin:16px 16px 0;grid-template-columns:1fr;gap:14px}
+ .attendance-portal .note-field{padding:18px 16px 4px}
+ .attendance-portal .form-footer{padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));gap:12px}
+ .attendance-portal .primary-button{min-height:48px;font-size:16px}
+ .attendance-portal .smk-reason-admin{padding:16px}
+ .attendance-portal .smk-reason-add{flex-direction:column}
+ .attendance-portal .summary-head h1{font-size:28px}
+ .attendance-portal .history-date,.attendance-portal .history-selection{min-width:0;width:100%}
+}

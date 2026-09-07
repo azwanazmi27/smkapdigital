@@ -3,8 +3,15 @@ import { upsertAbsenceToSheet } from "../../lib/google-sheets";
 import { portalActor } from "../../server-auth";
 
 const form6 = ["DESFITRI BINTI MOHD NASIR","MOHD FADIL BIN ABDULLAH","NOOR AZWAN BIN AZMI","NOR ATIKAH BINTI MOHAMED","NOR RABIATUL ADAWIAH BINTI RAMELI","NORHASHIDAH BINTI MOHD NORHANI","SARIZAN BINTI SULONG","SITI NUR AISYAH BINTI MOHD NAYAI"];
-const defaultReasons = ["MC", "Cuti Rehat Khas", "Cuti Tanpa Rekod", "Kursus / Mesyuarat", "Urusan Rasmi", "Kecemasan", "Lain-lain"];
+const defaultReasons = ["MC", "CRK", "Mesyuarat", "Kursus / Latihan", "Urusan Rasmi", "Bertugas Warden", "Hal Kecemasan", "Lain-lain"];
 const mainstream = ["AFFROSH KHANA BT AHMAD","AHMAD NAJIB BIN AZMI","AINUL HUSNA ABDUL SAMAD","AMIRUL AMIN ZULKIFLE AMIN","AZHAR BIN MOHAMED","AZLIZA ALIAS","AZMAN KASSIM","ENGKU NUR AISYAH BINTI CHE ENGKU MUHAMMAD","FARAH HASNOOR JAAFAR","FAZIYAH ISMAIL","HABIBAH BT ABD AZIZ","HAMIZON BERAHIM","HASNI BIN MAMAT","MAHMUD SABRI DAUD","MAISARAH BINTI ABD SAMAD","MAIZURA MAIDIN","MOHAMMAD ZAHARI BIN KHALIB","MOHASAFRA MOHD SHARIF","MOHD IZZUDIN BIN ISHAK","MOHD RASHIDI ABDUL LATIFF","MOHD RAZLY BIN ABDUL RAZAMAN","MUHAMAD AL AMIN BIN RAMLI","MUHAMAD SHUKRI ABDUL GHANI","MUHAMMAD AMIEN HAIQAL MAHMUD","MUHAMMAD FAHMI IDHAM BIN MUSA","MUHAMMAD RAFIQ FARHAN B NOORDIN","MUZAYANA ABD MANAN","NAJAH AMIROH BT ROHANI","NOOR AMIRA SYAMILA BINTI AHMAD NASIR","NOR AZITA BT MAMAT","NOR FADHILAH HANANI BINTI MOHD RAZALI","NOR FAIZAH BT KAMARUDDIN","NOR SYAKIRAH BINTI BAHRU","NORASYIKIN BT MOHD ANUAR","NORFATIMAWATI MAHMOOD","NORZALINAWATI MUHAMAD AZHA","NUR AISYAH MANSOR","NUR ZATUL AYUNI MOHAMAD ALDARAWI","NURAISURA IBRAHIM","NURUL ARISYA MOHD BADLI","RAHIMAH BINTI ABD HALIM","ROS SELAI BINTI HARUN","SHAHIRUDDIN IBRAHIM","SHAMSUL HAZLAN B MOHD KAMAL HAKIM","SHARMA ELIANA SHAFIE","SITI ELIANA BTE ROSLI","SITI NORAINAA BT MOHD ZAIDI","SITI NORFAZILAH MAT NOR","SURIHA SADI","TENGKU NOORMUNIRA BT TENGKU KAMARULZAMAN","TG MOHD HILMI TG MOHD DAUD","WAN HARUN BIN WAN ALI","WAN MAYZAITU WAHIDAH","ZANILAH ZAINAL"];
+
+async function reasonAdmin(request: Request) {
+  const pin = request.headers.get("x-admin-pin");
+  if (env.RELIEF_ADMIN_PIN && pin === env.RELIEF_ADMIN_PIN) return true;
+  const actor = await portalActor(request);
+  return !!actor && ["admin", "super_admin"].includes(actor.role);
+}
 
 async function prepare() {
   const db = env.DB;
@@ -12,6 +19,7 @@ async function prepare() {
     db.prepare("CREATE TABLE IF NOT EXISTS teachers (id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL, created_at TEXT NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS absences (id TEXT PRIMARY KEY, teacher_id TEXT NOT NULL, teacher_name TEXT NOT NULL, category TEXT NOT NULL, absence_date TEXT NOT NULL, end_date TEXT, reason TEXT NOT NULL, duration TEXT NOT NULL, start_time TEXT, end_time TEXT, note TEXT NOT NULL DEFAULT '', relief_status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS absence_reasons (reason TEXT PRIMARY KEY, created_at TEXT NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS absence_reason_settings (id TEXT PRIMARY KEY)"),
     db.prepare("CREATE INDEX IF NOT EXISTS idx_absences_date ON absences(absence_date, end_date)"),
   ]);
   const count = await db.prepare("SELECT COUNT(*) AS total FROM teachers").first<{ total: number }>();
@@ -19,7 +27,11 @@ async function prepare() {
     const now = new Date().toISOString();
     await db.batch([...form6.map((name, index) => db.prepare("INSERT OR IGNORE INTO teachers (id,name,category,created_at) VALUES (?,?,?,?)").bind(`form6-${index + 1}`, name, "form6", now)), ...mainstream.map((name, index) => db.prepare("INSERT OR IGNORE INTO teachers (id,name,category,created_at) VALUES (?,?,?,?)").bind(`main-${index + 1}`, name, "mainstream", now))]);
   }
-  await db.batch(defaultReasons.map((reason) => db.prepare("INSERT OR IGNORE INTO absence_reasons(reason,created_at) VALUES (?,?)").bind(reason, new Date().toISOString())));
+  // Seed once atomically. An empty list after admin deletion must stay empty.
+  await db.batch([
+    ...defaultReasons.map(reason => db.prepare("INSERT OR IGNORE INTO absence_reasons(reason,created_at) SELECT ?,? WHERE NOT EXISTS (SELECT 1 FROM absence_reason_settings WHERE id='seeded')").bind(reason, new Date().toISOString())),
+    db.prepare("INSERT OR IGNORE INTO absence_reason_settings(id) VALUES ('seeded')"),
+  ]);
 }
 
 export async function GET(request: Request) {
@@ -45,11 +57,10 @@ export async function POST(request: Request) {
     await prepare(); const resource = new URL(request.url).searchParams.get("resource");
     const body = await request.json() as Record<string, unknown>;
     if (resource === "reasons") {
-      const actor = await portalActor(request);
-      if (!actor || !["admin", "super_admin"].includes(actor.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
+      if (!await reasonAdmin(request)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
       const reason = typeof body.reason === "string" ? body.reason.trim().replace(/\s+/g, " ").slice(0, 80) : "";
       if (!reason) return Response.json({ error: "Sebab ketidakhadiran perlu diisi." }, { status: 400 });
-      await env.DB.prepare("INSERT OR IGNORE INTO absence_reasons(reason,created_at) VALUES (?,?)").bind(reason, new Date().toISOString()).run();
+      await env.DB.prepare("INSERT OR IGNORE INTO absence_reasons(reason,created_at) SELECT ?,? WHERE NOT EXISTS (SELECT 1 FROM absence_reasons WHERE reason=? COLLATE NOCASE)").bind(reason, new Date().toISOString(), reason).run();
       return Response.json({ success: true });
     }
     if (resource !== "absences") return Response.json({ error: "Sumber tidak sah" }, { status: 400 });
@@ -70,8 +81,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     await prepare();
-    const actor = await portalActor(request);
-    if (!actor || !["admin", "super_admin"].includes(actor.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
+    if (!await reasonAdmin(request)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
     const url = new URL(request.url);
     if (url.searchParams.get("resource") !== "reasons") return Response.json({ error: "Sumber tidak sah" }, { status: 400 });
     const reason = (url.searchParams.get("reason") || "").trim().slice(0, 80);

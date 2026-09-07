@@ -48,3 +48,5 @@ export const skasEvidence = sqliteTable("skas_evidence", {
 export const skasMappingRules = sqliteTable("skas_mapping_rules", {
   id: text("id").primaryKey(), category: text("category").notNull(), signalProfile: text("signal_profile").notNull().default("regular"), domain: text("domain").notNull(), unitName: text("unit_name").notNull(), evidenceType: text("evidence_type").notNull(), standardCode: text("standard_code").notNull(), updatedByEmail: text("updated_by_email").notNull(), updatedByName: text("updated_by_name").notNull(), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
 }, (table) => [uniqueIndex("idx_skas_mapping_rules_category_signal").on(table.category,table.signalProfile)]);
+export const absenceReasons = sqliteTable('absence_reasons', { reason:text('reason').primaryKey(), createdAt:text('created_at').notNull() });
+export const absenceReasonSettings = sqliteTable('absence_reason_settings', { id:text('id').primaryKey() });
