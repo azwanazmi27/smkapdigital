@@ -16,6 +16,8 @@ async function archiveGeneratedReliefPdf(input:{id:string;date:unknown;day:unkno
  if(!result.id||!result.url)throw new Error("Drive belum mengesahkan PDF relief. Cuba simpan pelan sekali lagi.");
  await env.DB.prepare("INSERT OR IGNORE INTO management_materials(id,school_year,folder_id,title,document_type,source_url,storage_key,mime_type,original_name,notes,visibility,owner_email,owner_name,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
   .bind(input.id,schoolYear,reliefFolderId,title,"Analisis, laporan atau keberhasilan",result.url,result.id,"application/pdf",originalName,"Jadual relief dijana oleh Sistem Relief.","staff","",text(input.createdBy).slice(0,180)||"Sistem Relief",input.now).run();
+ await env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,storage_key,mime_type,original_name,notes,status,submitted_by_email,submitted_by_name,verified_by_email,verified_by_name,verified_at,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,'','','',?,'pending','',?,'','','','PENGURUSAN SEKOLAH',?,?,?) ON CONFLICT DO NOTHING")
+  .bind(crypto.randomUUID(),schoolYear,"Kurikulum","Jadual Waktu dan Guru Ganti (MMI)","Analisis, laporan atau keberhasilan",title,"3.1",result.url,"Jadual relief dijana secara automatik dan menunggu perakuan pentadbir.",text(input.createdBy).slice(0,180)||"Sistem Relief",input.id,input.now,input.now).run();
 }
 export async function GET(request:NextRequest,c:{params:Promise<{path:string[]}>}){const p=await parts(c),root=p[0];
  if(root==="teachers"){const x=await env.DB.prepare("SELECT id,name,category,created_at AS createdAt FROM teachers ORDER BY category,name").all();return json({teachers:x.results})}
