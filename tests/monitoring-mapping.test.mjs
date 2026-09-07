@@ -36,13 +36,14 @@ test('shared SQL includes monitoring, preserves original link, and withdraws del
  const skas=readFileSync(new URL('../app/api/skas/route.ts',import.meta.url),'utf8');
  db.exec(skas.match(/prepare\("(CREATE TABLE IF NOT EXISTS skas_evidence [^"]+)"/)[1]);
  db.exec("CREATE TABLE opr_reports(id TEXT,name TEXT,category TEXT,view_url TEXT,created_at TEXT); CREATE TABLE opr_intake_metadata(report_id TEXT,payload_json TEXT);");
+ db.exec(readFileSync(new URL('../drizzle/0006_parallel_proteus.sql',import.meta.url),'utf8'));
  db.prepare('INSERT INTO opr_reports VALUES(?,?,?,?,?)').run('monitor-1','2026-08-31-E-PEMANTAUAN-Pemantauan kantin.pdf',category,'https://drive.google.com/file/d/original','2026-08-31');
  const linked=readFileSync(new URL('../app/api/opr-management/route.ts',import.meta.url),'utf8');
- const query=linked.match(/prepare\("(SELECT [^"]+)"/)[1];
+ const query=linked.match(/prepare\("(SELECT r.id[^"]+)"/)[1];
  assert.equal(db.prepare(query).all()[0].viewUrl,'https://drive.google.com/file/d/original');
  const insert=[...skas.matchAll(/prepare\("(INSERT INTO skas_evidence[^"]+)"/g)].map(m=>m[1]).find(sql=>sql.includes("'portal'"));
  db.prepare(insert).run('evidence-1',2026,'Hal Ehwal Murid','Kantin dan Pemakanan','Pemantauan dan penambahbaikan','Pemantauan kantin','3.3','https://drive.google.com/file/d/original','Cadangan','admin@example.com','Admin','e-Pemantauan','monitor-1','now','now');
- assert.equal(db.prepare(query).all()[0].mappingStatus,'pending');
+ assert.equal(db.prepare(query).all()[0].manualFolder,null);
  const drive=readFileSync(new URL('../app/api/drive/route.ts',import.meta.url),'utf8');
  const withdraw=drive.match(/prepare\("(UPDATE skas_evidence SET status='source_deleted'[^"]+)"/)[1];
  db.prepare(withdraw).run('later','monitor-1');
