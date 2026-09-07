@@ -605,7 +605,7 @@ function OprDashboard({ create, openDuty, notify, user }: { create: () => void; 
   };
   useEffect(() => { void loadReports(); }, []);
   const reportTitle = (report: OprReport) => report.name.replace(/\.pdf$/i, "").replace(/__(?:TEMPAT|PERINGKAT|BIDANG|PENCAPAIAN|PENYEDIA)__.*/i, "").replace(/^\d{4}-\d{2}-\d{2}-/, "").replace(/^ARKIB-/i, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
-  const reportPreparer = (report: OprReport) => report.name.match(/__PENYEDIA__(.+)\.pdf$/i)?.[1] || "Nama penyedia tidak direkodkan";
+  const reportPreparer = (report: OprReport) => report.name.replace(/\.pdf$/i, "").match(/__(?:PENYEDIA|PEMANTAU)__(.*?)(?=__[A-Z]+__|$)/i)?.[1]?.trim() || "Nama penyedia tidak direkodkan";
   const reportDate = (report: OprReport) => new Intl.DateTimeFormat("ms-MY", { day: "numeric", month: "long", year: "numeric" }).format(new Date(report.updatedAt));
   const oprReports = reports.filter((report) => isPrimaryReport(report) && !report.category.toLowerCase().includes("arkib kejayaan") && !/^\d{4}-\d{2}-\d{2}-ARKIB-/i.test(report.name));
   const belongsTo = (report: OprReport, category: string) => report.category === category || report.category.startsWith(`${category} · `) || (category === "Pengurusan" && ["Laporan Guru Bertugas","Laporan Perhimpunan"].includes(report.category));
