@@ -57,6 +57,13 @@
       "when": 1788756589220,
       "tag": "0007_robust_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788773109364,
+      "tag": "0008_striped_punisher",
+      "breakpoints": true
     }
   ]
 }

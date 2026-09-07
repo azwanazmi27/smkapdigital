@@ -14,6 +14,10 @@ export const managementReportFolders = sqliteTable("management_report_folders", 
  reportId:text("report_id").primaryKey(),folderId:text("folder_id").notNull(),documentType:text("document_type").notNull().default(""),updatedBy:text("updated_by").notNull(),updatedAt:text("updated_at").notNull(),
 });
 export const teachers = sqliteTable("teachers", { id: text("id").primaryKey(), name: text("name").notNull(), category: text("category").notNull(), createdAt: text("created_at").notNull() });
+export const reliefTeacherReview = sqliteTable("relief_teacher_review", {
+ nameKey:text("name_key").primaryKey(),name:text("name").notNull(),scheduleId:text("schedule_id").notNull(),sourceLabel:text("source_label").notNull(),
+ status:text("status").notNull().default("pending"),teacherId:text("teacher_id").notNull().default(""),reviewedAt:text("reviewed_at").notNull().default(""),updatedAt:text("updated_at").notNull(),
+});
 export const absences = sqliteTable("absences", { id: text("id").primaryKey(), teacherId: text("teacher_id").notNull(), teacherName: text("teacher_name").notNull(), category: text("category").notNull(), absenceDate: text("absence_date").notNull(), endDate: text("end_date"), reason: text("reason").notNull(), duration: text("duration").notNull(), startTime: text("start_time"), endTime: text("end_time"), note: text("note").notNull().default(""), reliefStatus: text("relief_status").notNull().default("pending"), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull() });
 export const reliefSchedules = sqliteTable("relief_schedules", { id: text("id").primaryKey(), fileName: text("file_name").notNull(), sourceLabel: text("source_label").notNull(), teacherCount: text("teacher_count").notNull(), isActive: text("is_active").notNull(), teachersJson: text("teachers_json").notNull(), createdAt: text("created_at").notNull() });
 export const reliefSettings = sqliteTable("relief_settings", { id: text("id").primaryKey(), payloadJson: text("payload_json").notNull(), updatedAt: text("updated_at").notNull() });

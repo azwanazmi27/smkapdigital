@@ -1,4 +1,5 @@
 const root = document.getElementById("relief-root");
+import { createTeacherReview } from './teacher-review.js';
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
@@ -95,6 +96,14 @@ summaryObserver.observe(root, { childList: true, subtree: true });
 
 const summaryStyle = document.createElement("style");
 summaryStyle.textContent = `
+  .teacher-review-panel{margin:20px 0;padding:20px;border:1px solid #8eaaa8;border-radius:16px;background:#f0f7f6;color:#173b43}
+  .teacher-review-panel h2{font-size:22px}.teacher-review-panel p,.teacher-review-panel label,.teacher-review-panel summary{font-size:16px;line-height:1.5}
+  .teacher-review-row{display:grid;gap:12px;padding:16px;margin-top:14px;border:1px solid #a9c5c3;border-radius:12px;background:#fff}
+  .teacher-review-row strong{font-size:17px;overflow-wrap:anywhere}.teacher-review-row small{font-size:14px;overflow-wrap:anywhere}
+  .teacher-review-row label{display:grid;gap:6px}.teacher-review-row select{width:100%;min-width:0;min-height:46px;padding:10px;font:inherit;border:1px solid #749591;border-radius:8px;color:#173b43;background:white}
+  .teacher-review-panel button{min-height:44px;padding:10px 16px;font:700 15px/1.4 Arial;border:1px solid #337a72;border-radius:8px;color:#fff;background:#176b61;cursor:pointer}
+  .teacher-review-panel button:disabled{opacity:.55;cursor:default}.teacher-review-actions{display:flex;gap:10px;flex-wrap:wrap}
+  @media(max-width:640px){.teacher-review-panel{padding:14px}.teacher-review-actions button{width:100%}}
   .smk-summary-modes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .smk-summary-modes button{min-height:42px;padding:9px 14px;border:1px solid rgba(101,202,191,.42);border-radius:10px;color:#c8e5e1;background:#103946;font:700 14px/1.2 inherit;cursor:pointer}
   .smk-summary-modes button.active{color:#06303a;background:linear-gradient(135deg,#7bd8ce,#79c3df);border-color:transparent}
@@ -108,6 +117,7 @@ try {
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();
+  window.SMKAPTeacherReview = createTeacherReview(React);
   const ReactDOMModule = framework.t();
   const ReactDOM = ReactDOMModule.default || ReactDOMModule;
   ReactDOM.hydrateRoot(root, React.createElement(App));
