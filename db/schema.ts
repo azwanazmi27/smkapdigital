@@ -14,6 +14,10 @@ export const managementReportFolders = sqliteTable("management_report_folders", 
  reportId:text("report_id").primaryKey(),folderId:text("folder_id").notNull(),documentType:text("document_type").notNull().default(""),updatedBy:text("updated_by").notNull(),updatedAt:text("updated_at").notNull(),
 });
 export const teachers = sqliteTable("teachers", { id: text("id").primaryKey(), name: text("name").notNull(), category: text("category").notNull(), createdAt: text("created_at").notNull() });
+export const staffPortfolio = sqliteTable('staff_portfolio', {
+ id:text('id').primaryKey(),userId:text('user_id').notNull(),title:text('title').notNull(),issuer:text('issuer').notNull().default(''),
+ awardDate:text('award_date').notNull().default(''),featured:integer('featured').notNull().default(0),createdAt:text('created_at').notNull(),
+},table=>[index('idx_portfolio_user').on(table.userId)]);
 export const reliefTeacherReview = sqliteTable("relief_teacher_review", {
  nameKey:text("name_key").primaryKey(),name:text("name").notNull(),scheduleId:text("schedule_id").notNull(),sourceLabel:text("source_label").notNull(),
  status:text("status").notNull().default("pending"),teacherId:text("teacher_id").notNull().default(""),reviewedAt:text("reviewed_at").notNull().default(""),updatedAt:text("updated_at").notNull(),

@@ -64,6 +64,13 @@
       "when": 1788773109364,
       "tag": "0008_striped_punisher",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788774814633,
+      "tag": "0009_fluffy_prodigy",
+      "breakpoints": true
     }
   ]
 }
