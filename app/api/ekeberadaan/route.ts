@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { upsertAbsenceToSheet } from "../../lib/google-sheets";
+import { portalActor } from "../../server-auth";
 
 const form6 = ["DESFITRI BINTI MOHD NASIR","MOHD FADIL BIN ABDULLAH","NOOR AZWAN BIN AZMI","NOR ATIKAH BINTI MOHAMED","NOR RABIATUL ADAWIAH BINTI RAMELI","NORHASHIDAH BINTI MOHD NORHANI","SARIZAN BINTI SULONG","SITI NUR AISYAH BINTI MOHD NAYAI"];
 const mainstream = ["AFFROSH KHANA BT AHMAD","AHMAD NAJIB BIN AZMI","AINUL HUSNA ABDUL SAMAD","AMIRUL AMIN ZULKIFLE AMIN","AZHAR BIN MOHAMED","AZLIZA ALIAS","AZMAN KASSIM","ENGKU NUR AISYAH BINTI CHE ENGKU MUHAMMAD","FARAH HASNOOR JAAFAR","FAZIYAH ISMAIL","HABIBAH BT ABD AZIZ","HAMIZON BERAHIM","HASNI BIN MAMAT","MAHMUD SABRI DAUD","MAISARAH BINTI ABD SAMAD","MAIZURA MAIDIN","MOHAMMAD ZAHARI BIN KHALIB","MOHASAFRA MOHD SHARIF","MOHD IZZUDIN BIN ISHAK","MOHD RASHIDI ABDUL LATIFF","MOHD RAZLY BIN ABDUL RAZAMAN","MUHAMAD AL AMIN BIN RAMLI","MUHAMAD SHUKRI ABDUL GHANI","MUHAMMAD AMIEN HAIQAL MAHMUD","MUHAMMAD FAHMI IDHAM BIN MUSA","MUHAMMAD RAFIQ FARHAN B NOORDIN","MUZAYANA ABD MANAN","NAJAH AMIROH BT ROHANI","NOOR AMIRA SYAMILA BINTI AHMAD NASIR","NOR AZITA BT MAMAT","NOR FADHILAH HANANI BINTI MOHD RAZALI","NOR FAIZAH BT KAMARUDDIN","NOR SYAKIRAH BINTI BAHRU","NORASYIKIN BT MOHD ANUAR","NORFATIMAWATI MAHMOOD","NORZALINAWATI MUHAMAD AZHA","NUR AISYAH MANSOR","NUR ZATUL AYUNI MOHAMAD ALDARAWI","NURAISURA IBRAHIM","NURUL ARISYA MOHD BADLI","RAHIMAH BINTI ABD HALIM","ROS SELAI BINTI HARUN","SHAHIRUDDIN IBRAHIM","SHAMSUL HAZLAN B MOHD KAMAL HAKIM","SHARMA ELIANA SHAFIE","SITI ELIANA BTE ROSLI","SITI NORAINAA BT MOHD ZAIDI","SITI NORFAZILAH MAT NOR","SURIHA SADI","TENGKU NOORMUNIRA BT TENGKU KAMARULZAMAN","TG MOHD HILMI TG MOHD DAUD","WAN HARUN BIN WAN ALI","WAN MAYZAITU WAHIDAH","ZANILAH ZAINAL"];
@@ -47,4 +48,20 @@ export async function POST(request: Request) {
     const sheetMirrored = await upsertAbsenceToSheet(record);
     return Response.json({ success: true, sheetMirrored });
   } catch (error) { console.error("E-Keberadaan create", error); return Response.json({ error: "Laporan tidak dapat disimpan sekarang." }, { status: 500 }); }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    await prepare();
+    const actor = await portalActor(request);
+    if (!actor || !["admin", "super_admin"].includes(actor.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
+    const url = new URL(request.url);
+    if (url.searchParams.get("resource") !== "absences") return Response.json({ error: "Sumber tidak sah" }, { status: 400 });
+    const id = (url.searchParams.get("id") || "").trim().slice(0, 80);
+    if (!id) return Response.json({ error: "Rekod tidak sah." }, { status: 400 });
+    const found = await env.DB.prepare("SELECT id FROM absences WHERE id=?").bind(id).first<{ id: string }>();
+    if (!found) return Response.json({ error: "Rekod tidak ditemui." }, { status: 404 });
+    await env.DB.prepare("DELETE FROM absences WHERE id=?").bind(id).run();
+    return Response.json({ success: true });
+  } catch (error) { console.error("E-Keberadaan delete", error); return Response.json({ error: "Rekod tidak dapat dibuang sekarang." }, { status: 500 }); }
 }
