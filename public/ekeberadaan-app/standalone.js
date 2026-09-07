@@ -23,6 +23,13 @@ const reportDate = (record) => record.endDate && record.endDate !== record.absen
   ? `${formatDate(record.absenceDate)} – ${formatDate(record.endDate)}`
   : formatDate(record.absenceDate);
 
+const coversSelectedDate = (record, selectedDate) => {
+  if (!selectedDate) return true;
+  const start = record.absenceDate || "";
+  const end = record.endDate || start;
+  return start <= selectedDate && selectedDate <= end;
+};
+
 const openSummaryPdf = async (selectedDate) => {
   const preview = window.open("", "_blank");
   if (!preview) return;
@@ -31,7 +38,7 @@ const openSummaryPdf = async (selectedDate) => {
     const response = await fetch("/api/ekeberadaan?resource=absences", { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload?.error || "Data tidak dapat dibaca.");
-    const records = (payload.records || []).filter((record) => !selectedDate || record.absenceDate === selectedDate);
+    const records = (payload.records || []).filter((record) => coversSelectedDate(record, selectedDate));
     const label = selectedDate ? `Tarikh: ${formatDate(selectedDate)}` : "Semua rekod ketidakhadiran";
     const rows = records.map((record, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(record.teacherName)}</td><td>${escapeHtml(reportDate(record))}</td><td>${escapeHtml(record.reason || "—")}</td></tr>`).join("")
       || '<tr><td colspan="4" class="empty">Tiada ketidakhadiran direkodkan.</td></tr>';
