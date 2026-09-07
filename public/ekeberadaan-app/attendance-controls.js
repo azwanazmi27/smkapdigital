@@ -1,6 +1,24 @@
 // Components composed into the retained attendance app; relief logic stays in its original bundle.
 export function createAttendanceControls(React) {
   const {createElement:h,useState,useEffect,useRef}=React;
+  function FloatingDialog({children,labelId,onClose,locked=false,kind=''}) {
+    const dialog=useRef(null),closeRef=useRef(onClose),lockedRef=useRef(locked);
+    closeRef.current=onClose;lockedRef.current=locked;
+    useEffect(()=>{
+      const element=dialog.current,previous=document.activeElement;
+      element.showModal();
+      const cancel=event=>{event.preventDefault();if(!lockedRef.current)closeRef.current?.();};
+      element.addEventListener('cancel',cancel);
+      return()=>{element.removeEventListener('cancel',cancel);element.close();if(previous?.isConnected)previous.focus({preventScroll:true});};
+    },[]);
+    return h('dialog',{ref:dialog,className:`smk-floating-dialog ${kind}`,'aria-labelledby':labelId,'aria-modal':true},children);
+  }
+  function SubmissionPopup({success,busy,onClose}) {
+    return h(FloatingDialog,{labelId:'smk-submit-title',onClose,locked:!success||busy,kind:success?'is-success':'is-sending'},
+      h('div',{className:'smk-popup-icon','aria-hidden':true},success?h('svg',{viewBox:'0 0 48 48',fill:'none'},h('path',{d:'M12 25l8 8 17-19',stroke:'currentColor',strokeWidth:4,strokeLinecap:'round',strokeLinejoin:'round'})):h('span',{className:'smk-popup-spinner'})),
+      h('div',{'aria-live':'polite',role:'status'},h('h2',{id:'smk-submit-title'},success?'Laporan berjaya dihantar':'Sedang menghantar laporan'),h('p',null,success?'Rekod telah diterima untuk semakan penyelaras.':'Sila tunggu sebentar. Laporan anda sedang disimpan.')),
+      success&&!busy&&h('button',{type:'button',className:'smk-popup-primary',onClick:onClose},'Selesai'));
+  }
   function TeacherPicker({teachers,value,onChange,loading}) {
     const [query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(0);
     const selected=teachers.find(t=>t.id===value), input=useRef(null);
@@ -47,9 +65,13 @@ export function createAttendanceControls(React) {
       h('h2',{id:'smk-reason-title'},'Sebab ketidakhadiran'),h('p',null,'Urus pilihan sebab dalam borang guru. Rekod terdahulu kekal apabila pilihan dibuang.'),
       h('form',{onSubmit:e=>{e.preventDefault();if(reason.trim())void change('POST',reason.trim());}},h('label',{htmlFor:'smk-new-reason'},'Sebab baharu'),h('div',{className:'smk-reason-add'},h('input',{id:'smk-new-reason',value:reason,required:true,maxLength:80,placeholder:'Contoh: Cuti Bersalin',onChange:e=>setReason(e.target.value),disabled:busy}),h('button',{disabled:busy||!reason.trim()},busy?'Menyimpan…':'Tambah sebab'))),
       message&&h('p',{role:'status'},message),error&&h('p',{role:'alert'},error,h('button',{type:'button',onClick:load},'Cuba semula')),
-      loading?h('p',{role:'status'},'Memuatkan sebab…'):h('ul',null,reasons.map(item=>h('li',{key:item},h('span',null,item),h('button',{type:'button',disabled:busy,'aria-label':`Buang sebab ${item}`,onClick:()=>setTarget(item)},'Buang')))),
+      loading?h('p',{role:'status'},'Memuatkan sebab…'):h('ul',null,reasons.map(item=>h('li',{key:item},h('span',null,item),h('button',{type:'button',disabled:busy,'aria-label':`Buang sebab ${item}`,onClick:()=>{setMessage('');setTarget(item);}},'Buang')))),
       !loading&&!error&&!reasons.length&&h('p',null,'Belum ada pilihan sebab. Tambah sebab baharu di atas.'),
-      target&&h('div',{className:'smk-reason-confirm',role:'alertdialog','aria-labelledby':'smk-reason-confirm-title'},h('strong',{id:'smk-reason-confirm-title'},`Buang pilihan “${target}”?`),h('p',null,'Rekod ketidakhadiran lama tidak dipadam.'),h('div',null,h('button',{type:'button',disabled:busy,onClick:()=>setTarget(null)},'Batal'),h('button',{type:'button',disabled:busy,onClick:()=>void change('DELETE',target)},busy?'Membuang…':'Ya, buang'))));
+      target&&h(FloatingDialog,{labelId:'smk-reason-confirm-title',onClose:()=>setTarget(null),locked:busy,kind:'is-confirm'},
+        h('div',{className:'smk-popup-icon','aria-hidden':true},h('svg',{viewBox:'0 0 48 48',fill:'none'},h('path',{d:'M17 15v-4h14v4M11 15h26M15 15l2 24h14l2-24M21 21v12M27 21v12',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',strokeLinejoin:'round'}))),
+        h('h2',{id:'smk-reason-confirm-title'},`Buang pilihan “${target}”?`),h('p',null,'Pilihan ini akan dikeluarkan daripada borang. Rekod ketidakhadiran lama dikekalkan.'),
+        message&&h('p',{role:'alert',className:'smk-popup-error'},message),
+        h('div',{className:'smk-popup-actions'},h('button',{type:'button',className:'smk-popup-secondary',disabled:busy,onClick:()=>setTarget(null)},'Batal'),h('button',{type:'button',className:'smk-popup-danger',disabled:busy,onClick:()=>void change('DELETE',target)},busy?'Membuang…':'Ya, buang'))));
   }
-  return {TeacherPicker,ReasonPicker,ReasonAdmin};
+  return {TeacherPicker,ReasonPicker,ReasonAdmin,SubmissionPopup};
 }

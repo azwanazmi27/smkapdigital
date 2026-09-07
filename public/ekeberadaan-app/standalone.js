@@ -1,6 +1,6 @@
 const root = document.getElementById("relief-root");
 import { createTeacherReview } from './teacher-review.js';
-import { createAttendanceControls } from './attendance-controls.js';
+import { createAttendanceControls } from './attendance-controls.js?v=mobile-attendance-2';
 
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
@@ -114,7 +114,7 @@ document.head.append(summaryStyle);
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=mobile-attendance-1"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=mobile-attendance-2"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();

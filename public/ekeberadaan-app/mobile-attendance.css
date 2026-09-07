@@ -57,3 +57,37 @@
  .attendance-portal .summary-head h1{font-size:28px}
  .attendance-portal .history-date,.attendance-portal .history-selection{min-width:0;width:100%}
 }
+
+/* Native top-layer dialogs stay centred above the form, even while it is scrolled. */
+.attendance-portal .smk-floating-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:calc(100% - 32px);max-width:390px;max-height:calc(100dvh - 40px);overflow:auto;border:1px solid #ffffffa6;border-radius:26px;padding:30px 24px 24px;background:linear-gradient(155deg,#fff,#f3faf7);color:#173e36;text-align:center;box-shadow:0 28px 80px #082e3852,0 4px 16px #082e3826;font-family:inherit;animation:smk-popup-enter .32s cubic-bezier(.16,1,.3,1) both}
+.attendance-portal .smk-floating-dialog::backdrop{background:#0628308c;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:smk-popup-backdrop .24s ease-out both}
+.attendance-portal .smk-floating-dialog h2{margin:20px 0 10px;font-size:22px;line-height:1.3;font-weight:750;overflow-wrap:anywhere}
+.attendance-portal .smk-floating-dialog p{margin:0 0 20px;font-size:16px;line-height:1.6;color:#58716c}
+.attendance-portal .smk-floating-dialog .smk-popup-icon{display:grid;place-items:center;width:76px;height:76px;margin:0 auto;border-radius:24px;color:#fff;background:linear-gradient(145deg,#18ae91,#076956);box-shadow:0 10px 25px #0d806329}
+.attendance-portal .smk-floating-dialog .smk-popup-icon svg{width:42px;height:42px}
+.attendance-portal .smk-floating-dialog.is-confirm .smk-popup-icon{background:#fff0ec;color:#b44531;box-shadow:0 8px 24px #b4453112}
+.attendance-portal .smk-floating-dialog .smk-popup-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+.attendance-portal .smk-floating-dialog button{box-sizing:border-box;min-height:48px;padding:12px 18px;border:1px solid transparent;border-radius:13px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:transform .16s,background .16s}
+.attendance-portal .smk-floating-dialog button:active{transform:scale(.97)}
+.attendance-portal .smk-floating-dialog button:focus-visible{outline:3px solid #158674;outline-offset:3px}
+.attendance-portal .smk-floating-dialog .smk-popup-primary{width:100%;background:#08735c;color:white}
+.attendance-portal .smk-floating-dialog .smk-popup-secondary{background:#fff;color:#365b51;border-color:#cbded6}
+.attendance-portal .smk-floating-dialog .smk-popup-danger{background:#b84030;color:white}
+.attendance-portal .smk-floating-dialog button:disabled{opacity:.55;cursor:wait}
+.attendance-portal .smk-floating-dialog .smk-popup-error{color:#ac382b;font-size:14px}
+.smk-popup-spinner{width:30px;height:30px;border:3px solid #ffffff45;border-top-color:white;border-radius:50%;animation:smk-popup-spin .85s linear infinite}
+.attendance-portal .smk-floating-dialog.is-success .smk-popup-icon{animation:smk-popup-check .45s cubic-bezier(.2,.9,.3,1.3) both}
+.attendance-portal .smk-floating-dialog.is-success path{stroke-dasharray:45;stroke-dashoffset:45;animation:smk-popup-draw .45s .12s ease-out forwards}
+@keyframes smk-popup-enter{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes smk-popup-backdrop{from{opacity:0}to{opacity:1}}
+@keyframes smk-popup-spin{to{transform:rotate(360deg)}}
+@keyframes smk-popup-check{from{transform:scale(.8)}to{transform:scale(1)}}
+@keyframes smk-popup-draw{to{stroke-dashoffset:0}}
+/* iOS date/time controls have intrinsic widths: constrain both grid tracks and controls. */
+.attendance-portal .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.attendance-portal :is(.report-card,.form-grid,.field,.time-row,.date-range-row,.date-range-field){min-width:0;box-sizing:border-box}
+.attendance-portal input:is([type=date],[type=time]){display:block;box-sizing:border-box;width:100%;min-width:0!important;max-width:100%;min-inline-size:0;inline-size:100%;-webkit-appearance:none;appearance:none}
+.attendance-portal input:is([type=date],[type=time])::-webkit-date-and-time-value{min-width:0;text-align:left}
+.attendance-portal input:is([type=date],[type=time])::-webkit-datetime-edit{min-width:0;padding:0}
+@media(max-width:620px){.attendance-portal .form-grid{grid-template-columns:minmax(0,1fr)}.attendance-portal .time-row{grid-template-columns:minmax(0,1fr)}.attendance-portal .smk-floating-dialog{padding:26px 20px 20px}.attendance-portal .smk-floating-dialog h2{font-size:21px}}
+@media(prefers-reduced-motion:reduce){.attendance-portal .smk-floating-dialog,.attendance-portal .smk-floating-dialog::backdrop,.attendance-portal .smk-floating-dialog .smk-popup-icon,.attendance-portal .smk-floating-dialog path,.smk-popup-spinner{animation:none!important}.attendance-portal .smk-floating-dialog.is-success path{stroke-dashoffset:0}.attendance-portal .smk-floating-dialog button{transition:none}}
