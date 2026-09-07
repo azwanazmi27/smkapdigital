@@ -1,0 +1,1 @@
+ALTER TABLE `management_report_folders` ADD `document_type` text DEFAULT '' NOT NULL;

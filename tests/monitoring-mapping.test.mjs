@@ -37,6 +37,7 @@ test('shared SQL includes monitoring, preserves original link, and withdraws del
  db.exec(skas.match(/prepare\("(CREATE TABLE IF NOT EXISTS skas_evidence [^"]+)"/)[1]);
  db.exec("CREATE TABLE opr_reports(id TEXT,name TEXT,category TEXT,view_url TEXT,created_at TEXT); CREATE TABLE opr_intake_metadata(report_id TEXT,payload_json TEXT);");
  db.exec(readFileSync(new URL('../drizzle/0006_parallel_proteus.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../drizzle/0007_robust_risque.sql',import.meta.url),'utf8'));
  db.prepare('INSERT INTO opr_reports VALUES(?,?,?,?,?)').run('monitor-1','2026-08-31-E-PEMANTAUAN-Pemantauan kantin.pdf',category,'https://drive.google.com/file/d/original','2026-08-31');
  const linked=readFileSync(new URL('../app/api/opr-management/route.ts',import.meta.url),'utf8');
  const query=linked.match(/prepare\("(SELECT r.id[^"]+)"/)[1];

@@ -11,7 +11,7 @@ export const managementMaterials = sqliteTable("management_materials", {
 },table=>[index("idx_management_year_folder").on(table.schoolYear,table.folderId)]);
 
 export const managementReportFolders = sqliteTable("management_report_folders", {
- reportId:text("report_id").primaryKey(),folderId:text("folder_id").notNull(),updatedBy:text("updated_by").notNull(),updatedAt:text("updated_at").notNull(),
+ reportId:text("report_id").primaryKey(),folderId:text("folder_id").notNull(),documentType:text("document_type").notNull().default(""),updatedBy:text("updated_by").notNull(),updatedAt:text("updated_at").notNull(),
 });
 export const teachers = sqliteTable("teachers", { id: text("id").primaryKey(), name: text("name").notNull(), category: text("category").notNull(), createdAt: text("created_at").notNull() });
 export const absences = sqliteTable("absences", { id: text("id").primaryKey(), teacherId: text("teacher_id").notNull(), teacherName: text("teacher_name").notNull(), category: text("category").notNull(), absenceDate: text("absence_date").notNull(), endDate: text("end_date"), reason: text("reason").notNull(), duration: text("duration").notNull(), startTime: text("start_time"), endTime: text("end_time"), note: text("note").notNull().default(""), reliefStatus: text("relief_status").notNull().default("pending"), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull() });

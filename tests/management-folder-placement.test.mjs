@@ -19,12 +19,13 @@ test('actual handlers persist a folder independently, count ancestors, retain UR
  const db=new DatabaseSync(':memory:');
  db.exec("CREATE TABLE opr_reports(id TEXT,name TEXT,category TEXT,view_url TEXT,created_at TEXT); CREATE TABLE opr_intake_metadata(report_id TEXT,payload_json TEXT); CREATE TABLE skas_years(school_year INTEGER,status TEXT); INSERT INTO skas_years VALUES(2026,'active');");
  db.exec(readFileSync(new URL('../drizzle/0006_parallel_proteus.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../drizzle/0007_robust_risque.sql',import.meta.url),'utf8'));
  globalThis.folderTestStore={db:{prepare(sql){return {bind(...args){return {first:async()=>db.prepare(sql).get(...args),run:async()=>db.prepare(sql).run(...args)};},all:async()=>({results:db.prepare(sql).all()})};}}};
  globalThis.folderTestActor={role:'admin',email:'admin@example.com'};
  db.prepare('INSERT INTO opr_reports VALUES(?,?,?,?,?)').run('r1','2026-09-01-Pemantauan kantin.pdf','Lain-lain · e-Pemantauan','https://drive.google.com/original','2026-09-01');
  const get=async()=>await (await route.GET(new Request('https://portal.test/api/opr-management?year=2026'))).json();
- const post=(folderId)=>route.POST(new Request('https://portal.test/api/opr-management',{method:'POST',headers:{origin:'https://portal.test','Content-Type':'application/json'},body:JSON.stringify({id:'r1',folderId})}));
- let data=await get();assert.equal(data.reports[0].folderId,'hem-9');
+ const post=(folderId,documentType)=>route.POST(new Request('https://portal.test/api/opr-management',{method:'POST',headers:{origin:'https://portal.test','Content-Type':'application/json'},body:JSON.stringify({id:'r1',folderId,documentType})}));
+ let data=await get();assert.equal(data.reports[0].folderId,'hem-9');assert.equal(data.reports[0].documentType,'Pemantauan dan penambahbaikan');
  assert.equal((await post('hem-14')).status,200);
  data=await get();assert.equal(data.reports[0].folderId,'hem-14');
  assert.equal(data.reports.filter(r=>inManagementFolder(r.folderId,'hem')).length,1);
@@ -32,6 +33,9 @@ test('actual handlers persist a folder independently, count ancestors, retain UR
  assert.equal(data.reports.filter(r=>inManagementFolder(r.folderId,'hem-9')).length,0);
  assert.equal(data.reports[0].openUrl,'https://drive.google.com/original');
  assert.equal(data.reports[0].mappingBasis,'manual');
+ assert.equal((await post('hem-14','Program, aktiviti atau OPR')).status,200);
+ data=await get();assert.equal(data.reports[0].documentType,'Program, aktiviti atau OPR');
+ assert.equal((await post('hem-14','invalid')).status,400);
  // No SKAS table exists: both actions must succeed without it.
  assert.equal((await post('unknown')).status,400);
  globalThis.folderTestActor={role:'teacher',email:'teacher@example.com'};
