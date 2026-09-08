@@ -331,7 +331,7 @@ export function LandingPortal() {
       </div>
     </section>
 
-    <footer className="landing-footer"><p>Portal ini disediakan untuk urusan rasmi warga SMK Agama Pahang.</p><span>© 2026 SMK Agama Pahang · Dibangunkan oleh BangWan</span><nav aria-label="Pautan bantuan"><button onClick={() => notify("Panduan ringkas akan dibuka di sini")}>Bantuan</button><a href="mailto:cra8001@moe.edu.my">Hubungi Sekolah</a><button onClick={() => notify("Maklumat portal digunakan untuk urusan rasmi sekolah sahaja")}>Privasi</button></nav></footer>
+    <footer className="landing-footer"><p>Portal ini disediakan untuk urusan rasmi warga SMK Agama Pahang.</p><span>© 2026 SMK Agama Pahang · Dibangunkan oleh BangWan</span><nav aria-label="Dasar dan hubungan sekolah"><button onClick={() => notify("Penafian: Maklumat dalam portal ini disediakan untuk rujukan dan urusan rasmi sekolah.")}>Penafian</button><button onClick={() => notify("Privasi: Data peribadi digunakan hanya bagi urusan sekolah, keselamatan dan perkhidmatan yang dibenarkan.")}>Privasi</button><a href="tel:+6094523901" aria-label="Hubungi sekolah di 09-4523901">Hubungi Sekolah: 09-4523901</a></nav></footer>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section ref={folderModalRef} className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan") ? "generator-modal" : ""} ${open === "orgchart" ? "org-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
