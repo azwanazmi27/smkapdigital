@@ -53,7 +53,6 @@ export async function verifyGoogleCredential(credential: string) {
 }
 
 export async function createPortalSession(credential: string) {
-  await ensureSessionTable();
   const google = await verifyGoogleCredential(credential);
   if (!google) return null;
   const user = await env.DB.prepare("SELECT id,email,name,position,grade,role,status FROM portal_users WHERE email=? AND status='active' AND deleted_at IS NULL").bind(google.email).first<PortalActor>();
@@ -61,8 +60,11 @@ export async function createPortalSession(credential: string) {
   const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, "");
   const now = new Date();
   const expires = new Date(now.getTime() + SESSION_DAYS * 86400000);
-  await env.DB.prepare("INSERT INTO portal_sessions(token_hash,user_id,google_picture,expires_at,created_at,last_seen_at) VALUES(?,?,?,?,?,?)")
-    .bind(await digest(token), user.id, google.picture || "", expires.toISOString(), now.toISOString(), now.toISOString()).run();
+  const digestValue = await digest(token);
+  const insert = () => env.DB.prepare("INSERT INTO portal_sessions(token_hash,user_id,google_picture,expires_at,created_at,last_seen_at) VALUES(?,?,?,?,?,?)")
+    .bind(digestValue, user.id, google.picture || "", expires.toISOString(), now.toISOString(), now.toISOString()).run();
+  try { await insert(); }
+  catch { await ensureSessionTable(); await insert(); }
   return { token, expires, user: { ...user, googlePicture: google.picture || "" } };
 }
 
@@ -81,7 +83,6 @@ export async function deletePortalSession(request: Request) {
 }
 
 export async function portalActor(request: Request): Promise<PortalActor | null> {
-  await ensureSessionTable();
   const bearer = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (bearer) {
     const google = await verifyGoogleCredential(bearer);
@@ -93,8 +94,11 @@ export async function portalActor(request: Request): Promise<PortalActor | null>
   const token = readCookie(request, COOKIE_NAME);
   if (!token) return null;
   const hash = await digest(token);
-  const actor = await env.DB.prepare("SELECT u.id,u.email,u.name,u.position,u.grade,u.role,u.status,s.google_picture AS googlePicture FROM portal_sessions s JOIN portal_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.status='active' AND u.deleted_at IS NULL")
+  const readActor = () => env.DB.prepare("SELECT u.id,u.email,u.name,u.position,u.grade,u.role,u.status,s.google_picture AS googlePicture FROM portal_sessions s JOIN portal_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.status='active' AND u.deleted_at IS NULL")
     .bind(hash, new Date().toISOString()).first<PortalActor>();
+  let actor: PortalActor | null;
+  try { actor = await readActor(); }
+  catch { await ensureSessionTable(); actor = await readActor(); }
   if (actor) void env.DB.prepare("UPDATE portal_sessions SET last_seen_at=? WHERE token_hash=?").bind(new Date().toISOString(), hash).run();
   return actor || null;
 }
