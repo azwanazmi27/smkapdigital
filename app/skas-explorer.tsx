@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, ExternalLink, FileText, FolderOpen, Search, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, BarChart3, CheckCircle2, ChevronDown, ChevronRight, Clock3, ExternalLink, FilePlus2, FileText, FolderInput, FolderOpen, Search, ShieldCheck } from 'lucide-react';
 import { skasStandards, skasEvidenceTypes } from './skas-catalog';
 import { evidenceLink, evidenceScope, evidenceUnits, filterEvidence, type EvidenceRecord } from './skas-evidence-model';
 
 const statuses: Record<string,string> = {approved:'Diperakui', pending:'Menunggu semakan', needs_info:'Perlu tindakan', rejected:'Ditolak'};
 const dateLabel = (value: string) => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleDateString('ms-MY', {day:'numeric', month:'long', year:'numeric'}) : 'Belum direkodkan';
 
-export function SkasExplorer({records, year, loading, error, retry, manage, monitor, setMonitor}: {
-  records: EvidenceRecord[]; year: number; loading: boolean; error: string; retry: () => void; manage: () => void;
+export function SkasExplorer({records, year, loading, error, retry, manage, add, candidates, monitor, setMonitor}: {
+  records: EvidenceRecord[]; year: number; loading: boolean; error: string; retry: () => void; manage: () => void; add: () => void; candidates: () => void;
   monitor: boolean; setMonitor: (value: boolean) => void;
 }) {
   const [standard, setStandard] = useState('');
@@ -18,6 +18,7 @@ export function SkasExplorer({records, year, loading, error, retry, manage, moni
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState('');
+  const [openStandards, setOpenStandards] = useState<string[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
   const scoped = evidenceScope(records, year, monitor);
@@ -35,9 +36,11 @@ export function SkasExplorer({records, year, loading, error, retry, manage, moni
   function switchMode() { setMonitor(!monitor); setStandard(''); resetFilters(); }
   function back() { if(selected) setSelected(''); else if(unit) {setUnit('');setType('');} else openStandard(''); }
   const summary = (value: string) => scoped.filter(item=>item.status===value).length;
+  const showStatus = (value: string) => { setStatus(value); setStandard(''); setUnit(''); setType(''); setSelected(''); window.setTimeout(()=>document.querySelector('#skas-records')?.scrollIntoView({block:'start',behavior:'smooth'}),0); };
+  const toggleStandard = (code: string) => setOpenStandards(current=>current.includes(code)?current.filter(item=>item!==code):[...current,code]);
 
   return <section className={`skas-explorer${monitor?' is-monitor':''}`} aria-label="Pelayar evidens mengikut standard">
-    <div className="skas-view-controls"><button onClick={switchMode} aria-pressed={monitor}><ShieldCheck aria-hidden="true"/>{monitor?'Kembali ke paparan pentadbir':'Paparan pemantau'}</button>{!monitor&&<button onClick={manage}>Urus evidens & pemetaan</button>}</div>
+    <div className="skas-view-controls"><button onClick={switchMode} aria-pressed={monitor}><ShieldCheck aria-hidden="true"/>{monitor?'Kembali ke paparan pentadbir':'Paparan pemantau'}</button>{!monitor&&<button onClick={manage}>Pengurusan lanjutan</button>}</div>
     {monitor&&<p className="skas-monitor-note"><ShieldCheck aria-hidden="true"/>Paparan pemantau · Evidens diperakui sahaja · Tiada kawalan sunting atau padam</p>}
     <nav className="skas-breadcrumb" aria-label="Kedudukan evidens"><button onClick={()=>openStandard('')}>Semua standard</button>{standard&&<><ChevronRight aria-hidden="true"/><button onClick={()=>{resetFilters();}}>Standard {standard}</button></>}{unit&&<><ChevronRight aria-hidden="true"/><button onClick={()=>setSelected('')}>{selectedUnit?.name || 'Unit'}</button></>}{detail&&<><ChevronRight aria-hidden="true"/><span>Butiran evidens</span></>}</nav>
     <header className="skas-explorer-heading">{(standard||selected||unit)&&<button onClick={back}><ArrowLeft aria-hidden="true"/>Kembali</button>}<h3 ref={heading} tabIndex={-1}>{detail?detail.title:standard?`Standard ${standard} — ${label || 'Evidens sekolah'}`:`Evidens sekolah ${year}`}</h3><p>{detail?'Semak maklumat dan buka dokumen sumber.':standard?'Pilih pecahan unit atau jenis dokumen untuk melihat kandungannya.':'Tekan standard untuk melihat pecahan dan evidens yang telah dipetakan.'}</p></header>
@@ -48,9 +51,9 @@ export function SkasExplorer({records, year, loading, error, retry, manage, moni
       {evidenceLink(detail)?<div className="skas-source-open"><a href={evidenceLink(detail)} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true"/>Buka dokumen asal <span>(tab baharu)</span></a><p>Dokumen dibuka pada sumber asal. Pautan Google Drive tertakluk kepada kebenaran pemilik fail.</p></div>:<p role="alert">Pautan dokumen belum tersedia. Hubungi pentadbir untuk melengkapkan sumber evidens.</p>}
     </article>:<>
       {!standard&&<>
-        <div className="skas-summary-buttons">{(monitor?['approved']:['approved','pending','needs_info']).map(value=><button key={value} onClick={()=>{setStatus(value);heading.current?.parentElement?.parentElement?.querySelector('#skas-records')?.scrollIntoView({block:'start'});}}><span>{statuses[value]}</span><strong>{summary(value)}</strong><small>Lihat pecahan evidens <ChevronRight aria-hidden="true"/></small></button>)}</div>
-        <div className="skas-standard-cards">{skasStandards.map(([code,name])=>{const entries=filterEvidence(scoped,{standard:code}),approved=entries.filter(item=>item.status==='approved').length;return <button key={code} onClick={()=>openStandard(code)} aria-label={`Buka Standard ${code}: ${name}, ${entries.length} evidens`}><span className="skas-standard-number">{code}</span><div><h4>{name}</h4><p>{entries.length?`${entries.length} evidens${monitor?'':` · ${approved} diperakui`}`:monitor?'Belum ada evidens diperakui':'Belum ada evidens dipetakan'}</p><span>Lihat pecahan <ChevronRight aria-hidden="true"/></span></div></button>;})}</div>
-        <p className="skas-coverage-note">Bilangan ini ialah rekod evidens, bukan skor atau pengesahan bahawa sesuatu standard telah lengkap.</p>
+        {!monitor&&<section className="skas-task-panel" aria-labelledby="skas-task-title"><div><span>MULA DI SINI</span><h4 id="skas-task-title">Apa yang anda mahu lakukan?</h4><p>Pilih tugasan anda. Istilah dan pemetaan SK@S akan dipaparkan hanya apabila diperlukan.</p></div><div className="skas-task-grid"><button className="primary-task" onClick={add}><FilePlus2/><span><strong>Tambah evidens</strong><small>Muat naik fail atau pautan</small></span><ChevronRight/></button><button onClick={()=>showStatus('pending')}><Clock3/><span><strong>Semak evidens</strong><small>{summary('pending')} menunggu semakan</small></span><ChevronRight/></button><button onClick={()=>showStatus('needs_info')}><CheckCircle2/><span><strong>Menunggu tindakan</strong><small>{summary('needs_info')} perlu dilengkapkan</small></span><ChevronRight/></button><button onClick={candidates}><FolderInput/><span><strong>Calon daripada portal</strong><small>Petakan laporan sedia ada</small></span><ChevronRight/></button></div></section>}
+        <section className="skas-overview" aria-label="Ringkasan evidens"><div className="skas-overview-title"><div><span>RINGKASAN {year}</span><h4>Status evidens sekolah</h4></div><BarChart3 aria-hidden="true"/></div><div className="skas-summary-buttons">{(monitor?['approved']:['approved','pending','needs_info']).map(value=><button key={value} onClick={()=>showStatus(value)}><span>{statuses[value]}</span><strong>{summary(value)}</strong><small>Lihat senarai <ChevronRight aria-hidden="true"/></small></button>)}</div></section>
+        <section className="skas-standards-accordion"><div className="skas-accordion-heading"><div><span>PEMETAAN SK@S</span><h4>Standard dan pecahan evidens</h4><p>Buka standard apabila anda mahu melihat pemetaannya.</p></div></div>{skasStandards.map(([code,name])=>{const entries=filterEvidence(scoped,{standard:code}),approved=entries.filter(item=>item.status==='approved').length,isOpen=openStandards.includes(code);return <article key={code} className={isOpen?'open':''}><button className="skas-accordion-trigger" onClick={()=>toggleStandard(code)} aria-expanded={isOpen}><span className="skas-standard-number">{code}</span><span><strong>{name}</strong><small>{entries.length?`${entries.length} evidens${monitor?'':` · ${approved} diperakui`}`:monitor?'Belum ada evidens diperakui':'Belum ada evidens dipetakan'}</small></span><ChevronDown aria-hidden="true"/></button>{isOpen&&<div className="skas-accordion-body"><p>{entries.length?'Lihat pecahan unit, jenis dokumen dan rekod yang dipetakan kepada standard ini.':'Pecahan akan dipaparkan selepas evidens pertama dipetakan.'}</p><button onClick={()=>openStandard(code)}>Buka Standard {code}<ChevronRight aria-hidden="true"/></button></div>}</article>})}<p className="skas-coverage-note">Bilangan ini ialah rekod evidens, bukan skor atau pengesahan bahawa sesuatu standard telah lengkap.</p></section>
       </>}
       {standard&&<section className="skas-unit-section"><h4>Pecahan unit / subunit</h4>{units.length?<div className="skas-unit-cards"><button aria-pressed={!unit} onClick={()=>{setUnit('');setType('');setSelected('');}}><FolderOpen aria-hidden="true"/><span>Semua unit<strong>{standardRecords.length} evidens</strong></span></button>{units.map(group=><button key={group.key} aria-pressed={unit===group.key} onClick={()=>{setUnit(group.key);setType('');setSelected('');}}><FolderOpen aria-hidden="true"/><span>{group.name}<small>{group.domain}</small><strong>{group.count} evidens</strong></span></button>)}</div>:<p className="skas-empty-message">{monitor?'Belum ada evidens diperakui bagi standard ini.':'Belum ada evidens dipetakan kepada standard ini. Pecahan unit akan muncul apabila rekod dipetakan.'}</p>}<p className="skas-coverage-note">Pecahan mengikut unit dalam rekod sedia ada; bukan senarai aspek/TUMS rasmi atau ukuran kelengkapan standard.</p></section>}
       {standard&&<section className="skas-type-section"><h4>Pecahan jenis dokumen</h4><div className="skas-type-cards">{skasEvidenceTypes.map(name=><button key={name} aria-pressed={type===name} onClick={()=>setType(type===name?'':name)}><span>{name}</span><strong>{filterEvidence(standardRecords,{unit,type:name}).length}</strong></button>)}</div></section>}
