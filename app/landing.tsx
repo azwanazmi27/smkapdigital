@@ -260,7 +260,7 @@ export function LandingPortal() {
   const currentFolderContent=open&&folderContent[open as keyof typeof folderContent];
   const currentItems=currentFolderContent?.items.map(item=>item) || [];
   if(open==="warga")currentItems.push({icon:FolderOpen,title:"PENGURUSAN SEKOLAH",text:"Fail pengurusan, kurikulum, HEM, kokurikulum dan Tingkatan Enam",folder:"pengurusan"});
-  if(open==="warga"&&identity&&["admin","super_admin"].includes(identity.role)){
+  if(open==="warga"&&identity){
     currentItems.push({icon:ShieldCheck,title:"Pusat SK@S",text:"Dashboard evidens dan pematuhan sekolah",folder:"skas"});
   }
   if(open==="ibubapa"){

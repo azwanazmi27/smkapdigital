@@ -70,7 +70,7 @@ async function dashboard(year:number){
 
 export async function GET(request:Request){
   try{
-    await prepare();const me=await requireAdmin(request);if(!me)return denied();
+    await prepare();const me=await portalActor(request);if(!me)return Response.json({error:"Log masuk diperlukan."},{status:401});
     const url=new URL(request.url),fileId=clean(url.searchParams.get("file"),80);
     if(fileId){
       const row=await env.DB.prepare("SELECT storage_key AS storageKey,mime_type AS mimeType,original_name AS originalName FROM skas_evidence WHERE id=?").bind(fileId).first<{storageKey:string;mimeType:string;originalName:string}>();
