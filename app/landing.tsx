@@ -338,7 +338,7 @@ export function LandingPortal() {
         <button className="portal-home-button" onClick={() => setOpen(null)} aria-label="Kembali ke Portal Utama"><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={closeViewLabel} title={closeViewLabel}><X aria-hidden="true" /></button>
         {identity&&open!=="admin"&&open!=="ekeberadaan"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
-          {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => openSubmodule("oprgenerator","Cipta OPR baharu")} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
+          {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} user={identity} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} /> : open === "oprhub" ? <OprDashboard create={() => openSubmodule("oprgenerator","Cipta OPR baharu")} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{currentFolderContent?.title}</h2>
           <p>{currentFolderContent?.intro}</p>
@@ -922,17 +922,21 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   </div>;
 }
 
-function VisitorForm({ notify, close }: { notify: (message: string) => void; close: () => void }) {
+type VisitorAdminRecord={id:string;date:string;timeIn:string;timeOut:string;name:string;phone:string;vehicleNo:string;organisation:string;purpose:string;staff:string;meetingPlace:string;notes:string;status:string};
+function VisitorForm({ notify, close, user }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null }) {
   const now = new Date();
   const [photo, setPhoto] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [review, setReview] = useState(false);
-  const [visitMode, setVisitMode] = useState<"in" | "out">("in");
+  const isAdmin=Boolean(user&&["admin","super_admin"].includes(user.role));
+  const [visitMode, setVisitMode] = useState<"in" | "out" | "records">("in");
   const [checkoutName, setCheckoutName] = useState("");
   const [checkoutId, setCheckoutId] = useState("");
   const [checkoutTime, setCheckoutTime] = useState(now.toTimeString().slice(0, 5));
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [activeRecords, setActiveRecords] = useState<Array<{ id: string; date: string; timeIn: string; name: string; vehicleNo: string }>>([]);
+  const [recordDate,setRecordDate]=useState(now.toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_Lumpur"}));
+  const [adminRecords,setAdminRecords]=useState<VisitorAdminRecord[]>([]);
   const [loadingActive, setLoadingActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -945,14 +949,16 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
   const tidyVisitorField = (field: keyof typeof form) => setForm((current) => ({ ...current, [field]: tidyTitleCase(current[field]) }));
   const complete = Boolean(form.date && form.timeIn && form.visitorName && form.phone && form.purpose && form.staff && photoFile);
   useEffect(() => {
-    if (visitMode !== "out" || checkoutDone) return;
+    if (checkoutDone) return;
     setLoadingActive(true); setSaveError("");
-    void fetch("/api/ekunjung", { cache: "no-store" }).then(async (response) => {
-      const result = await response.json() as { records?: typeof activeRecords; error?: string };
+    const url=visitMode==="records"?`/api/ekunjung?view=admin&date=${recordDate}`:"/api/ekunjung";
+    void fetch(url, { cache: "no-store" }).then(async (response) => {
+      const result = await response.json() as { records?: typeof activeRecords|VisitorAdminRecord[]; error?: string };
       if (!response.ok) throw new Error(result.error || "Senarai pelawat tidak tersedia");
-      setActiveRecords(result.records || []);
+      if(visitMode==="records")setAdminRecords((result.records||[]) as VisitorAdminRecord[]);else setActiveRecords((result.records||[]) as typeof activeRecords);
     }).catch((error) => setSaveError(error instanceof Error ? error.message : "Senarai pelawat tidak tersedia")).finally(() => setLoadingActive(false));
-  }, [visitMode, checkoutDone]);
+  }, [visitMode, checkoutDone,recordDate]);
+  const downloadVisitorCsv=()=>{const q=(value:unknown)=>`"${String(value??"").replace(/"/g,'""')}"`,headers=["Tarikh","Nama","Telefon","Kenderaan","Organisasi","Tujuan","Staf ditemui","Tempat","Waktu masuk","Waktu keluar","Status","Catatan"],rows=adminRecords.map(r=>[r.date,r.name,r.phone,r.vehicleNo,r.organisation,r.purpose,r.staff,r.meetingPlace,r.timeIn,r.timeOut||"Belum keluar",r.status,r.notes]);saveDownload(new Blob(["\ufeff"+[headers,...rows].map(row=>row.map(q).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}),`Senarai-Pelawat-${recordDate}.csv`);notify("Senarai pelawat berjaya dimuat turun");};
   const photoPayload = async (file: File) => {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
@@ -984,9 +990,11 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
     } catch (error) { setSaveError(error instanceof Error ? error.message : "Masa keluar tidak dapat disimpan"); }
     finally { setSaving(false); }
   };
+  if(visitMode==="records"&&isAdmin)return <div className="visitor-form-shell"><span className="modal-overline">PAPARAN ADMIN E-KUNJUNG</span><h2 id="folder-title">Senarai pelawat</h2><p>Butiran daftar masuk dan keluar pelawat mengikut tarikh.</p><div className="visitor-mode-tabs visitor-mode-tabs-three"><button onClick={()=>setVisitMode("in")}>Daftar masuk</button><button onClick={()=>setVisitMode("out")}>Daftar keluar</button><button className="active">Senarai</button></div><div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar</span></div><div className="visitor-record-toolbar"><label>Tarikh<input type="date" value={recordDate} onChange={e=>setRecordDate(e.target.value)}/></label><button onClick={downloadVisitorCsv} disabled={!adminRecords.length}>Muat turun CSV</button></div>{loadingActive?<div className="booking-loading"><i className="button-spinner"/> Membaca rekod pelawat...</div>:saveError?<p className="visitor-error">{saveError}</p>:!adminRecords.length?<div className="booking-empty"><strong>Tiada rekod</strong><span>Tiada pelawat direkodkan pada tarikh ini.</span></div>:<div className="visitor-record-list">{adminRecords.map(record=><article key={record.id}><header><div><h3>{record.name}</h3><span>{record.phone||"Tiada telefon"}{record.vehicleNo?` · ${record.vehicleNo}`:""}</span></div><b className={record.timeOut?"done":"active"}>{record.timeOut?"Telah keluar":"Belum keluar"}</b></header><dl><div><dt>Tujuan</dt><dd>{record.purpose||"—"}</dd></div><div><dt>Staf ditemui</dt><dd>{record.staff||"—"}</dd></div><div><dt>Waktu masuk</dt><dd>{record.timeIn}</dd></div><div><dt>Waktu keluar</dt><dd>{record.timeOut||"Belum direkodkan"}</dd></div>{record.organisation&&<div><dt>Organisasi</dt><dd>{record.organisation}</dd></div>}{record.meetingPlace&&<div><dt>Tempat</dt><dd>{record.meetingPlace}</dd></div>}{record.notes&&<div className="wide"><dt>Catatan</dt><dd>{record.notes}</dd></div>}</dl></article>)}</div>}<div className="visitor-actions"><button onClick={close}>Kembali</button></div></div>;
   if (visitMode === "out") return <div className="visitor-form-shell">
     <span className="modal-overline">E-KUNJUNG SMKAP</span><h2 id="folder-title">Daftar keluar pelawat</h2><p>Pelawat atau pengawal boleh melengkapkan daftar keluar dengan dua langkah sahaja.</p>
-    <div className="visitor-mode-tabs"><button onClick={() => setVisitMode("in")}>Daftar masuk</button><button className="active">Daftar keluar</button></div>
+    <div className={`visitor-mode-tabs ${isAdmin?"visitor-mode-tabs-three":""}`}><button onClick={() => setVisitMode("in")}>Daftar masuk</button><button className="active">Daftar keluar</button>{isAdmin&&<button onClick={()=>setVisitMode("records")}>Senarai</button>}</div>
+    <div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar</span></div>
     <div className="visitor-checkout-card"><span>↗</span><div><strong>Daftar keluar pelawat</strong><small>Cari nama seperti dalam rekod daftar masuk</small></div></div>
     {checkoutDone ? <div className="visitor-complete"><span>✓</span><strong>SELESAI</strong><p>{checkoutName} telah didaftarkan keluar pada {checkoutTime}.</p><button onClick={() => { setCheckoutDone(false); setCheckoutName(""); setCheckoutId(""); setCheckoutTime(new Date().toTimeString().slice(0, 5)); }}>Daftar keluar pelawat lain</button></div> : <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); void checkoutVisit(); }}>
       <label>Pilih pelawat *<select autoFocus value={checkoutId} onChange={(event) => { const id = event.target.value; setCheckoutId(id); setCheckoutName(activeRecords.find((record) => record.id === id)?.name || ""); }} required disabled={loadingActive}><option value="">{loadingActive ? "Membaca rekod..." : activeRecords.length ? "Pilih nama pelawat" : "Tiada pelawat aktif"}</option>{activeRecords.map((record) => <option key={record.id} value={record.id}>{record.name}{record.vehicleNo ? ` · ${record.vehicleNo}` : ""} · masuk {record.timeIn}</option>)}</select></label>
@@ -1007,7 +1015,8 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
   </article>;
   return <div className="visitor-form-shell">
     <span className="modal-overline">DAFTAR PELAWAT</span><h2 id="folder-title">E-Kunjung SMKAP</h2><p>Daftar masuk ke SMKAP dengan pantas.</p>
-    <div className="visitor-mode-tabs"><button className="active">Daftar masuk</button><button onClick={() => setVisitMode("out")}>Daftar keluar</button></div>
+    <div className={`visitor-mode-tabs ${isAdmin?"visitor-mode-tabs-three":""}`}><button className="active">Daftar masuk</button><button onClick={() => setVisitMode("out")}>Daftar keluar</button>{isAdmin&&<button onClick={()=>setVisitMode("records")}>Senarai</button>}</div>
+    <div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar</span></div>
     <div className="visitor-time-strip"><span>◷</span><div><small>Tarikh masuk</small><strong>{new Intl.DateTimeFormat("ms-MY", { dateStyle: "long" }).format(new Date(`${form.date}T12:00:00`))}</strong></div><label><small>Masa masuk — boleh dilaras</small><input type="time" value={form.timeIn} onChange={(event) => setVisitorField("timeIn",event.target.value)} required /></label></div>
     <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); if (complete) setReview(true); }}>
       <label>Nama pelawat *<input autoFocus value={form.visitorName} onChange={(event) => setVisitorField("visitorName",event.target.value)} onBlur={() => tidyVisitorField("visitorName")} placeholder="Masukkan nama penuh" required /></label>
