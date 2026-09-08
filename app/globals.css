@@ -1055,9 +1055,6 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 @media(max-width:640px){.management-centre .management-navigation{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:stretch}.management-centre .management-current-path{grid-row:1;grid-column:1;font-size:1rem;line-height:1.5;padding:4px 0}.management-centre .management-navigation>button{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:1rem;line-height:1.5}.management-centre .management-navigation>button svg{flex:none}}
 .skas-hero p{font-size:16px}.skas-hero>div:first-child>span,.skas-year label,.skas-year-note>span{font-size:14px}.skas-year select{font-size:16px;min-height:48px}.skas-year button{width:48px;height:48px}
 .skas-explorer{color:#ecf6f8;font-size:16px;line-height:1.55;margin-top:24px;min-width:0}
-.skas-explorer.is-viewer .skas-task-panel,.skas-explorer.is-viewer .skas-unmapped{display:none}
-.skas-shell:has(.skas-explorer.is-viewer) .skas-mobile-nav{grid-template-columns:1fr 1fr}.skas-shell:has(.skas-explorer.is-viewer) .skas-mobile-nav button:nth-child(2),.skas-shell:has(.skas-explorer.is-viewer) .skas-mobile-nav button:nth-child(3){display:none}
-.skas-user-access article{grid-template-columns:minmax(0,1fr) auto}.skas-user-access article>label{display:flex;align-items:center;gap:8px;margin:0}.skas-user-access article>label input{width:20px;height:20px;accent-color:#72d5c9}.skas-user-access article>label span{font-size:12px;font-weight:800}
 .skas-explorer *{box-sizing:border-box;min-width:0}
 .skas-explorer button,.skas-explorer input,.skas-explorer select,.skas-source-open a{font:inherit;min-height:48px;border:1px solid #426775;border-radius:12px;padding:12px 16px;background:#123440;color:#ecf6f8}
 .skas-explorer button{cursor:pointer;text-align:left}

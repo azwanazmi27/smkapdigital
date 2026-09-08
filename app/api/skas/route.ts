@@ -42,12 +42,6 @@ async function requireAdmin(request:Request):Promise<PortalActor|null>{
   return actor&&["admin","super_admin"].includes(actor.role)?actor:null;
 }
 
-async function requireSkasAccess(request:Request):Promise<PortalActor|null>{
-  const actor=await portalActor(request);if(!actor)return null;
-  const permission=await env.DB.prepare("SELECT enabled FROM admin_module_permissions WHERE user_id=? AND module_key='skas'").bind(actor.id).first<{enabled:number}>();
-  return permission?.enabled===0?null:actor;
-}
-
 function denied(){return Response.json({error:"Pusat SK@S hanya boleh diakses oleh pentadbir."},{status:403});}
 function safeKeyPart(value:string){return value.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80)||"fail";}
 
@@ -76,7 +70,7 @@ async function dashboard(year:number){
 
 export async function GET(request:Request){
   try{
-    await prepare();const me=await requireSkasAccess(request);if(!me)return Response.json({error:"Anda tidak mempunyai kebenaran."},{status:403});
+    await prepare();const me=await requireAdmin(request);if(!me)return denied();
     const url=new URL(request.url),fileId=clean(url.searchParams.get("file"),80);
     if(fileId){
       const row=await env.DB.prepare("SELECT storage_key AS storageKey,mime_type AS mimeType,original_name AS originalName FROM skas_evidence WHERE id=?").bind(fileId).first<{storageKey:string;mimeType:string;originalName:string}>();

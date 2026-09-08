@@ -8,8 +8,8 @@ import { evidenceLink, evidenceScope, evidenceUnits, filterEvidence, type Eviden
 const statuses: Record<string,string> = {approved:'Diperakui', pending:'Menunggu semakan', needs_info:'Perlu tindakan', rejected:'Ditolak'};
 const dateLabel = (value: string) => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleDateString('ms-MY', {day:'numeric', month:'long', year:'numeric'}) : 'Belum direkodkan';
 
-export function SkasExplorer({records, year, loading, error, retry, manage, add, candidates, unmappedCount, canManage, initialStatus='', monitor, setMonitor}: {
-  records: EvidenceRecord[]; year: number; loading: boolean; error: string; retry: () => void; manage: () => void; add: () => void; candidates: () => void; unmappedCount: number; canManage: boolean; initialStatus?: string;
+export function SkasExplorer({records, year, loading, error, retry, manage, add, candidates, unmappedCount, initialStatus='', monitor, setMonitor}: {
+  records: EvidenceRecord[]; year: number; loading: boolean; error: string; retry: () => void; manage: () => void; add: () => void; candidates: () => void; unmappedCount: number; initialStatus?: string;
   monitor: boolean; setMonitor: (value: boolean) => void;
 }) {
   const [standard, setStandard] = useState('');
@@ -39,8 +39,8 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const showStatus = (value: string) => { setStatus(value); setStandard(''); setUnit(''); setType(''); setSelected(''); window.setTimeout(()=>document.querySelector('#skas-records')?.scrollIntoView({block:'start',behavior:'smooth'}),0); };
   const toggleStandard = (code: string) => setOpenStandards(current=>current.includes(code)?current.filter(item=>item!==code):[...current,code]);
 
-  return <section className={`skas-explorer${monitor?' is-monitor':''}${canManage?'':' is-viewer'}`} aria-label="Pelayar evidens mengikut standard">
-    <div className="skas-view-controls"><button onClick={switchMode} aria-pressed={monitor}><ShieldCheck aria-hidden="true"/>{monitor?'Kembali ke paparan evidens':'Paparan diperakui'}</button>{canManage&&!monitor&&<button onClick={manage}>Pengurusan lanjutan</button>}</div>
+  return <section className={`skas-explorer${monitor?' is-monitor':''}`} aria-label="Pelayar evidens mengikut standard">
+    <div className="skas-view-controls"><button onClick={switchMode} aria-pressed={monitor}><ShieldCheck aria-hidden="true"/>{monitor?'Kembali ke paparan pentadbir':'Paparan pemantau'}</button>{!monitor&&<button onClick={manage}>Pengurusan lanjutan</button>}</div>
     {monitor&&<p className="skas-monitor-note"><ShieldCheck aria-hidden="true"/>Paparan pemantau · Evidens diperakui sahaja · Tiada kawalan sunting atau padam</p>}
     <nav className="skas-breadcrumb" aria-label="Kedudukan evidens"><button onClick={()=>openStandard('')}>Evidens</button>{standard&&<><ChevronRight aria-hidden="true"/><button onClick={()=>{resetFilters();}}>Standard {standard}</button></>}{unit&&<><ChevronRight aria-hidden="true"/><button onClick={()=>setSelected('')}>{selectedUnit?.name || 'Unit'}</button></>}{detail&&<><ChevronRight aria-hidden="true"/><span>Butiran evidens</span></>}</nav>
     <header className="skas-explorer-heading">{(standard||selected||unit)&&<button onClick={back}><ArrowLeft aria-hidden="true"/>Kembali</button>}<h3 ref={heading} tabIndex={-1}>{detail?detail.title:standard?`Standard ${standard} — ${label || 'Evidens sekolah'}`:initialStatus==='pending'?'Evidens menunggu semakan':`Evidens sekolah ${year}`}</h3><p>{detail?'Semak maklumat dan buka dokumen sumber.':standard?'Pilih pecahan unit atau jenis dokumen untuk melihat kandungannya.':initialStatus==='pending'?'Semak rekod berikut dan ambil tindakan yang diperlukan.':'Pilih tugasan untuk bermula. Pemetaan standard tersedia di bahagian bawah.'}</p></header>
