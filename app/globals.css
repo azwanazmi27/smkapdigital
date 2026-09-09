@@ -1178,6 +1178,24 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .skas-source-open{border-top:1px solid #426775;padding-top:20px;margin-top:24px}
 .skas-source-open a{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;background:#81d8cf;color:#052631;font-weight:700;text-decoration:none}
 .skas-source-open a span{font-size:14px}
+.skas-review-panel{margin-top:24px;padding:22px;border:1px solid #426775;border-radius:16px;background:#102f3b}
+.skas-review-heading>span{font-size:12px;font-weight:800;letter-spacing:.12em;color:#81d8cf}
+.skas-review-heading h4{margin:6px 0;font-size:21px;color:#fff}
+.skas-review-heading p{margin:0;color:#bdd2d9;max-width:68ch}
+.skas-review-panel fieldset{display:grid;gap:10px;margin:20px 0;padding:0;border:0}
+.skas-review-panel legend{margin-bottom:10px;font-weight:800;color:#fff}
+.skas-review-panel fieldset label{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid #426775;border-radius:12px;background:#0b2834;cursor:pointer}
+.skas-review-panel input[type="checkbox"]{width:20px;height:20px;min-height:20px;margin:1px 0 0;accent-color:#81d8cf;flex:0 0 auto}
+.skas-review-notes{display:grid;gap:8px;font-weight:700;color:#fff}
+.skas-review-notes small{font-weight:400;color:#bdd2d9}
+.skas-review-notes textarea{width:100%;min-height:108px;resize:vertical;border:1px solid #426775;border-radius:12px;padding:12px 14px;background:#0b2834;color:#ecf6f8;font:inherit;font-size:16px}
+.skas-review-notes textarea::placeholder{color:#91abb4}
+.skas-review-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
+.skas-review-actions button{font-weight:800}
+.skas-review-actions .approve{background:#81d8cf;color:#052631;border-color:#81d8cf}
+.skas-review-actions button:disabled{cursor:not-allowed;opacity:.5}
+.skas-review-error{margin:12px 0 0;padding:10px 12px;border-left:4px solid #ff9d8e;background:#492e2b;color:#ffe2dc}
+.skas-review-help{margin:10px 0 0;text-align:right;font-size:14px;color:#bdd2d9}
 .skas-management-back{min-height:48px;margin:20px 0;font-size:16px}
 .skas-mobile-nav{display:none}
 .skas-task-panel,.skas-overview,.skas-standards-accordion{margin:18px 0;padding:22px;border:1px solid #365b68;border-radius:18px;background:linear-gradient(145deg,rgba(19,57,70,.9),rgba(8,38,49,.86));box-shadow:0 16px 40px rgba(0,12,18,.13)}
@@ -1193,7 +1211,7 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
  .skas-unmapped{grid-template-columns:44px minmax(0,1fr) auto;gap:11px;margin:0 0 10px;padding:14px}.skas-unmapped-icon{width:44px;height:44px}.skas-unmapped>strong{min-width:32px;font-size:25px}.skas-unmapped>button{grid-column:1/-1;width:100%;justify-content:center;min-height:46px}.skas-unmapped h4{font-size:17px}.skas-unmapped p{font-size:13px!important}.skas-record-section{margin-top:10px}.skas-record-section>h4{font-size:19px}.skas-explorer-filters{margin-top:10px}.skas-explorer-filters label{font-size:14px}.skas-record-cards>button{gap:11px}.skas-record-cards>button>svg{display:none}.skas-record-cards h4{font-size:17px}.skas-record-cards p{font-size:14px}.skas-explorer .skas-status-label{font-size:12px}.skas-result-count{font-size:14px}
  .skas-mobile-nav{position:fixed;z-index:1250;left:50%;right:auto;bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100vw - 28px);max-width:520px;height:76px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:7px;border:1px solid rgba(174,220,220,.22);border-radius:28px;background:linear-gradient(145deg,rgba(28,38,42,.82),rgba(10,18,23,.9));-webkit-backdrop-filter:blur(24px) saturate(145%);backdrop-filter:blur(24px) saturate(145%);box-shadow:inset 0 1px rgba(255,255,255,.12),0 16px 45px rgba(0,0,0,.42);transform:translateX(-50%);isolation:isolate}.skas-mobile-nav button{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;min-height:60px;padding:6px 3px;color:#a4b4b8;border:0;border-radius:22px;background:transparent;font-size:11px;font-weight:750;transition:background .18s ease,color .18s ease,transform .18s ease}.skas-mobile-nav button:active{transform:scale(.96)}.skas-mobile-nav button.active{color:#e9fffc;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.07));box-shadow:inset 0 1px rgba(255,255,255,.12),0 7px 18px rgba(0,0,0,.2)}.skas-mobile-nav button.active svg{color:#7ce3d6;filter:drop-shadow(0 0 8px rgba(124,227,214,.35))}.skas-mobile-nav svg{width:22px;height:22px}.skas-mobile-nav b{position:absolute;top:2px;left:calc(50% + 7px);min-width:19px;height:19px;display:grid;place-items:center;padding:0 5px;border:2px solid rgba(15,25,29,.9);border-radius:12px;color:#082c32;background:#76dfce;font-size:10px;box-shadow:0 3px 10px rgba(0,0,0,.28)}
  .skas-actions{grid-template-columns:1fr}.skas-actions>button{min-height:54px}.skas-add,.skas-candidates,.skas-browser{padding:13px}.skas-section-title h3{font-size:19px}.skas-form-grid label{font-size:14px}.skas-form-grid input,.skas-form-grid select,.skas-form-grid textarea{font-size:16px}.skas-save{min-height:52px}.skas-candidates article strong{font-size:15px}.skas-candidates article small,.skas-candidates article span{font-size:12px}.skas-evidence-list>article{padding:14px}.skas-evidence-head strong{font-size:16px}.skas-evidence-head small,.skas-evidence-head p,.skas-evidence-meta,.skas-notes,.skas-verified{font-size:12px}.skas-evidence-actions a,.skas-evidence-actions button{min-height:44px;font-size:13px}.skas-management-back{width:100%;margin:10px 0}
- .skas-standard-cards,.skas-unit-cards,.skas-explorer-filters,.skas-document-detail dl{grid-template-columns:1fr}
+ .skas-standard-cards,.skas-unit-cards,.skas-explorer-filters,.skas-document-detail dl{grid-template-columns:1fr}.skas-review-panel{padding:16px}.skas-review-actions{display:grid}.skas-review-actions button{width:100%}.skas-review-help{text-align:left}
  .skas-summary-buttons{grid-template-columns:1fr}
  .skas-summary-buttons button{display:grid;grid-template-columns:1fr auto;align-items:center}
  .skas-summary-buttons small{grid-column:1/-1}

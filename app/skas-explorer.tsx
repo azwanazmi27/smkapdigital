@@ -10,6 +10,7 @@ const dateLabel = (value: string) => value && Number.isFinite(Date.parse(value))
 
 export function SkasExplorer({records, year, loading, error, retry, manage, add, candidates, unmappedCount, canManage, initialStatus='', monitor, setMonitor}: {
   records: EvidenceRecord[]; year: number; loading: boolean; error: string; retry: () => void; manage: () => void; add: () => void; candidates: () => void; unmappedCount: number; canManage: boolean; initialStatus?: string;
+  review: (id: string, status: string, notes?: string) => Promise<boolean>;
   monitor: boolean; setMonitor: (value: boolean) => void;
 }) {
   const [standard, setStandard] = useState('');
@@ -18,6 +19,10 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const [status, setStatus] = useState(initialStatus);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState('');
+  const [reviewChecks, setReviewChecks] = useState<boolean[]>([false,false,false,false]);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewError, setReviewError] = useState('');
+  const [reviewing, setReviewing] = useState(false);
   const [openStandards, setOpenStandards] = useState<string[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
@@ -30,7 +35,7 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const selectedUnit = units.find(item => item.key === unit);
   const types = [...new Set(filterEvidence(standardRecords,{unit}).map(item=>item.evidenceType))].sort();
 
-  useEffect(() => { if(firstRender.current){firstRender.current=false;return;} heading.current?.focus({preventScroll:true}); heading.current?.scrollIntoView({block:'start',behavior:'instant'}); }, [standard, unit, selected, monitor]);
+  useEffect(() => { setReviewChecks([false,false,false,false]); setReviewNotes(''); setReviewError(''); if(firstRender.current){firstRender.current=false;return;} heading.current?.focus({preventScroll:true}); heading.current?.scrollIntoView({block:'start',behavior:'instant'}); }, [standard, unit, selected, monitor]);
   function resetFilters() { setUnit(''); setType(''); setStatus(''); setQuery(''); setSelected(''); }
   function openStandard(code: string) { setStandard(code); resetFilters(); }
   function switchMode() { setMonitor(!monitor); setStandard(''); resetFilters(); }
@@ -38,6 +43,16 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const summary = (value: string) => scoped.filter(item=>item.status===value).length;
   const showStatus = (value: string) => { setStatus(value); setStandard(''); setUnit(''); setType(''); setSelected(''); window.setTimeout(()=>document.querySelector('#skas-records')?.scrollIntoView({block:'start',behavior:'smooth'}),0); };
   const toggleStandard = (code: string) => setOpenStandards(current=>current.includes(code)?current.filter(item=>item!==code):[...current,code]);
+  const reviewItems = ['Dokumen boleh dibuka dan kandungannya jelas','Tajuk, tarikh serta nama penyedia adalah betul','Kandungan benar-benar membuktikan aktiviti atau urusan','Standard, bidang dan unit yang dipilih adalah sesuai'];
+  const allChecked = reviewChecks.every(Boolean);
+  async function submitReview(nextStatus: 'approved'|'needs_info') {
+    if(nextStatus==='approved'&&!allChecked){setReviewError('Sahkan semua perkara dalam senarai semak sebelum memperakui eviden.');return;}
+    if(nextStatus==='needs_info'&&!reviewNotes.trim()){setReviewError('Nyatakan perkara yang perlu dilengkapkan sebelum mengembalikan eviden.');return;}
+    setReviewError('');setReviewing(true);
+    const saved=await review(detail!.id,nextStatus,reviewNotes);
+    setReviewing(false);
+    if(saved)setSelected('');
+  }
 
   return <section className={`skas-explorer${monitor?' is-monitor':''}${canManage?'':' is-viewer'}`} aria-label="Pelayar evidens mengikut standard">
     <div className="skas-view-controls"><button onClick={switchMode} aria-pressed={monitor}><ShieldCheck aria-hidden="true"/>{monitor?'Kembali ke paparan evidens':'Paparan diperakui'}</button>{canManage&&!monitor&&<button onClick={manage}>Pengurusan lanjutan</button>}</div>
@@ -49,6 +64,14 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
       <dl>{[['Standard',detail.standardCode],['Bidang',detail.domain],['Unit / subunit',detail.unitName],['Jenis evidens',detail.evidenceType],['Tahun',String(detail.schoolYear)],['Sumber',detail.sourceModule || (detail.sourceType==='upload'?'Muat naik manual':'Pautan manual')],['Dikemukakan oleh',detail.submittedByName],['Tarikh direkodkan',dateLabel(detail.createdAt)],['Disemak oleh',detail.verifiedByName || 'Belum disemak'],['Tarikh semakan',dateLabel(detail.verifiedAt)]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value || 'Belum dinyatakan'}</dd></div>)}</dl>
       {detail.notes&&<div className="skas-detail-notes"><h4>Catatan</h4><p>{detail.notes}</p></div>}
       {evidenceLink(detail)?<div className="skas-source-open"><a href={evidenceLink(detail)} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true"/>Buka dokumen asal <span>(tab baharu)</span></a><p>Dokumen dibuka pada sumber asal. Pautan Google Drive tertakluk kepada kebenaran pemilik fail.</p></div>:<p role="alert">Pautan dokumen belum tersedia. Hubungi pentadbir untuk melengkapkan sumber evidens.</p>}
+      {canManage&&!monitor&&detail.status!=="approved"&&<form className="skas-review-panel" onSubmit={event=>event.preventDefault()}>
+        <div className="skas-review-heading"><span>LANGKAH SEMAKAN</span><h4>Tindakan semakan eviden</h4><p>Buka dokumen asal, kemudian sahkan perkara berikut sebelum membuat keputusan.</p></div>
+        <fieldset><legend>Senarai semak</legend>{reviewItems.map((item,index)=><label key={item}><input type="checkbox" checked={reviewChecks[index]} onChange={event=>setReviewChecks(current=>current.map((value,itemIndex)=>itemIndex===index?event.target.checked:value))}/><span>{item}</span></label>)}</fieldset>
+        <label className="skas-review-notes"><span>Catatan tindakan <small>(wajib jika eviden perlu dilengkapkan)</small></span><textarea rows={4} value={reviewNotes} onChange={event=>{setReviewNotes(event.target.value);setReviewError('');}} placeholder="Contoh: Sila tambah tarikh program dan gambar aktiviti yang lebih jelas."/></label>
+        {reviewError&&<p className="skas-review-error" role="alert">{reviewError}</p>}
+        <div className="skas-review-actions"><button type="button" onClick={()=>void submitReview('needs_info')} disabled={reviewing}>Kembalikan untuk tindakan</button><button type="button" className="approve" onClick={()=>void submitReview('approved')} disabled={reviewing||!allChecked}>{reviewing?'Sedang menyimpan…':'Perakui eviden'}</button></div>
+        {!allChecked&&<p className="skas-review-help">Tandakan keempat-empat pengesahan untuk mengaktifkan butang “Perakui eviden”.</p>}
+      </form>}
     </article>:<>
       {!standard&&<>
         {!monitor&&<section className="skas-task-panel" aria-labelledby="skas-task-title"><div><span>MULA DI SINI</span><h4 id="skas-task-title">Apa yang anda mahu lakukan?</h4><p>Pilih tugasan anda. Istilah dan pemetaan SK@S akan dipaparkan hanya apabila diperlukan.</p></div><div className="skas-task-grid"><button className="primary-task" onClick={add}><FilePlus2/><span><strong>Tambah evidens</strong><small>Muat naik fail atau pautan</small></span><ChevronRight/></button><button onClick={()=>showStatus('pending')}><Clock3/><span><strong>Semak evidens</strong><small>{summary('pending')} menunggu semakan</small></span><ChevronRight/></button><button onClick={()=>showStatus('needs_info')}><CheckCircle2/><span><strong>Menunggu tindakan</strong><small>{summary('needs_info')} perlu dilengkapkan</small></span><ChevronRight/></button><button onClick={candidates}><FolderInput/><span><strong>Calon daripada portal</strong><small>Petakan laporan sedia ada</small></span><ChevronRight/></button></div></section>}
