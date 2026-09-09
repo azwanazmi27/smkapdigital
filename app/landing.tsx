@@ -150,6 +150,7 @@ export function LandingPortal() {
   const [open, setOpen] = useState<Folder>(null);
   const [toast, setToast] = useState("");
   const [opening, setOpening] = useState("");
+  const [attendanceSplash,setAttendanceSplash]=useState(false);
   const [identity,setIdentity]=useState<PortalIdentity|null>(null);
   const [identityChecked,setIdentityChecked]=useState(false);
   const [pendingStaffOpen,setPendingStaffOpen]=useState(false);
@@ -223,6 +224,12 @@ export function LandingPortal() {
     });
     return()=>cancelAnimationFrame(firstFrame);
   },[open]);
+  useEffect(()=>{
+    if(open!=="ekeberadaan"){setAttendanceSplash(false);return;}
+    setAttendanceSplash(true);
+    const timer=window.setTimeout(()=>setAttendanceSplash(false),1800);
+    return()=>window.clearTimeout(timer);
+  },[open]);
   useEffect(() => {
     const resizeAll = () => document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(resizeAutoGrowTextarea);
     const resizeTarget = (event: Event) => {
@@ -252,7 +259,7 @@ export function LandingPortal() {
     if(folder.id==="warga"&&!identity){setAuthOpen(true);finishOpening();return;}
     setOpen(folder.id);finishOpening();
   };
-  const openSubmodule=(folder:Folder,title:string)=>{setOpening(title);setOpen(folder);finishOpening();};
+  const openSubmodule=(folder:Folder,title:string)=>{if(folder!=="ekeberadaan")setOpening(title);setOpen(folder);if(folder!=="ekeberadaan")finishOpening();};
   const closeStaffAnnouncement=(readId?:string)=>{if(readId)localStorage.setItem(`smkap_announcement_read_${readId}`,"1");setStaffAnnouncementOpen(false);};
   const updatePhoto=async(file?:File)=>{if(!file||!identity)return;const base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(",")[1]||"");reader.onerror=()=>reject(Error("Gambar tidak dapat dibaca"));reader.readAsDataURL(file);});const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({photoBase64:base64,mimeType:file.type})}),data=await response.json();if(!response.ok)throw new Error(data.error);await loadIdentity(false);notify("Gambar profil berjaya dikemas kini");};
   const updateProfile=async(profile:{name:string;position:string;grade:string})=>{const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)}),data=await response.json();if(!response.ok)throw new Error(data.error||"Profil tidak dapat dikemas kini.");setIdentity(current=>current?{...current,...profile}:current);notify("Profil berjaya dikemas kini");};
@@ -357,6 +364,7 @@ export function LandingPortal() {
     {staffAnnouncementOpen&&staffAnnouncements.length>0&&<StaffAnnouncementPopup items={staffAnnouncements} close={closeStaffAnnouncement}/>} 
     {pushNotice&&<PushNoticePopup item={pushNotice} close={()=>{setPushNotice(null);const url=new URL(window.location.href);url.searchParams.delete("notification");history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}}/>}
     {profileOpen&&identity&&<ProfileCard user={identity} close={()=>setProfileOpen(false)} save={updateProfile} updatePhoto={updatePhoto} logout={logout} notify={notify} pushState={pushState} enableNotifications={enableNotifications}/>} 
+    {attendanceSplash&&<div className="attendance-splash" role="status" aria-live="polite"><img src="/ekeberadaan-loading.jpg" alt="SMKAP Digital e-Keberadaan"/><div className="attendance-splash-shade" aria-hidden="true"/><div className="attendance-splash-status"><i aria-hidden="true"/><span>Memuatkan e-Keberadaan…</span></div></div>}
     {opening&&<div className="portal-opening" role="status" aria-live="polite"><div><i aria-hidden="true"/><span><strong>Membuka {opening}</strong><small>Sila tunggu sebentar…</small></span></div></div>}
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;

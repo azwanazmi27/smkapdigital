@@ -12,6 +12,13 @@ body { margin:0; background:var(--cream); color:var(--ink); font-family:var(--fo
 .portal-opening { position:fixed; z-index:980; inset:0; display:grid; place-items:center; padding:20px; background:rgba(2,13,21,.28); pointer-events:none; animation:fadeIn .12s ease; }
 .portal-opening>div { min-width:min(310px,calc(100vw - 40px)); display:flex; align-items:center; gap:13px; padding:16px 18px; border:1px solid rgba(140,218,210,.28); border-radius:18px; color:#edf8f6; background:linear-gradient(140deg,rgba(34,79,95,.96),rgba(8,34,46,.98)); box-shadow:0 24px 75px rgba(0,0,0,.42); }
 .portal-opening span { display:grid; gap:3px; }.portal-opening strong { font-size:14px; }.portal-opening small { color:#a8c3c5; font-size:11px; }
+.attendance-splash { position:fixed; z-index:990; inset:0; display:grid; place-items:center; overflow:hidden; background:#061a26; animation:fadeIn .18s ease; }
+.attendance-splash>img { width:100%; height:100%; object-fit:cover; object-position:center; }
+.attendance-splash-shade { position:absolute; inset:0; background:linear-gradient(180deg,rgba(2,15,25,.04) 45%,rgba(2,15,25,.5) 100%); }
+.attendance-splash-status { position:absolute; left:50%; bottom:max(34px,calc(env(safe-area-inset-bottom) + 22px)); transform:translateX(-50%); display:flex; align-items:center; gap:11px; padding:11px 16px; color:#fff; border:1px solid rgba(255,255,255,.32); border-radius:999px; background:rgba(5,28,42,.64); box-shadow:0 12px 36px rgba(0,0,0,.25); backdrop-filter:blur(14px); white-space:nowrap; }
+.attendance-splash-status i { width:20px; height:20px; border:2.5px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:visitorSpin .72s linear infinite; }
+.attendance-splash-status span { font-size:14px; font-weight:750; letter-spacing:.01em; }
+@media (min-width:760px){.attendance-splash>img{object-fit:contain}.attendance-splash{background:radial-gradient(circle at 50% 45%,#244858 0,#071b27 68%,#04121b 100%)}}
 button,input,select,textarea { max-width:100%; min-width:0; font:inherit; }
 textarea { height:auto; overflow-y:hidden!important; resize:none!important; field-sizing:content; line-height:1.55; }
 button { cursor:pointer; }
