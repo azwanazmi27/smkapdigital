@@ -302,7 +302,7 @@ export async function POST(request: Request) {
         return Response.json({ error: "Kandungan atau jumlah saiz fail tidak sah." }, { status: 400 });
       }
       const name = (typeof item.name === "string" ? item.name : "fail-opr")
-        .replace(/[\\/:*?"<>|]/g, "-").slice(0, 180);
+        .replace(/[\\/:*?"<>|]/g, "-").slice(0, 500);
       files.push({ name, mimeType, base64 });
     }
 
