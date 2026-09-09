@@ -4,7 +4,7 @@ import {ProfileCard,StaffExpertiseList} from "./profile-card";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, Clock3, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HandCoins, HeartHandshake, Landmark, Mail, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Presentation, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Trophy, UserRound, Users, Video, X } from "lucide-react";
+import { Bell, BookOpen, BookOpenText, BriefcaseBusiness, Building2, CalendarDays, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, ClipboardList, Clock3, ExternalLink, FilePlus2, FileText, Folder, GraduationCap, HandCoins, HeartHandshake, Landmark, Mail, Map, MapPin, Monitor, MoonStar, Network, Palette, Phone, Plus, Presentation, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Trophy, UserRound, Users, Video, X } from "lucide-react";
 import { oprCategoryGroups, oprCategoryValues, oprFolderTree, type OprFolderNode } from "./opr-categories";
 import {achievementCategory} from './achievement-mapping';
 import {isPrimaryReport} from './report-kind';
@@ -796,6 +796,21 @@ const roomIcon = (room: string) => {
   return <Icon aria-hidden="true" />;
 };
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string; canDelete?: boolean };
+const bookingStatusCache = new Map<string, { bookings: Booking[]; savedAt: number }>();
+const bookingStatusRequests = new Map<string, Promise<Booking[]>>();
+const fetchBookingStatus = (date: string) => {
+  const pending = bookingStatusRequests.get(date);
+  if (pending) return pending;
+  const request = fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" }).then(async (response) => {
+    const data = await response.json() as { bookings?: Booking[]; error?: string };
+    if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
+    const bookings = data.bookings || [];
+    bookingStatusCache.set(date, { bookings, savedAt: Date.now() });
+    return bookings;
+  }).finally(() => bookingStatusRequests.delete(date));
+  bookingStatusRequests.set(date, request);
+  return request;
+};
 const formatBookingDateRange = (startDate: string, endDate: string) => {
   const format = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("ms-MY", { day: "numeric", month: "long" });
   const year = new Date(`${endDate}T12:00:00`).getFullYear();
@@ -824,17 +839,18 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [roomPickerOpen, setRoomPickerOpen] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ success: boolean; message: string; id?: string; count?: number } | null>(null);
   const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const loadBookings = async () => {
-    setLoading(true); setError("");
+    const cached = bookingStatusCache.get(date);
+    if (cached) setBookings(cached.bookings);
+    setLoading(!cached); setError("");
     try {
-      const response = await fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" });
-      const data = await response.json() as { bookings?: Booking[]; error?: string };
-      if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
-      setBookings(data.bookings || []);
+      if (cached && Date.now() - cached.savedAt < 60_000) return;
+      setBookings(await fetchBookingStatus(date));
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
     finally { setLoading(false); }
   };
@@ -857,6 +873,17 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     const now = new Date();
     const inUse = active.some((item) => now >= new Date(`${item.startDate}T${item.startTime}`) && now <= new Date(`${item.endDate}T${item.endTime}`));
     return inUse ? { label: "Sedang digunakan", tone: "inuse" } : { label: "Ditempah", tone: "booked" };
+  };
+  const beginBooking = (room: string) => {
+    setField("room", room);
+    setField("startDate", date);
+    setField("endDate", date);
+    setRoomPickerOpen(false);
+    setTab("form");
+  };
+  const openBookingForm = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 620px)").matches) setRoomPickerOpen(true);
+    else setTab("form");
   };
   const submit = async () => {
     setSaving(true); setError(""); setResult(null);
@@ -918,10 +945,10 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   if (result) return <div className="booking-centre"><span className="modal-overline">E-TEMPAHAN SMKAP</span><div className={`booking-result ${result.success ? "success" : "failed"}`}><span>{result.success ? "✓" : "!"}</span><h2>{result.success ? "TEMPAHAN BERJAYA" : "TEMPAHAN TIDAK BERJAYA"}</h2><p>{result.message}</p>{result.id && <small>Nombor rujukan: {result.id}{result.count && result.count > 1 ? ` · ${result.count} rekod` : ""}</small>}<div><button onClick={() => { setResult(null); setTab("list"); void loadBookingList(); }}>Lihat senarai tempahan</button><button className="booking-primary" onClick={() => { setResult(null); setTab("form"); }}>Buat tempahan lain</button></div></div></div>;
   return <div className="booking-centre">
     <div className="booking-head"><div><span className="modal-overline">E-TEMPAHAN SMKAP</span><h2 id="folder-title">Tempahan bilik sekolah</h2><p>Semak kekosongan dan buat tempahan dalam beberapa langkah sahaja.</p></div><button onClick={close}>Kembali ke Guru & Staf</button></div>
-    <div className="booking-tabs booking-tabs-three"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>Status bilik</button><button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}>Senarai tempahan</button><button className={tab === "form" ? "active" : ""} onClick={() => setTab("form")}>＋ Buat tempahan</button></div>
+    <div className="booking-tabs booking-tabs-three"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>Status bilik</button><button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}>Senarai tempahan</button><button className={tab === "form" ? "active" : ""} onClick={openBookingForm}>＋ Buat tempahan</button></div>
     {tab === "dashboard" ? <>
       <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
-      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => { setField("room", room); setField("startDate", date); setField("endDate", date); setTab("form"); }}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
+      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => beginBooking(room)}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
     </> : tab === "list" ? <>
       <div className="booking-list-filter"><label>Dari<input type="date" value={listFrom} onChange={(event) => setListFrom(event.target.value)} /></label><label>Hingga<input type="date" min={listFrom} value={listTo} onChange={(event) => setListTo(event.target.value)} /></label><label>Bilik<select value={listRoom} onChange={(event) => setListRoom(event.target.value)}><option>Semua bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><button onClick={() => void loadBookingList()} disabled={listLoading}>{listLoading ? "Membaca..." : "Paparkan"}</button><button className="booking-print" onClick={() => void printBookingList()} disabled={printingList || listLoading || !visibleListBookings.length}>{printingList ? "Menjana PDF..." : "Muat turun PDF"}</button></div>
       {listLoading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca senarai tempahan...</div> : listError ? <p className="visitor-error">{listError}</p> : !visibleListBookings.length ? <div className="booking-empty"><strong>Tiada tempahan</strong><span>Tiada rekod dalam julat dan bilik yang dipilih.</span></div> : <div className="booking-list">{visibleListBookings.map((item) => <article key={`${item.id}-${item.startDate}`}><div className="booking-list-date" aria-hidden="true">{roomIcon(item.room)}</div><div className="booking-list-details"><h3>{item.room}</h3><strong className="booking-list-range">{formatBookingDateRange(item.startDate, item.endDate)}</strong><p>{formatBookingTime(item.startTime)}–{formatBookingTime(item.endTime)}</p><span>{item.applicantName}</span><small>{item.participants} peserta · {item.purpose}</small></div><div className="booking-list-actions"><b>{item.status}</b>{item.canDelete && <button type="button" onClick={() => setDeleteTarget(item)}>Padam tempahan</button>}</div></article>)}</div>}
@@ -936,6 +963,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
       <p className="visitor-disclaimer"><span>ⓘ</span> Nama boleh diubah jika tempahan dibuat bagi pihak orang lain. Akaun dan e-mel sebenar akan disimpan untuk tujuan rekod apabila log masuk Google diaktifkan.</p>
       <div className="visitor-actions"><button type="button" onClick={() => setTab("dashboard")}>Semak status bilik</button><button className="visitor-primary" disabled={saving}>{saving ? <><i className="button-spinner"></i> Menyemak...</> : "Sahkan tempahan →"}</button></div>
     </form>}
+    {typeof document !== "undefined" && createPortal(<><nav className="booking-floating-nav" aria-label="Menu e-Tempahan"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}><CalendarRange aria-hidden="true"/><span>Status</span></button><button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}><ClipboardList aria-hidden="true"/><span>Senarai</span></button><button className={tab === "form" || roomPickerOpen ? "active add" : "add"} onClick={() => setRoomPickerOpen(true)}><Plus aria-hidden="true"/><span>Tambah</span></button></nav>{roomPickerOpen && <div className="booking-room-picker" role="dialog" aria-modal="true" aria-labelledby="room-picker-title" onMouseDown={(event) => event.target === event.currentTarget && setRoomPickerOpen(false)}><section><header><div><span className="modal-overline">TEMPAHAN BAHARU</span><h3 id="room-picker-title">Pilih bilik untuk ditempah</h3></div><button type="button" aria-label="Tutup pilihan bilik" onClick={() => setRoomPickerOpen(false)}><X aria-hidden="true"/></button></header><div>{bookingRooms.map((room) => <button type="button" key={room} onClick={() => beginBooking(room)}><span>{roomIcon(room)}</span><strong>{room}</strong><ChevronRight aria-hidden="true"/></button>)}</div></section></div>}</>, document.body)}
     {deleteTarget && <div className="achievement-confirm" role="dialog" aria-modal="true" aria-labelledby="delete-booking-title" onMouseDown={(event) => event.target === event.currentTarget && !deleting && setDeleteTarget(null)}><section><span className="modal-overline">PENGESAHAN PADAM</span><h3 id="delete-booking-title">Padam tempahan ini?</h3><p><strong>{deleteTarget.room}</strong><br />{formatBookingDateRange(deleteTarget.startDate, deleteTarget.endDate)}<br />{formatBookingTime(deleteTarget.startTime)}–{formatBookingTime(deleteTarget.endTime)} · {deleteTarget.applicantName}</p><small>Tempahan yang dipadam tidak boleh dipulihkan.</small><div><button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)}>Batal</button><button type="button" className="danger" disabled={deleting} onClick={() => void deleteBooking()}>{deleting ? "Sedang memadam…" : "Ya, padam tempahan"}</button></div></section></div>}
   </div>;
 }
