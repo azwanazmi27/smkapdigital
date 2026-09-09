@@ -799,6 +799,7 @@ type Booking = { id: string; room: string; applicantName: string; purpose: strin
 const formatBookingDateRange = (startDate: string, endDate: string) => {
   const format = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("ms-MY", { day: "numeric", month: "long" });
   const year = new Date(`${endDate}T12:00:00`).getFullYear();
+  if (startDate === endDate) return `${format(startDate)} ${year}`;
   return `${format(startDate)}–${format(endDate)} ${year}`;
 };
 const formatBookingTime = (value: string) => {
@@ -825,22 +826,27 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [roomPickerOpen, setRoomPickerOpen] = useState(false);
-  const [roomSearch, setRoomSearch] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ success: boolean; message: string; id?: string; count?: number } | null>(null);
   const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  const loadBookings = async () => {
-    setLoading(true); setError("");
+  const loadBookings = async (silent = false) => {
+    if (!silent) { setLoading(true); setError(""); }
     try {
       const response = await fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" });
       const data = await response.json() as { bookings?: Booking[]; error?: string };
       if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
-      setBookings(data.bookings || []);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
-    finally { setLoading(false); }
+      setBookings(data.bookings || []); setError("");
+    } catch (reason) { if (!silent) setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
+    finally { if (!silent) setLoading(false); }
   };
-  useEffect(() => { void loadBookings(); }, [date]);
+  useEffect(() => {
+    void loadBookings();
+    const timer = window.setInterval(() => void loadBookings(true), 15000);
+    const refreshWhenVisible = () => { if (document.visibilityState === "visible") void loadBookings(true); };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshWhenVisible); };
+  }, [date]);
   const loadBookingList = async () => {
     setListLoading(true); setListError("");
     try {
@@ -851,7 +857,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     } catch (reason) { setListError(reason instanceof Error ? reason.message : "Senarai tempahan tidak dapat dibaca"); }
     finally { setListLoading(false); }
   };
-  const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan");
+  const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan" && new Date(`${item.endDate}T${item.endTime}`) > new Date());
   const visibleListBookings = listRoom === "Semua bilik" ? listBookings : listBookings.filter((item) => item.room === listRoom);
   const roomState = (room: string) => {
     const active = roomBookings(room);
@@ -860,8 +866,8 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     const inUse = active.some((item) => now >= new Date(`${item.startDate}T${item.startTime}`) && now <= new Date(`${item.endDate}T${item.endTime}`));
     return inUse ? { label: "Sedang digunakan", tone: "inuse" } : { label: "Ditempah", tone: "booked" };
   };
-  const filteredBookingRooms = bookingRooms.filter((room) => room.toLocaleLowerCase("ms-MY").includes(roomSearch.trim().toLocaleLowerCase("ms-MY")));
-  const showRoomPicker = () => { setRoomSearch(""); setRoomPickerOpen(true); };
+  const nextRoomBooking = (room: string) => [...roomBookings(room)].sort((a, b) => `${a.startDate}T${a.startTime}`.localeCompare(`${b.startDate}T${b.startTime}`))[0];
+  const showRoomPicker = () => { setRoomPickerOpen(true); void loadBookings(true); };
   const beginBooking = (room: string) => {
     setField("room", room);
     setField("startDate", date);
@@ -959,14 +965,12 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
           <i className="booking-picker-handle" aria-hidden="true" />
           <header>
             <span className="booking-picker-title-icon"><Building2 aria-hidden="true" /></span>
-            <div><h3 id="room-picker-title">Pilih bilik untuk ditempah</h3><p>Pilih ruang yang anda ingin semak atau tempah.</p></div>
+            <div><h3 id="room-picker-title">Pilih bilik untuk ditempah</h3><p>Status dan waktu dikemas kini secara automatik.</p></div>
             <button type="button" aria-label="Tutup pilihan bilik" onClick={() => setRoomPickerOpen(false)}><X aria-hidden="true"/></button>
           </header>
-          <label className="booking-room-search"><Search aria-hidden="true"/><input value={roomSearch} onChange={(event) => setRoomSearch(event.target.value)} placeholder="Cari bilik…" autoFocus /></label>
           <div className="booking-picker-grid">
-            {filteredBookingRooms.map((room) => { const state = roomState(room); return <button type="button" className={state.tone} key={room} onClick={() => beginBooking(room)}><span>{roomIcon(room)}</span><div><strong>{room}</strong><small><i />{state.label}</small></div><ChevronRight aria-hidden="true"/></button>; })}
+            {bookingRooms.map((room) => { const state = roomState(room); const slot = nextRoomBooking(room); return <button type="button" className={state.tone} key={room} onClick={() => beginBooking(room)}><span>{roomIcon(room)}</span><div><strong>{room}</strong><small><i />{state.label}</small>{slot && <em>{formatBookingDateRange(slot.startDate, slot.endDate)} · {formatBookingTime(slot.startTime)}–{formatBookingTime(slot.endTime)}</em>}</div><ChevronRight aria-hidden="true"/></button>; })}
           </div>
-          {!filteredBookingRooms.length && <p className="booking-picker-empty">Tiada bilik yang sepadan dengan carian.</p>}
         </section>
       </div>}
     </>, document.body)}
