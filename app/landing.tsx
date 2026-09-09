@@ -825,6 +825,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [roomPickerOpen, setRoomPickerOpen] = useState(false);
+  const [roomSearch, setRoomSearch] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ success: boolean; message: string; id?: string; count?: number } | null>(null);
   const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
@@ -859,6 +860,8 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     const inUse = active.some((item) => now >= new Date(`${item.startDate}T${item.startTime}`) && now <= new Date(`${item.endDate}T${item.endTime}`));
     return inUse ? { label: "Sedang digunakan", tone: "inuse" } : { label: "Ditempah", tone: "booked" };
   };
+  const filteredBookingRooms = bookingRooms.filter((room) => room.toLocaleLowerCase("ms-MY").includes(roomSearch.trim().toLocaleLowerCase("ms-MY")));
+  const showRoomPicker = () => { setRoomSearch(""); setRoomPickerOpen(true); };
   const beginBooking = (room: string) => {
     setField("room", room);
     setField("startDate", date);
@@ -866,10 +869,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     setRoomPickerOpen(false);
     setTab("form");
   };
-  const openBookingForm = () => {
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 620px)").matches) setRoomPickerOpen(true);
-    else setTab("form");
-  };
+  const openBookingForm = showRoomPicker;
   const submit = async () => {
     setSaving(true); setError(""); setResult(null);
     try {
@@ -948,7 +948,28 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
       <p className="visitor-disclaimer"><span>ⓘ</span> Nama boleh diubah jika tempahan dibuat bagi pihak orang lain. Akaun dan e-mel sebenar akan disimpan untuk tujuan rekod apabila log masuk Google diaktifkan.</p>
       <div className="visitor-actions"><button type="button" onClick={() => setTab("dashboard")}>Semak status bilik</button><button className="visitor-primary" disabled={saving}>{saving ? <><i className="button-spinner"></i> Menyemak...</> : "Sahkan tempahan →"}</button></div>
     </form>}
-    {typeof document !== "undefined" && createPortal(<><nav className="booking-floating-nav" aria-label="Menu e-Tempahan"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}><CalendarRange aria-hidden="true"/><span>Status</span></button><button className={tab === "form" || roomPickerOpen ? "active add" : "add"} onClick={() => setRoomPickerOpen(true)}><Plus aria-hidden="true"/><span>Tambah</span></button><button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}><ClipboardList aria-hidden="true"/><span>Senarai</span></button></nav>{roomPickerOpen && <div className="booking-room-picker" role="dialog" aria-modal="true" aria-labelledby="room-picker-title" onMouseDown={(event) => event.target === event.currentTarget && setRoomPickerOpen(false)}><section><header><div><span className="modal-overline">TEMPAHAN BAHARU</span><h3 id="room-picker-title">Pilih bilik untuk ditempah</h3></div><button type="button" aria-label="Tutup pilihan bilik" onClick={() => setRoomPickerOpen(false)}><X aria-hidden="true"/></button></header><div>{bookingRooms.map((room) => <button type="button" key={room} onClick={() => beginBooking(room)}><span>{roomIcon(room)}</span><strong>{room}</strong><ChevronRight aria-hidden="true"/></button>)}</div></section></div>}</>, document.body)}
+    {typeof document !== "undefined" && createPortal(<>
+      <nav className="booking-floating-nav" aria-label="Menu e-Tempahan">
+        <button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}><CalendarRange aria-hidden="true"/><span>Status</span></button>
+        <button className={tab === "form" || roomPickerOpen ? "active add" : "add"} onClick={showRoomPicker}><Plus aria-hidden="true"/><span>Tambah</span></button>
+        <button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}><ClipboardList aria-hidden="true"/><span>Senarai</span></button>
+      </nav>
+      {roomPickerOpen && <div className="booking-room-picker" role="dialog" aria-modal="true" aria-labelledby="room-picker-title" onMouseDown={(event) => event.target === event.currentTarget && setRoomPickerOpen(false)}>
+        <section>
+          <i className="booking-picker-handle" aria-hidden="true" />
+          <header>
+            <span className="booking-picker-title-icon"><Building2 aria-hidden="true" /></span>
+            <div><h3 id="room-picker-title">Pilih bilik untuk ditempah</h3><p>Pilih ruang yang anda ingin semak atau tempah.</p></div>
+            <button type="button" aria-label="Tutup pilihan bilik" onClick={() => setRoomPickerOpen(false)}><X aria-hidden="true"/></button>
+          </header>
+          <label className="booking-room-search"><Search aria-hidden="true"/><input value={roomSearch} onChange={(event) => setRoomSearch(event.target.value)} placeholder="Cari bilik…" autoFocus /></label>
+          <div className="booking-picker-grid">
+            {filteredBookingRooms.map((room) => { const state = roomState(room); return <button type="button" className={state.tone} key={room} onClick={() => beginBooking(room)}><span>{roomIcon(room)}</span><div><strong>{room}</strong><small><i />{state.label}</small></div><ChevronRight aria-hidden="true"/></button>; })}
+          </div>
+          {!filteredBookingRooms.length && <p className="booking-picker-empty">Tiada bilik yang sepadan dengan carian.</p>}
+        </section>
+      </div>}
+    </>, document.body)}
     {deleteTarget && <div className="achievement-confirm" role="dialog" aria-modal="true" aria-labelledby="delete-booking-title" onMouseDown={(event) => event.target === event.currentTarget && !deleting && setDeleteTarget(null)}><section><span className="modal-overline">PENGESAHAN PADAM</span><h3 id="delete-booking-title">Padam tempahan ini?</h3><p><strong>{deleteTarget.room}</strong><br />{formatBookingDateRange(deleteTarget.startDate, deleteTarget.endDate)}<br />{formatBookingTime(deleteTarget.startTime)}–{formatBookingTime(deleteTarget.endTime)} · {deleteTarget.applicantName}</p><small>Tempahan yang dipadam tidak boleh dipulihkan.</small><div><button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)}>Batal</button><button type="button" className="danger" disabled={deleting} onClick={() => void deleteBooking()}>{deleting ? "Sedang memadam…" : "Ya, padam tempahan"}</button></div></section></div>}
   </div>;
 }
