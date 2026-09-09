@@ -643,7 +643,7 @@ footer { display:flex; justify-content:space-between; gap:20px; padding:24px 2px
   .folder-card { min-height:182px; }
 }
 
-/* E-Tempahan — multi-day block and booking list */
+/* E-Tempahan — multi-day booking with OPR-style floating navigation */
 .booking-tabs-three { grid-template-columns:repeat(3,1fr); }
 .room-grid header>span svg { width:21px; height:21px; stroke-width:1.8; }
 .booking-repeat-note { display:flex; align-items:flex-start; gap:10px; padding:12px 13px; color:#9eb7b8; border:1px solid rgba(118,207,194,.17); border-radius:11px; background:rgba(91,185,170,.07); font-size:11px; line-height:1.45; }
