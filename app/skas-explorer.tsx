@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, BarChart3, CheckCircle2, ChevronDown, ChevronRight, Clock3, ExternalLink, FilePlus2, FileText, FolderInput, FolderOpen, Search, ShieldCheck } from 'lucide-react';
-import { skasStandards, skasEvidenceTypes } from './skas-catalog';
+import { skasDomains, skasStandards, skasEvidenceTypes } from './skas-catalog';
 import { evidenceLink, evidenceScope, evidenceUnits, filterEvidence, type EvidenceRecord } from './skas-evidence-model';
 
 const statuses: Record<string,string> = {approved:'Diperakui', pending:'Menunggu semakan', needs_info:'Perlu tindakan', rejected:'Ditolak'};
 const dateLabel = (value: string) => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleDateString('ms-MY', {day:'numeric', month:'long', year:'numeric'}) : 'Belum direkodkan';
 
-export function SkasExplorer({records, year, loading, error, retry, manage, add, candidates, unmappedCount, canManage, initialStatus='', monitor, setMonitor}: {
+type ReviewChanges = {standardCode:string;domain:string;unitName:string;title:string;submittedByName:string;evidenceDate:string};
+
+export function SkasExplorer({records, year, loading, error, retry, manage, add, candidates, unmappedCount, canManage, initialStatus='', review, monitor, setMonitor}: {
   records: EvidenceRecord[]; year: number; loading: boolean; error: string; retry: () => void; manage: () => void; add: () => void; candidates: () => void; unmappedCount: number; canManage: boolean; initialStatus?: string;
-  review: (id: string, status: string, notes?: string) => Promise<boolean>;
+  review: (id: string, status: string, notes?: string, changes?: ReviewChanges) => Promise<boolean>;
   monitor: boolean; setMonitor: (value: boolean) => void;
 }) {
   const [standard, setStandard] = useState('');
@@ -21,6 +23,7 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const [selected, setSelected] = useState('');
   const [reviewChecks, setReviewChecks] = useState<boolean[]>([false,false,false,false]);
   const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewChanges, setReviewChanges] = useState<ReviewChanges>({standardCode:'',domain:'',unitName:'',title:'',submittedByName:'',evidenceDate:''});
   const [reviewError, setReviewError] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const [openStandards, setOpenStandards] = useState<string[]>([]);
@@ -35,7 +38,7 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const selectedUnit = units.find(item => item.key === unit);
   const types = [...new Set(filterEvidence(standardRecords,{unit}).map(item=>item.evidenceType))].sort();
 
-  useEffect(() => { setReviewChecks([false,false,false,false]); setReviewNotes(''); setReviewError(''); if(firstRender.current){firstRender.current=false;return;} heading.current?.focus({preventScroll:true}); heading.current?.scrollIntoView({block:'start',behavior:'instant'}); }, [standard, unit, selected, monitor]);
+  useEffect(() => { const record=scoped.find(item=>item.id===selected);setReviewChecks([false,false,false,false]); setReviewNotes(''); setReviewChanges(record?{standardCode:record.standardCode,domain:record.domain,unitName:record.unitName,title:record.title,submittedByName:record.submittedByName,evidenceDate:record.createdAt.slice(0,10)}:{standardCode:'',domain:'',unitName:'',title:'',submittedByName:'',evidenceDate:''}); setReviewError(''); if(firstRender.current){firstRender.current=false;return;} heading.current?.focus({preventScroll:true}); heading.current?.scrollIntoView({block:'start',behavior:'instant'}); }, [standard, unit, selected, monitor]);
   function resetFilters() { setUnit(''); setType(''); setStatus(''); setQuery(''); setSelected(''); }
   function openStandard(code: string) { setStandard(code); resetFilters(); }
   function switchMode() { setMonitor(!monitor); setStandard(''); resetFilters(); }
@@ -45,11 +48,16 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
   const toggleStandard = (code: string) => setOpenStandards(current=>current.includes(code)?current.filter(item=>item!==code):[...current,code]);
   const reviewItems = ['Dokumen boleh dibuka dan kandungannya jelas','Tajuk, tarikh serta nama penyedia adalah betul','Kandungan benar-benar membuktikan aktiviti atau urusan','Standard, bidang dan unit yang dipilih adalah sesuai'];
   const allChecked = reviewChecks.every(Boolean);
+  const reviewDomain = skasDomains.find(item=>item.name===reviewChanges.domain) || skasDomains[0];
+  function standardDomain(code:string,currentDomain:string){if(code==='1')return'Pengurusan';if(code==='2'&&['Pengurusan','Kekuatan Sekolah'].includes(currentDomain))return currentDomain;if(code==='2')return'Pengurusan';if(code==='3.1')return'Kurikulum';if(code==='3.2')return'Kokurikulum';if(code==='3.3')return'Hal Ehwal Murid';if(code==='4')return'Pengajaran dan Pembelajaran';return'Pencapaian';}
+  function changeReviewStandard(code:string){const domain=standardDomain(code,reviewChanges.domain),definition=skasDomains.find(item=>item.name===domain)||skasDomains[0];setReviewChanges(current=>({...current,standardCode:code,domain,unitName:definition.units[0]}));setReviewChecks(current=>current.map((value,index)=>index===3?false:value));}
+  function changeReviewDomain(domain:string){const definition=skasDomains.find(item=>item.name===domain)||skasDomains[0],code=domain==='Pengurusan'?(reviewChanges.standardCode==='1'?'1':'2'):domain==='Kekuatan Sekolah'?'2':definition.standard;setReviewChanges(current=>({...current,standardCode:code,domain,unitName:definition.units[0]}));setReviewChecks(current=>current.map((value,index)=>index===3?false:value));}
   async function submitReview(nextStatus: 'approved'|'needs_info') {
     if(nextStatus==='approved'&&!allChecked){setReviewError('Sahkan semua perkara dalam senarai semak sebelum memperakui eviden.');return;}
     if(nextStatus==='needs_info'&&!reviewNotes.trim()){setReviewError('Nyatakan perkara yang perlu dilengkapkan sebelum mengembalikan eviden.');return;}
     setReviewError('');setReviewing(true);
-    const saved=await review(detail!.id,nextStatus,reviewNotes);
+    if(!reviewChanges.title.trim()||!reviewChanges.submittedByName.trim()||!reviewChanges.evidenceDate){setReviewError('Lengkapkan tajuk, tarikh dan nama penyedia sebelum menyimpan semakan.');return;}
+    const saved=await review(detail!.id,nextStatus,reviewNotes,reviewChanges);
     setReviewing(false);
     if(saved)setSelected('');
   }
@@ -66,6 +74,7 @@ export function SkasExplorer({records, year, loading, error, retry, manage, add,
       {evidenceLink(detail)?<div className="skas-source-open"><a href={evidenceLink(detail)} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true"/>Buka dokumen asal <span>(tab baharu)</span></a><p>Dokumen dibuka pada sumber asal. Pautan Google Drive tertakluk kepada kebenaran pemilik fail.</p></div>:<p role="alert">Pautan dokumen belum tersedia. Hubungi pentadbir untuk melengkapkan sumber evidens.</p>}
       {canManage&&!monitor&&detail.status!=="approved"&&<form className="skas-review-panel" onSubmit={event=>event.preventDefault()}>
         <div className="skas-review-heading"><span>LANGKAH SEMAKAN</span><h4>Tindakan semakan eviden</h4><p>Buka dokumen asal, kemudian sahkan perkara berikut sebelum membuat keputusan.</p></div>
+        <section className="skas-review-mapping" aria-labelledby="skas-review-details-title"><div><h5 id="skas-review-details-title">Semak atau betulkan maklumat</h5><p>Maklumat yang diubah akan menggantikan butiran asal apabila semakan disimpan.</p></div><div className="skas-review-basic-fields"><label>Tajuk eviden<input value={reviewChanges.title} onChange={event=>{setReviewChanges(current=>({...current,title:event.target.value}));setReviewChecks(current=>current.map((value,index)=>index===1?false:value));}} required/></label><label>Tarikh eviden<input type="date" value={reviewChanges.evidenceDate} onChange={event=>{setReviewChanges(current=>({...current,evidenceDate:event.target.value}));setReviewChecks(current=>current.map((value,index)=>index===1?false:value));}} required/></label><label>Nama penyedia<input value={reviewChanges.submittedByName} onChange={event=>{setReviewChanges(current=>({...current,submittedByName:event.target.value}));setReviewChecks(current=>current.map((value,index)=>index===1?false:value));}} required/></label></div><div className="skas-review-mapping-fields"><label>Standard<select value={reviewChanges.standardCode} onChange={event=>changeReviewStandard(event.target.value)}>{skasStandards.map(([code,name])=><option key={code} value={code}>{code} · {name}</option>)}</select></label><label>Bidang<select value={reviewChanges.domain} onChange={event=>changeReviewDomain(event.target.value)}>{skasDomains.map(item=><option key={item.name} value={item.name}>{item.name}</option>)}</select></label><label>Unit / subunit<select value={reviewChanges.unitName} onChange={event=>{setReviewChanges(current=>({...current,unitName:event.target.value}));setReviewChecks(current=>current.map((value,index)=>index===3?false:value));}}>{reviewDomain.units.map(name=><option key={name} value={name}>{name}</option>)}</select></label></div></section>
         <fieldset><legend>Senarai semak</legend>{reviewItems.map((item,index)=><label key={item}><input type="checkbox" checked={reviewChecks[index]} onChange={event=>setReviewChecks(current=>current.map((value,itemIndex)=>itemIndex===index?event.target.checked:value))}/><span>{item}</span></label>)}</fieldset>
         <label className="skas-review-notes"><span>Catatan tindakan <small>(wajib jika eviden perlu dilengkapkan)</small></span><textarea rows={4} value={reviewNotes} onChange={event=>{setReviewNotes(event.target.value);setReviewError('');}} placeholder="Contoh: Sila tambah tarikh program dan gambar aktiviti yang lebih jelas."/></label>
         {reviewError&&<p className="skas-review-error" role="alert">{reviewError}</p>}
