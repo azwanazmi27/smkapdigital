@@ -796,21 +796,6 @@ const roomIcon = (room: string) => {
   return <Icon aria-hidden="true" />;
 };
 type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string; canDelete?: boolean };
-const bookingStatusCache = new Map<string, { bookings: Booking[]; savedAt: number }>();
-const bookingStatusRequests = new Map<string, Promise<Booking[]>>();
-const fetchBookingStatus = (date: string) => {
-  const pending = bookingStatusRequests.get(date);
-  if (pending) return pending;
-  const request = fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" }).then(async (response) => {
-    const data = await response.json() as { bookings?: Booking[]; error?: string };
-    if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
-    const bookings = data.bookings || [];
-    bookingStatusCache.set(date, { bookings, savedAt: Date.now() });
-    return bookings;
-  }).finally(() => bookingStatusRequests.delete(date));
-  bookingStatusRequests.set(date, request);
-  return request;
-};
 const formatBookingDateRange = (startDate: string, endDate: string) => {
   const format = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("ms-MY", { day: "numeric", month: "long" });
   const year = new Date(`${endDate}T12:00:00`).getFullYear();
@@ -845,12 +830,12 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "", participants: "" });
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const loadBookings = async () => {
-    const cached = bookingStatusCache.get(date);
-    if (cached) setBookings(cached.bookings);
-    setLoading(!cached); setError("");
+    setLoading(true); setError("");
     try {
-      if (cached && Date.now() - cached.savedAt < 60_000) return;
-      setBookings(await fetchBookingStatus(date));
+      const response = await fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" });
+      const data = await response.json() as { bookings?: Booking[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
+      setBookings(data.bookings || []);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
     finally { setLoading(false); }
   };
