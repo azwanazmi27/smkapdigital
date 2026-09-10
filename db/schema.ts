@@ -94,3 +94,9 @@ export const documentMappingRules = sqliteTable("document_mapping_rules", {
 export const schoolDocumentIdentity = sqliteTable("school_document_identity", {
   id: text("id").primaryKey(), versionNumber: integer("version_number").notNull(), payloadJson: text("payload_json").notNull(), active: integer("active").notNull().default(1), createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(),
 }, table => [uniqueIndex("idx_school_document_identity_version").on(table.versionNumber)]);
+
+export const documentDrafts = sqliteTable("document_drafts", {
+  id: text("id").primaryKey(), schoolYear: integer("school_year").notNull(), panelId: text("panel_id").notNull().default(""), programmeId: text("programme_id").notNull().default(""),
+  documentType: text("document_type").notNull(), title: text("title").notNull().default(""), payloadJson: text("payload_json").notNull().default("{}"), step: integer("step").notNull().default(1),
+  ownerUserId: text("owner_user_id").notNull(), createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
+}, table => [index("idx_document_drafts_owner_updated").on(table.ownerUserId, table.updatedAt), index("idx_document_drafts_year_panel").on(table.schoolYear, table.panelId)]);

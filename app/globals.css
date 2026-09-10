@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./epanitia.css";
 
 :root { --green-950:#0f332b; --green-900:#173f35; --green-800:#215344; --green-700:#28624f; --green-100:#e0eee8; --cream:#f7f3eb; --paper:#fffefa; --ink:#20322c; --muted:#728078; --gold:#e8b44a; --coral:#df735f; --blue:#5c8fa0; --line:#e5e8e1; }
 * { box-sizing:border-box; }
