@@ -1,3 +1,5 @@
+import { portalActor } from "../../server-auth";
+
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 function clean(value: unknown, max: number) {
@@ -6,6 +8,10 @@ function clean(value: unknown, max: number) {
 
 export async function POST(request: Request) {
   try {
+    const actor = await portalActor(request);
+    if (!actor || !["admin", "super_admin"].includes(actor.role)) {
+      return Response.json({ error: "Fungsi AI hanya tersedia untuk pentadbir." }, { status: 403 });
+    }
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return Response.json({ error: "Pembacaan pintar belum diaktifkan oleh pentadbir." }, { status: 503 });
 
