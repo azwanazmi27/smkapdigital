@@ -50,3 +50,47 @@ export const skasMappingRules = sqliteTable("skas_mapping_rules", {
 }, (table) => [uniqueIndex("idx_skas_mapping_rules_category_signal").on(table.category,table.signalProfile)]);
 export const absenceReasons = sqliteTable('absence_reasons', { reason:text('reason').primaryKey(), createdAt:text('created_at').notNull() });
 export const absenceReasonSettings = sqliteTable('absence_reason_settings', { id:text('id').primaryKey() });
+
+// Satu rekod induk untuk setiap dokumen. Kandungan fail kekal di Google Drive;
+// D1 hanya menyimpan metadata, versi dan pemetaan silang modul.
+export const documents = sqliteTable("documents", {
+  id: text("id").primaryKey(), schoolId: text("school_id").notNull().default("CRA8001"), academicYearId: integer("academic_year_id").notNull(),
+  panelId: text("panel_id").notNull().default(""), programmeId: text("programme_id").notNull().default(""), sourceModule: text("source_module").notNull(),
+  documentType: text("document_type").notNull(), title: text("title").notNull(), referenceNumber: text("reference_number").notNull().default(""),
+  status: text("status").notNull().default("draft"), currentVersionId: text("current_version_id").notNull().default(""), ownerUserId: text("owner_user_id").notNull().default(""),
+  createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(), archivedAt: text("archived_at").notNull().default(""),
+}, table => [index("idx_documents_year_panel").on(table.academicYearId, table.panelId), index("idx_documents_programme").on(table.programmeId), index("idx_documents_status").on(table.status)]);
+
+export const documentVersions = sqliteTable("document_versions", {
+  id: text("id").primaryKey(), documentId: text("document_id").notNull(), versionNumber: integer("version_number").notNull(), templateVersionId: text("template_version_id").notNull().default(""),
+  driveFileId: text("drive_file_id").notNull(), driveFolderId: text("drive_folder_id").notNull().default(""), driveUrl: text("drive_url").notNull(), filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(), fileSize: integer("file_size").notNull().default(0), checksum: text("checksum").notNull().default(""), createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(), approvalStatus: text("approval_status").notNull().default("draft"),
+}, table => [uniqueIndex("idx_document_versions_number").on(table.documentId, table.versionNumber), uniqueIndex("idx_document_versions_drive_file").on(table.driveFileId)]);
+
+export const documentMappings = sqliteTable("document_mappings", {
+  id: text("id").primaryKey(), documentId: text("document_id").notNull(), documentVersionId: text("document_version_id").notNull().default(""), destinationModule: text("destination_module").notNull(),
+  destinationCategoryId: text("destination_category_id").notNull().default(""), destinationStandardId: text("destination_standard_id").notNull().default(""), mappingStatus: text("mapping_status").notNull().default("pending"),
+  mappedBy: text("mapped_by").notNull(), mappedAt: text("mapped_at").notNull(), reviewedBy: text("reviewed_by").notNull().default(""), reviewedAt: text("reviewed_at").notNull().default(""),
+}, table => [uniqueIndex("idx_document_mapping_destination").on(table.documentId, table.destinationModule, table.destinationCategoryId, table.destinationStandardId), index("idx_document_mappings_review").on(table.destinationModule, table.mappingStatus)]);
+
+export const programmes = sqliteTable("programmes", {
+  id: text("id").primaryKey(), schoolId: text("school_id").notNull().default("CRA8001"), academicYearId: integer("academic_year_id").notNull(), panelId: text("panel_id").notNull().default(""),
+  title: text("title").notNull(), startDate: text("start_date").notNull().default(""), endDate: text("end_date").notNull().default(""), venue: text("venue").notNull().default(""),
+  targetGroup: text("target_group").notNull().default(""), coordinatorUserId: text("coordinator_user_id").notNull().default(""), status: text("status").notNull().default("draft"),
+  createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
+}, table => [index("idx_programmes_year_panel").on(table.academicYearId, table.panelId)]);
+
+export const programmeDocuments = sqliteTable("programme_documents", {
+  programmeId: text("programme_id").notNull(), documentId: text("document_id").notNull(), relationshipType: text("relationship_type").notNull(),
+}, table => [uniqueIndex("idx_programme_documents_link").on(table.programmeId, table.documentId)]);
+
+export const documentMappingRules = sqliteTable("document_mapping_rules", {
+  id: text("id").primaryKey(), documentType: text("document_type").notNull(), epanitiaCategoryId: text("epanitia_category_id").notNull().default(""), managementFolderId: text("management_folder_id").notNull().default(""),
+  skasStandardId: text("skas_standard_id").notNull().default(""), mappingMode: text("mapping_mode").notNull().default("confirm"), minimumStatus: text("minimum_status").notNull().default("approved"),
+  versionPolicy: text("version_policy").notNull().default("latest_approved"), approverRoles: text("approver_roles").notNull().default("admin,super_admin"), updatedBy: text("updated_by").notNull(), updatedAt: text("updated_at").notNull(),
+}, table => [uniqueIndex("idx_document_mapping_rules_type").on(table.documentType)]);
+
+export const schoolDocumentIdentity = sqliteTable("school_document_identity", {
+  id: text("id").primaryKey(), versionNumber: integer("version_number").notNull(), payloadJson: text("payload_json").notNull(), active: integer("active").notNull().default(1), createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(),
+}, table => [uniqueIndex("idx_school_document_identity_version").on(table.versionNumber)]);

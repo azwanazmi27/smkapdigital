@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 import { portalActor } from "../../server-auth";
 import { suggestSkasMappings } from "../../skas-catalog";
+import { registerDocument } from "../../document-service";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 
@@ -259,7 +260,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
     }
 
-    const body = await request.json() as { category?: unknown; files?: unknown; metadata?:unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown };
+    const body = await request.json() as { category?: unknown; files?: unknown; metadata?:unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown; title?:unknown; documentType?:unknown; schoolYear?:unknown; panelId?:unknown; programmeId?:unknown };
     if(body.action==="bundle"){
       const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memuat turun bundle."},{status:403});
       const ids=Array.isArray(body.ids)?body.ids.filter((id):id is string=>typeof id==="string"&&/^[\w-]{10,120}$/.test(id)).slice(0,100):[];
@@ -276,6 +277,20 @@ export async function POST(request: Request) {
       const categories=oprCategoryValues.filter((category)=>category===root||category.startsWith(`${root} · `));
       const result=await scriptAction({action:"ensureFolders",categories},60_000);
       return Response.json({success:true,root,ensured:result.ensured||0});
+    }
+    if(body.action==="document-upload"){
+      const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk dengan akaun sekolah."},{status:401});
+      const item=Array.isArray(body.files)?body.files[0] as UploadFile:undefined;
+      const mimeType=typeof item?.mimeType==="string"?item.mimeType:"",base64=typeof item?.base64==="string"?item.base64:"";
+      const allowed=new Set(["application/pdf","image/jpeg","image/png","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/msword","application/vnd.ms-excel"]);
+      if(!item||!allowed.has(mimeType)||!base64||base64.length>17_000_000)return Response.json({error:"Fail tidak sah atau melebihi 12 MB."},{status:400});
+      const raw=Uint8Array.from(atob(base64),c=>c.charCodeAt(0)),zip=raw[0]===0x50&&raw[1]===0x4b,ole=raw[0]===0xd0&&raw[1]===0xcf;
+      if(!(validMagic(raw,mimeType)||((mimeType.includes("officedocument"))&&zip)||((mimeType==="application/msword"||mimeType==="application/vnd.ms-excel")&&ole)))return Response.json({error:"Kandungan fail tidak sepadan dengan jenis fail."},{status:400});
+      const name=(typeof item.name==="string"?item.name:"dokumen").replace(/[\\/:*?"<>|]/g,"-").slice(0,500);
+      const result=await scriptAction({category:"Lain-lain",files:[{name,mimeType,base64}]},60_000),saved=normalizeUploadedFiles(result.files,"Lain-lain",[{name}]);
+      if(!saved[0])throw new Error("Google Drive belum mengesahkan fail");
+      const document=await registerDocument(actor,{title:typeof body.title==="string"?body.title:name,documentType:typeof body.documentType==="string"?body.documentType:"Dokumen sokongan lain",sourceModule:"e-Panitia",schoolYear:Number(body.schoolYear)||new Date().getFullYear(),panelId:typeof body.panelId==="string"?body.panelId:"",programmeId:typeof body.programmeId==="string"?body.programmeId:"",status:"draft",file:{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType}});
+      return Response.json({success:true,file:saved[0],document});
     }
     const category = typeof body.category === "string" ? body.category : "";
     if (!validCategory(category)) {
@@ -325,6 +340,10 @@ export async function POST(request: Request) {
       const suggestions = suggestedSkas(category, metadata);
       await env.DB.prepare("INSERT INTO opr_intake_metadata (report_id,created_by_email,category,competition_status,external_involvement_status,suggested_skas_json,payload_json,review_status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(report_id) DO UPDATE SET created_by_email=excluded.created_by_email,category=excluded.category,competition_status=excluded.competition_status,external_involvement_status=excluded.external_involvement_status,suggested_skas_json=excluded.suggested_skas_json,payload_json=excluded.payload_json,review_status='pending',updated_at=excluded.updated_at")
         .bind(saved[0].id, actor?.email || metadata.createdBy, category, metadata.competition.enabled ? "1" : "0", metadata.external.enabled ? "1" : "0", JSON.stringify(suggestions), JSON.stringify(metadata), "pending", now, now).run();
+      if(actor)await registerDocument(actor,{
+        title:metadata.title||saved[0].name.replace(/\.pdf$/i,""),documentType:"Laporan OPR",sourceModule:"Pusat OPR",schoolYear:Number(metadata.programDate.slice(0,4))||new Date().getFullYear(),
+        panelId:category,status:"draft",file:{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType:"application/pdf"},metadata:{suggestedSkas:suggestions},
+      });
     }
     return Response.json({ success: true, files: saved });
   } catch (error) {
