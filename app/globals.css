@@ -1325,3 +1325,57 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .achievement-mode{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}.achievement-mode>button{min-width:0;min-height:70px;display:flex;align-items:center;gap:11px;padding:13px;border:1px solid rgba(132,219,211,.14);border-radius:15px;color:#b8cdce;background:rgba(255,255,255,.025);text-align:left;cursor:pointer}.achievement-mode>button.active{border-color:rgba(126,222,211,.48);color:#efffff;background:rgba(74,172,164,.14);box-shadow:inset 0 0 0 1px rgba(126,222,211,.1)}.achievement-mode svg{width:21px;flex:0 0 auto;color:#75d9cd}.achievement-mode span,.achievement-mode strong,.achievement-mode small{display:block}.achievement-mode strong{font-size:12px}.achievement-mode small{margin-top:4px;color:#7f9a9d;font-size:9px;line-height:1.35}.achievement-form>.achievement-upload{display:grid;margin-bottom:12px}.achievement-progress{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,38%);align-items:center;gap:14px;margin:0 0 12px;padding:13px 15px;border:1px solid rgba(126,222,211,.2);border-radius:14px;background:rgba(79,176,166,.08)}.achievement-progress span,.achievement-progress strong,.achievement-progress small{display:block}.achievement-progress strong{font-size:11px}.achievement-progress small{margin-top:3px;color:#8fa9aa;font-size:9px}.achievement-progress progress{width:100%;height:8px;accent-color:#78d8cd}.achievement-bundle-review{margin-top:14px;padding:15px;border:1px solid rgba(134,219,212,.16);border-radius:16px;background:rgba(4,34,45,.3)}.achievement-bundle-review>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}.achievement-bundle-review>div:first-child span,.achievement-bundle-review>div:first-child strong,.achievement-bundle-review>div:first-child small{display:block}.achievement-bundle-review>div:first-child strong{font-size:14px}.achievement-bundle-review>div:first-child small{margin-top:4px;color:#849fa1;font-size:9px}.achievement-bundle-review>div:first-child button{min-height:40px;padding:7px 12px;border:1px solid rgba(126,222,211,.2);border-radius:11px;color:#bce3df;background:rgba(255,255,255,.05);font:inherit;font-size:9px;font-weight:850;cursor:pointer}.achievement-bundle-list{display:grid;gap:7px;max-height:55vh;overflow:auto;overscroll-behavior:contain;padding-right:3px}.achievement-bundle-list article{min-width:0;display:grid;grid-template-columns:34px minmax(180px,1.35fr) minmax(150px,1fr) auto;align-items:end;gap:9px;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(255,255,255,.025)}.achievement-bundle-list article.has-error{border-color:rgba(255,171,128,.32)}.achievement-bundle-list article>b{width:32px;height:32px;display:grid;place-items:center;align-self:center;border-radius:10px;color:#79d9ce;background:rgba(78,177,166,.12);font-size:11px}.achievement-bundle-list label{min-width:0}.achievement-bundle-list input{min-width:0}.achievement-bundle-list .bundle-status{align-self:center;padding:6px 8px;border-radius:999px;color:#9edbd5;background:rgba(80,176,165,.1);font-size:8px;font-weight:900;white-space:nowrap}.achievement-bundle-list .bundle-status.error{color:#ffb7a8;background:rgba(168,73,53,.16)}.achievement-bundle-list .bundle-status.saved{color:#b9efc9;background:rgba(65,158,94,.16)}.achievement-bundle-list article>small{grid-column:2/-1;color:#ffb7a8;font-size:8px}.achievement-save:disabled{opacity:.58;cursor:wait}
 @media(max-width:760px){.achievement-mode{grid-template-columns:1fr}.achievement-progress{grid-template-columns:1fr}.achievement-bundle-review>div:first-child{align-items:stretch;flex-direction:column}.achievement-bundle-list{max-height:none;overflow:visible}.achievement-bundle-list article{grid-template-columns:34px minmax(0,1fr)}.achievement-bundle-list article>b{grid-row:1/3}.achievement-bundle-list article label{grid-column:2}.achievement-bundle-list .bundle-status{grid-column:2;justify-self:start}.achievement-bundle-list article>small{grid-column:2}}
 .achievement-bundle-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}.achievement-bundle-review .achievement-bundle-actions>button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 12px;border:1px solid rgba(126,222,211,.2);border-radius:11px;color:#bce3df;background:rgba(255,255,255,.05);font:inherit;font-size:9px;font-weight:850;cursor:pointer}.achievement-bundle-actions>button:first-child{color:#082e37;background:linear-gradient(135deg,#82dccf,#79c5df)}.achievement-bundle-actions svg{width:15px}.achievement-bundle-actions button:disabled,.achievement-mode button:disabled{opacity:.55;cursor:wait}@media(max-width:760px){.achievement-bundle-actions{display:grid;grid-template-columns:1fr}.achievement-bundle-actions>button{width:100%}}
+
+/* e-Panitia owns its layout; legacy portal main/sidebar rules must not leak in. */
+.epanitia-shell,.document-builder{min-width:0;width:100%;max-width:100%;color:#e8f7f8;box-sizing:border-box}
+.epanitia-shell *, .document-builder *{box-sizing:border-box}
+.epanitia-work>main,main.builder-form{margin:0;min-height:0;min-width:0;width:100%}
+.epanitia-work{grid-template-columns:240px minmax(0,1fr)}
+.epanitia-work>aside,.epanitia-work>main,.epanitia-kpis article,.epanitia-detail-backdrop>section{background:#102e39;border-color:#35545e;color:#e8f7f8}
+.epanitia-head p,.epanitia-kpis small,.epanitia-list small,.epanitia-list em,.epanitia-empty,.epanitia-file small,.epanitia-detail-backdrop dt{color:#afc7cd}
+.epanitia-head h2,.frequent-templates h3,.draft-strip h3{color:#e8f7f8}
+.epanitia-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.epanitia-kpis article,.epanitia-kpis span,.epanitia-primary-actions>button,.builder-form-body,.builder-grid>*{min-width:0}
+.epanitia-kpis strong{font-size:22px;overflow-wrap:anywhere}
+.epanitia-kpis svg,.epanitia-list>button>svg,.epanitia-file svg{color:#80dcd2;flex-shrink:0}
+.epanitia-work aside button{color:#c4dadd;min-height:44px;font-size:14px}
+.epanitia-work aside button.active{background:#204b52;color:#98eee2}
+.epanitia-work aside button span{background:#213f4b;color:#bce4e3}
+.epanitia-toolbar{display:grid;grid-template-columns:minmax(130px,1fr) 90px minmax(140px,1.3fr) 42px;align-items:end}
+.epanitia-toolbar label{display:grid;gap:6px;min-width:0;color:#c4dadd;font-size:13px}
+.epanitia-toolbar input,.epanitia-toolbar select,.epanitia-upload-card input,.epanitia-upload-card select{width:100%;min-width:0;min-height:44px;border:1px solid #46636c;border-radius:10px;padding:10px;color:#e8f7f8;background:#092732;font:inherit;color-scheme:dark}
+.epanitia-toolbar button,.epanitia-actions a,.epanitia-actions button{background:#173d48;color:#d8eeef;border-color:#46636c;min-height:44px}
+.epanitia-list>button{grid-template-columns:26px minmax(0,1fr) auto 18px;background:#133541;color:#e8f7f8;border-color:#35545e}
+.epanitia-list>button:hover{background:#1b414c;border-color:#80dcd2}
+.epanitia-list span{min-width:0;overflow-wrap:anywhere}
+.epanitia-error{background:#4a282c;color:#ffd5ce}
+.epanitia-detail-backdrop dl div{background:#102e39}
+.frequent-templates,.draft-strip{flex-wrap:wrap;overflow:visible}
+.frequent-templates>div,.draft-strip>div{flex:1 1 180px;min-width:0}
+.frequent-templates>button,.draft-strip>button{flex:0 1 auto;max-width:100%;font-size:13px}
+.epanitia-primary-actions small,.template-centre>div small,.draft-strip>button small{font-size:12px}
+.builder-form{grid-template-columns:minmax(0,1fr);gap:16px}
+.builder-form>aside{position:static;grid-row:1;padding:14px;font-size:14px}
+.builder-form>aside p{margin:0;line-height:1.5}
+.builder-form-body{width:100%;padding:20px}
+.builder-form-body label,.epanitia-upload-card>label,.builder-list legend{font-size:13px}
+.builder-form-body input,.builder-form-body select,.builder-form-body textarea{font-size:14px;color-scheme:dark}
+.builder-help{font-size:13px;line-height:1.6}
+.builder-list{min-width:0}
+.builder-matter,.calendar-item,.intervention-item{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;border:1px solid #35545e;border-radius:10px}
+.builder-row.pcg,.builder-row.expense{grid-template-columns:minmax(140px,2fr) repeat(3,minmax(65px,1fr)) minmax(80px,1fr) 34px}
+.document-builder>header{flex-wrap:wrap}
+.document-builder>header>div{min-width:0;flex:1 1 280px}
+.document-builder>header h2{font-size:26px;overflow-wrap:anywhere}
+.builder-steps button{font-size:14px;min-width:0}.builder-steps b{flex:0 0 29px}
+.builder-footer{flex-wrap:wrap}.builder-footer button{font-size:14px}
+.epanitia-shell :focus-visible,.document-builder :focus-visible{outline:2px solid #98eee2;outline-offset:3px}
+@media(max-width:1100px){.epanitia-work{grid-template-columns:200px minmax(0,1fr)}.epanitia-toolbar{grid-template-columns:minmax(0,1fr) 90px}.epanitia-toolbar label:nth-child(3){grid-column:1}.epanitia-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.epanitia-work{grid-template-columns:minmax(0,1fr)}.epanitia-work>aside{max-height:240px;overflow:auto}.builder-row.pcg,.builder-row.expense{grid-template-columns:repeat(2,minmax(0,1fr))}.builder-grid{grid-template-columns:minmax(0,1fr)}.epanitia-primary-actions{grid-template-columns:minmax(0,1fr)}.builder-form-body{padding:14px}.builder-steps button{flex-direction:column;align-items:flex-start;font-size:12px}.builder-steps span{display:block}.builder-final{grid-template-columns:minmax(0,1fr)}.epanitia-list>button{grid-template-columns:22px minmax(0,1fr) 18px}.epanitia-list i{grid-column:2}.epanitia-list>button>svg:last-child{grid-column:3;grid-row:1}}
+
+.folder-modal.generator-modal:has(.epanitia-shell),.folder-modal.generator-modal:has(.document-builder){width:min(1280px,calc(100vw - 48px));max-width:100%;padding:28px}
+.builder-row.people{grid-template-columns:minmax(0,1fr) 34px}
+@media(max-width:760px){.folder-modal.generator-modal:has(.epanitia-shell),.folder-modal.generator-modal:has(.document-builder){width:calc(100vw - 16px);padding:16px}}
+.epanitia-kpis small,.builder-warning,.builder-list legend{font-size:12px}
+.builder-preview-stage a,.builder-final a{color:#98eee2}
+.epanitia-shell input::placeholder,.document-builder input::placeholder,.document-builder textarea::placeholder{color:#91adb4;opacity:1}
