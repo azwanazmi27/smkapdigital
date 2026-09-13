@@ -1379,3 +1379,13 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .epanitia-kpis small,.builder-warning,.builder-list legend{font-size:12px}
 .builder-preview-stage a,.builder-final a{color:#98eee2}
 .epanitia-shell input::placeholder,.document-builder input::placeholder,.document-builder textarea::placeholder{color:#91adb4;opacity:1}
+
+/* Every builder stage must be independent of the portal sidebar offset. */
+.document-builder>main{margin:0;min-height:0;min-width:0;width:100%;max-width:100%}
+.epanitia-record-details{display:grid;gap:14px;margin-top:20px}
+.epanitia-record-details details{border:1px solid #46636c;border-radius:12px;padding:14px}
+.epanitia-record-details summary{cursor:pointer;font-weight:700;color:#d8eeef;min-height:32px}
+.epanitia-record-details article{padding:12px 0;border-top:1px solid #35545e;overflow-wrap:anywhere}
+.epanitia-record-details p{margin:6px 0;color:#bfd5da}.epanitia-record-details small{color:#afc7cd}
+.epanitia-record-details a{display:block;margin-top:8px;color:#98eee2}
+.builder-row button:disabled{opacity:.4;cursor:default}

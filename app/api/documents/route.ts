@@ -10,6 +10,16 @@ export async function GET(request:Request){
   const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk dengan akaun sekolah."},{status:401});
   const url=new URL(request.url),year=Number(url.searchParams.get("year")||new Date().getFullYear()),module=clean(url.searchParams.get("module"),30),view=clean(url.searchParams.get("view"),30);
   if(!Number.isInteger(year)||year<2020||year>2100)return Response.json({error:"Tahun tidak sah."},{status:400});
+  if(view==="record"){
+    const documentId=clean(url.searchParams.get("documentId"),120);
+    const doc=await env.DB.prepare("SELECT id FROM documents WHERE id=? AND archived_at=''").bind(documentId).first();
+    if(!doc)return Response.json({error:"Dokumen tidak ditemui."},{status:404});
+    const [versions,mappings]=await Promise.all([
+      env.DB.prepare("SELECT id,version_number AS number,filename,drive_url AS url,approval_status AS status,created_at AS createdAt FROM document_versions WHERE document_id=? ORDER BY version_number DESC").bind(documentId).all(),
+      env.DB.prepare("SELECT id,destination_module AS module,destination_category_id AS category,destination_standard_id AS standard,mapping_status AS status,document_version_id AS versionId FROM document_mappings WHERE document_id=? ORDER BY destination_module,destination_category_id").bind(documentId).all()
+    ]);
+    return Response.json({versions:versions.results,mappings:mappings.results},{headers:{"Cache-Control":"private, no-store"}});
+  }
   if(view==="drafts"){
     const drafts=await env.DB.prepare("SELECT id,school_year AS schoolYear,panel_id AS panelId,programme_id AS programmeId,document_type AS documentType,title,payload_json AS payloadJson,step,created_at AS createdAt,updated_at AS updatedAt FROM document_drafts WHERE owner_user_id=? AND school_year=? ORDER BY updated_at DESC").bind(actor.id||actor.email,year).all();
     return Response.json({drafts:drafts.results},{headers:{"Cache-Control":"private, no-store"}});
