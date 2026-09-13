@@ -1389,3 +1389,5 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .epanitia-record-details p{margin:6px 0;color:#bfd5da}.epanitia-record-details small{color:#afc7cd}
 .epanitia-record-details a{display:block;margin-top:8px;color:#98eee2}
 .builder-row button:disabled{opacity:.4;cursor:default}
+
+.epanitia-detail-backdrop{z-index:1000;color:#e8f7f8}.epanitia-detail-backdrop>section{max-height:calc(100dvh - 36px);overscroll-behavior:contain}.epanitia-detail-backdrop .folder-float-close{position:sticky;float:right;top:0;z-index:2;background:#173d48;color:#d8eeef}
