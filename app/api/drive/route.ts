@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 import { portalActor } from "../../server-auth";
 import { suggestSkasMappings } from "../../skas-catalog";
-import { registerDocument } from "../../document-service";
+import { registerDocument, addDocumentVersion } from "../../document-service";
 
 type UploadFile = { name?: unknown; mimeType?: unknown; base64?: unknown };
 
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
     }
 
-    const body = await request.json() as { category?: unknown; files?: unknown; metadata?:unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown; title?:unknown; documentType?:unknown; schoolYear?:unknown; panelId?:unknown; programmeId?:unknown };
+    const body = await request.json() as { category?: unknown; files?: unknown; metadata?:unknown; action?:unknown; ids?:unknown; name?:unknown; root?:unknown; title?:unknown; documentType?:unknown; schoolYear?:unknown; panelId?:unknown; programmeId?:unknown; documentId?:unknown };
     if(body.action==="bundle"){
       const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memuat turun bundle."},{status:403});
       const ids=Array.isArray(body.ids)?body.ids.filter((id):id is string=>typeof id==="string"&&/^[\w-]{10,120}$/.test(id)).slice(0,100):[];
@@ -280,6 +280,7 @@ export async function POST(request: Request) {
     }
     if(body.action==="document-upload"){
       const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk dengan akaun sekolah."},{status:401});
+      if(typeof body.documentId==="string"&&body.documentId){const owner=await env.DB.prepare("SELECT owner_user_id AS owner FROM documents WHERE id=? AND archived_at='' ").bind(body.documentId).first<{owner:string}>();if(!owner||(!['admin','super_admin'].includes(actor.role)&&![actor.id,actor.email].includes(owner.owner)))return Response.json({error:'Anda tidak dibenarkan menambah versi dokumen ini.'},{status:403});}
       const item=Array.isArray(body.files)?body.files[0] as UploadFile:undefined;
       const mimeType=typeof item?.mimeType==="string"?item.mimeType:"",base64=typeof item?.base64==="string"?item.base64:"";
       const allowed=new Set(["application/pdf","image/jpeg","image/png","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/msword","application/vnd.ms-excel"]);
@@ -289,7 +290,7 @@ export async function POST(request: Request) {
       const name=(typeof item.name==="string"?item.name:"dokumen").replace(/[\\/:*?"<>|]/g,"-").slice(0,500);
       const result=await scriptAction({category:"Lain-lain",files:[{name,mimeType,base64}]},60_000),saved=normalizeUploadedFiles(result.files,"Lain-lain",[{name}]);
       if(!saved[0])throw new Error("Google Drive belum mengesahkan fail");
-      const document=await registerDocument(actor,{title:typeof body.title==="string"?body.title:name,documentType:typeof body.documentType==="string"?body.documentType:"Dokumen sokongan lain",sourceModule:"e-Panitia",schoolYear:Number(body.schoolYear)||new Date().getFullYear(),panelId:typeof body.panelId==="string"?body.panelId:"",programmeId:typeof body.programmeId==="string"?body.programmeId:"",status:"draft",file:{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType}});
+      const document=typeof body.documentId==="string"&&body.documentId?{documentId:body.documentId,...await addDocumentVersion(actor,body.documentId,{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType},"draft")}:await registerDocument(actor,{title:typeof body.title==="string"?body.title:name,documentType:typeof body.documentType==="string"?body.documentType:"Dokumen sokongan lain",sourceModule:"e-Panitia",schoolYear:Number(body.schoolYear)||new Date().getFullYear(),panelId:typeof body.panelId==="string"?body.panelId:"",programmeId:typeof body.programmeId==="string"?body.programmeId:"",status:"draft",metadata:body.metadata&&typeof body.metadata==="object"?body.metadata as Record<string,unknown>:{},file:{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType}});
       return Response.json({success:true,file:saved[0],document});
     }
     const category = typeof body.category === "string" ? body.category : "";

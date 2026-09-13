@@ -31,17 +31,20 @@ export async function POST(request:Request){
   const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk."},{status:401});
   try{
     const body=await request.json() as Record<string,unknown>,action=clean(body.action,40);
-    if(action==="register")return Response.json({ok:true,...await registerDocument(actor,body.input as never)});
+    if(action==="register")return Response.json({ok:true,...await registerDocument(actor,{...(body.input as Record<string,unknown>),status:"draft"} as never)});
     if(action==="register-link"){
       const title=clean(body.title),url=clean(body.url,1200),documentType=clean(body.documentType)||"Pautan dokumen",schoolYear=Number(body.schoolYear);
       if(!title||!/^https:\/\//i.test(url)||!Number.isInteger(schoolYear))return Response.json({error:"Tajuk dan pautan HTTPS yang sah diperlukan."},{status:400});
+      let parsed:URL;try{parsed=new URL(url);if(parsed.protocol!=="https:"||parsed.username||parsed.password)throw new Error();}catch{return Response.json({error:"Pautan HTTPS tanpa kelayakan log masuk diperlukan."},{status:400});}
       const fileId=`link_${crypto.randomUUID()}`;
-      return Response.json({ok:true,...await registerDocument(actor,{title,documentType,sourceModule:"e-Panitia",schoolYear,panelId:clean(body.panelId),programmeId:clean(body.programmeId),status:"draft",file:{id:fileId,name:title,viewUrl:url,mimeType:"text/uri-list"}})});
+      return Response.json({ok:true,...await registerDocument(actor,{title,documentType,sourceModule:"e-Panitia",schoolYear,panelId:clean(body.panelId),programmeId:clean(body.programmeId),status:"draft",metadata:body.metadata&&typeof body.metadata==="object"?body.metadata as Record<string,unknown>:{},file:{id:fileId,name:title,viewUrl:url,mimeType:"text/uri-list"}})});
     }
     if(action==="save-draft"){
       const schoolYear=Number(body.schoolYear),documentType=clean(body.documentType),draftId=clean(body.id,120)||`draft_${crypto.randomUUID()}`,stamp=new Date().toISOString();
       if(!Number.isInteger(schoolYear)||schoolYear<2020||schoolYear>2100||!documentType)return Response.json({error:"Maklumat draf tidak lengkap."},{status:400});
-      const payload=JSON.stringify(body.payload&&typeof body.payload==="object"?body.payload:{}).slice(0,200000);
+      const prior=await env.DB.prepare("SELECT owner_user_id AS ownerUserId,school_year AS schoolYear FROM document_drafts WHERE id=?").bind(draftId).first<{ownerUserId:string;schoolYear:number}>();if(prior&&(prior.ownerUserId!==(actor.id||actor.email)||prior.schoolYear!==schoolYear))return Response.json({error:"Draf bukan milik anda atau tahun tidak sepadan."},{status:403});
+      const payload=JSON.stringify(body.payload&&typeof body.payload==="object"?body.payload:{});
+      if(payload.length>200000)return Response.json({error:"Draf melebihi had saiz."},{status:400});
       await env.DB.prepare("INSERT INTO document_drafts (id,school_year,panel_id,programme_id,document_type,title,payload_json,step,owner_user_id,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET panel_id=excluded.panel_id,programme_id=excluded.programme_id,document_type=excluded.document_type,title=excluded.title,payload_json=excluded.payload_json,step=excluded.step,updated_at=excluded.updated_at WHERE document_drafts.owner_user_id=excluded.owner_user_id").bind(draftId,schoolYear,clean(body.panelId),clean(body.programmeId),documentType,clean(body.title),payload,Math.max(1,Math.min(3,Number(body.step)||1)),actor.id||actor.email,actor.email,stamp,stamp).run();
       return Response.json({ok:true,id:draftId,updatedAt:stamp});
     }
@@ -49,13 +52,13 @@ export async function POST(request:Request){
       await env.DB.prepare("DELETE FROM document_drafts WHERE id=? AND owner_user_id=?").bind(clean(body.id,120),actor.id||actor.email).run();
       return Response.json({ok:true});
     }
-    if(action==="new-version")return Response.json({ok:true,...await addDocumentVersion(actor,clean(body.documentId,120),body.file as never,clean(body.status,30)||"draft")});
+    if(action==="new-version")return Response.json({ok:true,...await addDocumentVersion(actor,clean(body.documentId,120),body.file as never,"draft")});
     if(action==="approve"){if(!admin(actor.role))return Response.json({error:"Hanya pentadbir boleh meluluskan dokumen."},{status:403});await approveDocument(actor,clean(body.documentId,120),clean(body.versionId,120));return Response.json({ok:true});}
     if(action==="map"){
       const documentId=clean(body.documentId,120),destinationModule=clean(body.destinationModule,30);if(!allowedModules.has(destinationModule))return Response.json({error:"Modul destinasi tidak sah."},{status:400});
       const current=await env.DB.prepare("SELECT current_version_id AS versionId FROM documents WHERE id=? AND archived_at=''").bind(documentId).first<{versionId:string}>();if(!current)return Response.json({error:"Dokumen tidak ditemui."},{status:404});
       const stamp=new Date().toISOString(),mappingId=`map_${crypto.randomUUID()}`;
-      await env.DB.prepare("INSERT INTO document_mappings (id,document_id,document_version_id,destination_module,destination_category_id,destination_standard_id,mapping_status,mapped_by,mapped_at,reviewed_by,reviewed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(document_id,destination_module,destination_category_id,destination_standard_id) DO UPDATE SET document_version_id=excluded.document_version_id,mapping_status=excluded.mapping_status,mapped_by=excluded.mapped_by,mapped_at=excluded.mapped_at").bind(mappingId,documentId,current.versionId,destinationModule,clean(body.destinationCategoryId,120),clean(body.destinationStandardId,120),clean(body.mappingStatus,30)||"pending",actor.email,stamp,"","").run();
+      await env.DB.prepare("INSERT INTO document_mappings (id,document_id,document_version_id,destination_module,destination_category_id,destination_standard_id,mapping_status,mapped_by,mapped_at,reviewed_by,reviewed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(document_id,destination_module,destination_category_id,destination_standard_id) DO UPDATE SET document_version_id=excluded.document_version_id,mapping_status=excluded.mapping_status,mapped_by=excluded.mapped_by,mapped_at=excluded.mapped_at").bind(mappingId,documentId,current.versionId,destinationModule,clean(body.destinationCategoryId,120),clean(body.destinationStandardId,120),"pending",actor.email,stamp,"","").run();
       return Response.json({ok:true});
     }
     if(action==="archive"){
