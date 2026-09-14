@@ -146,6 +146,8 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "o
   },
 };
 
+const oprCategoryForPanitia=(name:string)=>{const exact:Record<string,string>={"Bahasa Melayu":"Bahasa · Bahasa Melayu","Bahasa Inggeris":"Bahasa · Bahasa Inggeris","Bahasa Arab":"Bahasa · Bahasa Arab","Sains":"Sains & Matematik · Sains","Matematik":"Sains & Matematik · Matematik","Matematik Tambahan":"Sains & Matematik · Matematik Tambahan","Fizik":"Sains & Matematik · Fizik","Kimia":"Sains & Matematik · Kimia","Biologi":"Sains & Matematik · Biologi","Pendidikan Islam":"Pendidikan Islam · Pendidikan Islam","Pendidikan Al-Quran dan As-Sunnah":"Pendidikan Islam · Al-Quran & Al-Sunnah","Pendidikan Syariah Islamiah":"Pendidikan Islam · Pendidikan Syariah Islamiah","KKQ":"Pendidikan Islam · Pendidikan Islam","Sejarah":"Kemanusiaan · Sejarah","Geografi":"Kemanusiaan · Geografi","Pendidikan Seni Visual":"Kemanusiaan · Pendidikan Seni","Pendidikan Jasmani dan Kesihatan":"Kemanusiaan · Pendidikan Jasmani & Pendidikan Kesihatan","RBT":"Teknik & Vokasional · Reka Bentuk & Teknologi","Sains Komputer":"Teknik & Vokasional · Asas Sains Komputer & Sains Komputer"};return `Kurikulum · ${exact[name]||"Sokongan Akademik · Teknologi Maklumat & Komunikasi"}`};
+
 export function LandingPortal() {
   const publicContent=usePublicContent();
   const [open, setOpen] = useState<Folder>(null);
@@ -156,6 +158,7 @@ export function LandingPortal() {
   const [identityChecked,setIdentityChecked]=useState(false);
   const [pendingStaffOpen,setPendingStaffOpen]=useState(false);
   const [oprCategoryGroup,setOprCategoryGroup]=useState("");
+  const [oprInitialCategory,setOprInitialCategory]=useState("");
   const [authOpen,setAuthOpen]=useState(false);
   const [welcome,setWelcome]=useState(false);
   const [profileOpen,setProfileOpen]=useState(false);
@@ -342,7 +345,7 @@ export function LandingPortal() {
         <button className="portal-home-button" onClick={() => setOpen(null)} aria-label="Kembali ke Portal Utama"><ChevronLeft aria-hidden="true" /> Portal Utama</button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={closeViewLabel} title={closeViewLabel}><X aria-hidden="true" /></button>
         {identity&&open!=="admin"&&open!=="ekeberadaan"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
-          {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={()=>{setOprCategoryGroup("Kurikulum");setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
+          {open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={(panitia)=>{setOprCategoryGroup("Kurikulum");setOprInitialCategory(oprCategoryForPanitia(panitia));setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} initialCategory={oprInitialCategory} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);setOprInitialCategory("");openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <h2 id="folder-title">{currentFolderContent?.title}</h2>
           <p>{currentFolderContent?.intro}</p>
@@ -1417,7 +1420,7 @@ function OprDutyCentre({ notify,user }:{ notify:(message:string)=>void;user:Port
   </div>;
 }
 
-function OprGenerator({ notify, close, user, initialCategoryGroup="" }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null; initialCategoryGroup?:string }) {
+function OprGenerator({ notify, close, user, initialCategoryGroup="", initialCategory="" }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null; initialCategoryGroup?:string;initialCategory?:string }) {
   const [enhancing, setEnhancing] = useState(false);
   const [sending, setSending] = useState(false);
   const [rendering, setRendering] = useState(false);
@@ -1427,13 +1430,13 @@ function OprGenerator({ notify, close, user, initialCategoryGroup="" }: { notify
   const [pdfBase64, setPdfBase64] = useState("");
   const [details, setDetails] = useState("");
   const [aiMessage, setAiMessage] = useState("");
-  const [categorySearch, setCategorySearch] = useState(initialCategoryGroup&&initialCategoryGroup!=="Lain-lain"?`${initialCategoryGroup} ›`:"");
-  const [categoryPickerOpen, setCategoryPickerOpen] = useState(Boolean(initialCategoryGroup&&initialCategoryGroup!=="Lain-lain"));
+  const [categorySearch, setCategorySearch] = useState(initialCategory?initialCategory.replaceAll(" · "," › "):initialCategoryGroup&&initialCategoryGroup!=="Lain-lain"?`${initialCategoryGroup} ›`:"");
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(!initialCategory&&Boolean(initialCategoryGroup&&initialCategoryGroup!=="Lain-lain"));
   const [mediaFiles, setMediaFiles] = useState<Array<{ id:string; file:File; previewUrl:string; kind:string }>>([]);
   const [competition,setCompetition]=useState({enabled:false,name:"",participantType:"Pasukan sekolah",representsSchool:"Ya",participantName:"",level:"Daerah",achievement:"Penyertaan",recognitionStatus:"Belum pasti",officialResultStatus:"Belum diterima"});
   const [external,setExternal]=useState({enabled:false,partyType:"Ibu bapa / penjaga",partyName:"",involvementType:"Kehadiran program",invitedCount:"",attendanceCount:"",contributionType:"Tiada",contributionValue:""});
   const [form, setForm] = useState({
-    title: "", category: initialCategoryGroup==="Lain-lain"?"Lain-lain":"Kurikulum · Bahasa · Bahasa Melayu", manualCategory: "", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
+    title: "", category: initialCategory||(initialCategoryGroup==="Lain-lain"?"Lain-lain":"Kurikulum · Bahasa · Bahasa Melayu"), manualCategory: "", date: new Date().toISOString().slice(0, 10), venue: "", organiser: "", objective: "", outcome: "",
     preparedBy: user?.name||"", preparedRole: user?.position||"", verifier: "Wan Harun Bin Wan Ali|Pengetua", manualVerifier: "", manualVerifierRole: "",
   });
 
