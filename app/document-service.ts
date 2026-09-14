@@ -18,7 +18,7 @@ function defaultMappings(input:RegisterInput){
   const type=input.documentType.toLowerCase(),source=input.sourceModule.toLowerCase();
   const explicit=typeof input.metadata?.epanitiaCategory==="string"&&/^(0[1-8])$/.test(input.metadata.epanitiaCategory)?input.metadata.epanitiaCategory:"";
   const epanitia=explicit|| (type.includes("lantikan")?"01":type.includes("panggilan")?"03":type.includes("nota minta")||type.includes("invois")||type.includes("resit")?"06":type.includes("takwim tahunan")?"05":type.includes("strategik")||type.includes("taktikal")||type.includes("operasi")?"02":type.includes("plc")||type.includes("ladap")?"07":type.includes("laporan tahunan")?"08":source.includes("opr")||type.includes("opr")||type.includes("kertas kerja")?"05":type.includes("minit")?"03":type.includes("pentaksiran")?"04":type.includes("carta organisasi")?"01":"");
-  const mappings=[{module:"epanitia",category:epanitia,standard:"",status:input.status==="approved"?"active":"draft"}];
+  const mappings=[{module:"epanitia",category:epanitia,standard:"",status:"active"}];
   if(source.includes("opr"))mappings.push({module:"management",category:"",standard:"",status:input.status==="approved"?"active":"draft"});
   const suggestions=Array.isArray(input.metadata?.suggestedSkas)?input.metadata!.suggestedSkas.filter((v):v is string=>typeof v==="string"):[];
   for(const standard of suggestions)mappings.push({module:"skas",category:"",standard,status:input.status==="approved"?"pending_review":"draft"});
@@ -62,4 +62,3 @@ export async function approveDocument(actor:Actor,documentId:string,versionId:st
     env.DB.prepare("UPDATE document_mappings SET document_version_id=?,mapping_status=CASE WHEN destination_module='skas' THEN 'pending_review' ELSE 'active' END,reviewed_by=?,reviewed_at=? WHERE document_id=?").bind(versionId,actor.email,stamp,documentId),
   ]);
 }
-

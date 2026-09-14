@@ -5,6 +5,24 @@ import { addDocumentVersion, approveDocument, registerDocument } from "../../doc
 const allowedModules=new Set(["epanitia","management","skas"]);
 const clean=(v:unknown,n=180)=>typeof v==="string"?v.trim().slice(0,n):"";
 const admin=(role:string)=>role==="admin"||role==="super_admin";
+async function deleteDriveCopy(fileId:string){
+  if(!fileId||fileId.startsWith("link_"))return;
+  const webAppUrl=process.env.OPR_APPS_SCRIPT_URL,token=process.env.OPR_APPS_SCRIPT_TOKEN;
+  if(!webAppUrl||!token)throw new Error("Sambungan Google Drive belum dikonfigurasi.");
+  const response=await fetch(webAppUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,action:"delete",id:fileId}),redirect:"follow",cache:"no-store",signal:AbortSignal.timeout(20000)});
+  const result=await response.json() as {ok?:boolean;error?:string};
+  if(!response.ok||!result.ok)throw new Error(result.error||"Salinan Google Drive tidak dapat dipadam.");
+}
+async function hardDeleteDraft(actor:{id:string;email:string;role:string},documentId:string){
+  const document=await env.DB.prepare("SELECT owner_user_id AS ownerUserId,status FROM documents WHERE id=? AND archived_at=''").bind(documentId).first<{ownerUserId:string;status:string}>();
+  if(!document)return false;
+  if(document.status!=="draft")throw new Error("Hanya dokumen draf boleh dipadam terus.");
+  if(!admin(actor.role)&&![actor.id,actor.email].includes(document.ownerUserId))throw new Error("Hanya pemilik fail atau pentadbir boleh memadam draf ini.");
+  const versions=await env.DB.prepare("SELECT drive_file_id AS driveFileId FROM document_versions WHERE document_id=?").bind(documentId).all<{driveFileId:string}>();
+  for(const item of versions.results)await deleteDriveCopy(item.driveFileId);
+  await env.DB.batch([env.DB.prepare("DELETE FROM document_drafts WHERE owner_user_id=? AND payload_json LIKE ?").bind(actor.id||actor.email,`%${documentId}%`),env.DB.prepare("DELETE FROM programme_documents WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_mappings WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_versions WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM documents WHERE id=?").bind(documentId)]);
+  return true;
+}
 
 export async function GET(request:Request){
   const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk dengan akaun sekolah."},{status:401});
@@ -59,7 +77,9 @@ export async function POST(request:Request){
       return Response.json({ok:true,id:draftId,updatedAt:stamp});
     }
     if(action==="delete-draft"){
-      await env.DB.prepare("DELETE FROM document_drafts WHERE id=? AND owner_user_id=?").bind(clean(body.id,120),actor.id||actor.email).run();
+      const draftId=clean(body.id,120),draft=await env.DB.prepare("SELECT payload_json AS payloadJson FROM document_drafts WHERE id=? AND owner_user_id=?").bind(draftId,actor.id||actor.email).first<{payloadJson:string}>();
+      if(draft)try{const payload=JSON.parse(draft.payloadJson) as Record<string,unknown>,master=clean(payload._masterDocumentId,120);if(master)await hardDeleteDraft(actor,master)}catch(error){if(!(error instanceof SyntaxError))throw error;}
+      await env.DB.prepare("DELETE FROM document_drafts WHERE id=? AND owner_user_id=?").bind(draftId,actor.id||actor.email).run();
       return Response.json({ok:true});
     }
     if(action==="new-version")return Response.json({ok:true,...await addDocumentVersion(actor,clean(body.documentId,120),body.file as never,"draft")});
@@ -68,7 +88,7 @@ export async function POST(request:Request){
       const documentId=clean(body.documentId,120),destinationModule=clean(body.destinationModule,30);if(!allowedModules.has(destinationModule))return Response.json({error:"Modul destinasi tidak sah."},{status:400});
       const current=await env.DB.prepare("SELECT current_version_id AS versionId FROM documents WHERE id=? AND archived_at=''").bind(documentId).first<{versionId:string}>();if(!current)return Response.json({error:"Dokumen tidak ditemui."},{status:404});
       const stamp=new Date().toISOString(),mappingId=`map_${crypto.randomUUID()}`;
-      await env.DB.prepare("INSERT INTO document_mappings (id,document_id,document_version_id,destination_module,destination_category_id,destination_standard_id,mapping_status,mapped_by,mapped_at,reviewed_by,reviewed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(document_id,destination_module,destination_category_id,destination_standard_id) DO UPDATE SET document_version_id=excluded.document_version_id,mapping_status=excluded.mapping_status,mapped_by=excluded.mapped_by,mapped_at=excluded.mapped_at").bind(mappingId,documentId,current.versionId,destinationModule,clean(body.destinationCategoryId,120),clean(body.destinationStandardId,120),"pending",actor.email,stamp,"","").run();
+      await env.DB.prepare("INSERT INTO document_mappings (id,document_id,document_version_id,destination_module,destination_category_id,destination_standard_id,mapping_status,mapped_by,mapped_at,reviewed_by,reviewed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(document_id,destination_module,destination_category_id,destination_standard_id) DO UPDATE SET document_version_id=excluded.document_version_id,mapping_status=excluded.mapping_status,mapped_by=excluded.mapped_by,mapped_at=excluded.mapped_at,reviewed_by=excluded.reviewed_by,reviewed_at=excluded.reviewed_at").bind(mappingId,documentId,current.versionId,destinationModule,clean(body.destinationCategoryId,120),clean(body.destinationStandardId,120),"active",actor.email,stamp,actor.email,stamp).run();
       return Response.json({ok:true});
     }
     if(action==="archive"){
@@ -77,6 +97,7 @@ export async function POST(request:Request){
       const isOwner=document.ownerUserId===actor.id||document.ownerUserId===actor.email;
       if(!admin(actor.role)&&!isOwner)return Response.json({error:"Hanya pemilik fail atau pentadbir boleh memadam dokumen ini."},{status:403});
       if(document.status==="approved"&&!admin(actor.role))return Response.json({error:"Dokumen yang telah diluluskan hanya boleh dipadam oleh pentadbir."},{status:403});
+      if(document.status==="draft"){await hardDeleteDraft(actor,documentId);return Response.json({ok:true,deleted:true,driveFileDeleted:true});}
       const usage=await env.DB.prepare("SELECT destination_module AS module,destination_category_id AS category,destination_standard_id AS standard,mapping_status AS status FROM document_mappings WHERE document_id=?").bind(documentId).all();
       if(body.confirm!==true)return Response.json({error:"Pengesahan diperlukan.",impact:usage.results},{status:409});
       await env.DB.prepare("UPDATE documents SET status='archived',archived_at=?,updated_at=? WHERE id=?").bind(new Date().toISOString(),new Date().toISOString(),documentId).run();return Response.json({ok:true,archived:true,driveFileDeleted:false});
