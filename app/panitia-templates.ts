@@ -47,10 +47,10 @@ export type DocumentBlock={heading:string;body:string;table?:string[][]};
 export function templateDocument(t:Template,subject:string,year:number,input:TemplateInput):{title:string;blocks:DocumentBlock[]}{
  const v=input.values,title=`${t.name} Panitia ${subject}${['meeting','minutes'].includes(t.id)&&v.number?' Bil. '+v.number:''} ${year}`;
  const blocks:DocumentBlock[]=[];
- const person=(key:string)=>input.people?.[key]?.name||'[Belum dipilih daripada direktori berdaftar]';
- const ref=v.reference||'[Belum diperuntukkan]';
+ const person=(key:string)=>input.people?.[key]?.name||'';
+ const ref=v.reference||'';
  if(t.id==='meeting'||t.id==='appointment'){
-  blocks.push({heading:'Rujukan surat',body:`No. rujukan: ${ref}\nKod fail: ${v.fileCode||'[Belum disahkan]'}\nTarikh surat: ${v.letterDate||'[Belum diisi]'}`},
+  blocks.push({heading:'Rujukan surat',body:`No. rujukan: ${ref}\nKod fail: ${v.fileCode||''}\nTarikh surat: ${v.letterDate||''}`},
    {heading:'Kepada',body:t.id==='appointment'?person('recipient'):v.recipient});
   if(t.id==='meeting')blocks.push(
    {heading:'Jemputan mesyuarat',body:`Dengan hormatnya perkara di atas dirujuk.\n2. Tuan/puan dijemput menghadiri mesyuarat Panitia ${subject} Bil. ${v.number}/${year} seperti ketetapan berikut:`},
@@ -62,16 +62,15 @@ export function templateDocument(t:Template,subject:string,year:number,input:Tem
   blocks.push({heading:'Yang menjalankan amanah,',body:`${person('signatory')}\n${v.signatoryPosition||''}`});
   if(v.copies)blocks.push({heading:'Salinan kepada',body:v.copies});
  }else if(t.id==='minutes'){
-  blocks.push({heading:'Ketetapan mesyuarat',body:`Tarikh: ${v.date}\nMasa mula: ${v.time}\nMasa tamat: ${v.endTime||'[Belum direkodkan]'}\nTempat: ${v.venue}\nPengerusi: ${person('chair')}`});
-  for(const category of ['Hadir','Tidak hadir bersebab','Tidak hadir','Turut hadir'])blocks.push({heading:category,body:(input.attendance||[]).filter(a=>a.category===category).map((a,i)=>`${i+1}. ${a.name}`).join('\n')||'Belum direkodkan.'});
-  input.decisions.forEach((d,i)=>blocks.push({heading:`${i+1}. ${d.topic}`,body:`Keputusan / catatan sebenar: ${d.decision}\n${d.status==='Makluman sahaja'?'Makluman sahaja; tiada tugasan.':`Tindakan: ${d.owner}\nTarikh sasaran: ${d.due||'Belum ditetapkan'}\nStatus: ${d.status}`}`}));
-  blocks.push({heading:'Semakan dan pengesahan',body:'Semakan pengerusi untuk edaran: belum direkodkan.\nPengesahan dalam mesyuarat berikutnya: belum direkodkan.'});
+  blocks.push({heading:'Ketetapan mesyuarat',body:[`Tarikh: ${v.date}`,`Masa mula: ${v.time}`,v.endTime?`Masa tamat: ${v.endTime}`:'',`Tempat: ${v.venue}`,`Pengerusi: ${person('chair')}`].filter(Boolean).join('\n')});
+  for(const category of ['Hadir','Tidak hadir bersebab','Tidak hadir','Turut hadir'])blocks.push({heading:category,body:(input.attendance||[]).filter(a=>a.category===category).map((a,i)=>`${i+1}. ${a.name}`).join('\n')||'Tiada.'});
+  input.decisions.forEach((d,i)=>blocks.push({heading:`${i+1}. ${d.topic}`,body:`Keputusan / catatan sebenar: ${d.decision}\n${d.status==='Makluman sahaja'?'Makluman sahaja; tiada tugasan.':[`Tindakan: ${d.owner}`,d.due?`Tarikh sasaran: ${d.due}`:'',`Status: ${d.status}`].filter(Boolean).join('\n')}`}));
  }else{
-  if(t.id==='plc')blocks.push({heading:'Peserta',body:(input.attendance||[]).filter(a=>a.category==='Hadir').map(a=>a.name).join('\n')||'Belum direkodkan.'});
-  for(const f of t.fields.filter(f=>f.key!=='author'))blocks.push({heading:f.label,body:f.type==='person'?person(f.key):v[f.key]||'Belum diisi.'});
+  if(t.id==='plc')blocks.push({heading:'Peserta',body:(input.attendance||[]).filter(a=>a.category==='Hadir').map(a=>a.name).join('\n')||'Tiada.'});
+  for(const f of t.fields.filter(f=>f.key!=='author')){const body=f.type==='person'?person(f.key):v[f.key]||'';if(body)blocks.push({heading:f.label,body});}
   if(t.id==='pcg'){
    blocks.push({heading:'Butiran barang / perkhidmatan',body:'',table:requestItems(input).map((item,i)=>[String(i+1),item.item,item.quantity,(moneyCents(item.price)/100).toFixed(2),(Number(item.quantity)*moneyCents(item.price)/100).toFixed(2)])});
-   blocks.push({heading:'Jumlah permohonan',body:'RM '+(requestTotal(input)/100).toFixed(2)+'\nPermohonan sahaja; bukan kelulusan, perbelanjaan sebenar atau bukti pembayaran.'},{heading:'Semakan / kelulusan',body:'Belum direkodkan. Format perlu dipadankan dengan borang Nota Minta sekolah yang diluluskan.'});
+   blocks.push({heading:'Jumlah permohonan',body:'RM '+(requestTotal(input)/100).toFixed(2)},{heading:'Status permohonan',body:'Untuk tindakan dan kelulusan pegawai berkuasa.'});
   }
  }
  if(!['meeting','appointment'].includes(t.id))blocks.push({heading:'Disediakan oleh',body:person('author')});return {title,blocks};
