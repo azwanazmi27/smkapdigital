@@ -109,6 +109,7 @@ export function EPanitiaCentre({notify,user,openOpr}:{notify:(message:string)=>v
  const [preparedPdf,setPreparedPdf]=useState<Blob|null>(null),[pdfUrl,setPdfUrl]=useState(''),[pdfChecked,setPdfChecked]=useState(false);
  const builderRoot=useRef<HTMLDivElement|null>(null);
  useEffect(()=>{if(!builder)return;builderRoot.current?.closest('.folder-modal')?.scrollTo({top:0});},[builder?.id,step]);
+ useEffect(()=>{if(builder)return;document.querySelector<HTMLElement>('.folder-modal:has(.epanitia-shell)')?.scrollTo({top:0,behavior:'instant'});},[panel,adminMode,builder]);
  const uploaded=useRef<{documentId:string;driveUrl:string;needsMapping?:boolean}|null>(null);
  useEffect(()=>{let active=true,url='';setPreparedPdf(null);setPdfUrl('');setPdfChecked(false);uploaded.current=null;if(!builder||step<2)return;createPdf(builder,data,rows,users).then(blob=>{if(active){url=URL.createObjectURL(blob);setPreparedPdf(blob);setPdfUrl(url);}}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;if(url)URL.revokeObjectURL(url);};},[builder?.id,data,step>=2,users]);
  const pdfPreview=<div><p>Pratonton sebenar menggunakan kepala surat OPR. Semak kandungannya sebelum disimpan.</p>{pdfUrl?<><iframe title="Pratonton PDF e-Panitia" src={pdfUrl} style={{width:'100%',height:'75vh',border:0,background:'white'}}/><a href={pdfUrl} target="_blank" rel="noreferrer">Buka pratonton penuh</a></>:<p>Sedang menyediakan pratonton dokumen…</p>}</div>;
