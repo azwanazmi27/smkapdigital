@@ -84,6 +84,9 @@ export async function POST(request: Request) {
     if (action !== "create") return Response.json({ error: "Tindakan tidak sah." }, { status: 400 });
 
     const data = Object.fromEntries(Object.entries(textLimits).map(([key, max]) => [key, cleanText(body[key], max)]));
+    // Kekalkan keserasian dengan Google Apps Script lama yang masih menjangka
+    // nilai `staff`, walaupun medan tersebut tidak lagi dipaparkan kepada pelawat.
+    if (!data.staff) data.staff = "Tidak dinyatakan";
     if (!data.date || !/^\d{4}-\d{2}-\d{2}$/.test(data.date) || !/^\d{2}:\d{2}$/.test(data.timeIn) || !data.visitorName || !data.phone || !data.purpose) {
       return Response.json({ error: "Maklumat wajib tidak lengkap atau tidak sah." }, { status: 400 });
     }
