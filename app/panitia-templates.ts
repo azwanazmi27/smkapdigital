@@ -57,9 +57,9 @@ export function templateDocument(t:Template,subject:string,year:number,input:Tem
    {heading:'Ketetapan mesyuarat',body:`Tarikh mesyuarat: ${v.date}\nMasa: ${v.time}\nTempat: ${v.venue}\nPengerusi: ${person('chair')}`},
    {heading:'3. Agenda',body:input.agendas.filter(a=>a.trim()).map((a,i)=>`${i+1}. ${a}`).join('\n')},
    {heading:'Penutup',body:'4. Kehadiran dan kerjasama tuan/puan amat dihargai.\nSekian, terima kasih.'});
-  else blocks.push({heading:'Cadangan pelantikan',body:`Dengan hormatnya perkara di atas dirujuk.\n2. Pelantikan sebagai ${v.role} Panitia ${subject} dicadangkan bagi tempoh ${v.effectiveFrom} hingga ${v.effectiveTo}. Draf ini belum mengesahkan pelantikan.`},
+  else blocks.push({heading:'Pelantikan',body:`Dengan hormatnya perkara di atas dirujuk.\n2. Sukacita dimaklumkan bahawa tuan/puan dilantik sebagai ${v.role} Panitia ${subject} bagi tempoh ${v.effectiveFrom} hingga ${v.effectiveTo}.`},
    {heading:'3. Bidang tugas',body:v.duties},{heading:'Penutup',body:'Kerjasama tuan/puan amat dihargai.\nSekian, terima kasih.'});
-  blocks.push({heading:'Pegawai penandatangan yang dicadangkan',body:`${person('signatory')}\n${v.signatoryPosition||'[Jawatan / kuasa belum disahkan]'}\nTiada tandatangan atau kelulusan direkodkan.`});
+  blocks.push({heading:'Yang menjalankan amanah,',body:`${person('signatory')}\n${v.signatoryPosition||''}`});
   if(v.copies)blocks.push({heading:'Salinan kepada',body:v.copies});
  }else if(t.id==='minutes'){
   blocks.push({heading:'Ketetapan mesyuarat',body:`Tarikh: ${v.date}\nMasa mula: ${v.time}\nMasa tamat: ${v.endTime||'[Belum direkodkan]'}\nTempat: ${v.venue}\nPengerusi: ${person('chair')}`});
@@ -74,7 +74,7 @@ export function templateDocument(t:Template,subject:string,year:number,input:Tem
    blocks.push({heading:'Jumlah permohonan',body:'RM '+(requestTotal(input)/100).toFixed(2)+'\nPermohonan sahaja; bukan kelulusan, perbelanjaan sebenar atau bukti pembayaran.'},{heading:'Semakan / kelulusan',body:'Belum direkodkan. Format perlu dipadankan dengan borang Nota Minta sekolah yang diluluskan.'});
   }
  }
- blocks.push({heading:'Disediakan oleh',body:person('author')});return {title,blocks};
+ if(!['meeting','appointment'].includes(t.id))blocks.push({heading:'Disediakan oleh',body:person('author')});return {title,blocks};
 }
 export function templateErrors(t:Template,input:TemplateInput){
  const errors:Record<string,string>={};for(const f of t.fields){const v=input.values[f.key]?.trim();if(f.required&&f.type!=='person'&&!v)errors[f.key]='Lengkapkan '+f.label.toLowerCase()+'.';if(f.type==='number'&&v&&(!Number.isFinite(Number(v))||Number(v)<0||(f.key==='quantity'&&(!Number.isInteger(Number(v))||Number(v)<1))))errors[f.key]='Masukkan nombor yang sah.';}

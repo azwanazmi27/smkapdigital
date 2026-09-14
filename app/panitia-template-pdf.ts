@@ -28,9 +28,9 @@ export function templatePdf(title:string,subject:string,year:number,blocks:Docum
  const letter=/^Surat /.test(title);
  for(const b of blocks){if(y>bottom-22)page();if(b.table){text(b.heading,true);table(b.table);continue;}
   // Letter paragraphs retain their own numbering; minutes keep topic headings.
-  if(!letter||!['Jemputan mesyuarat','Cadangan pelantikan','Penutup'].includes(b.heading))text(b.heading,true);
+  if(!letter||!['Jemputan mesyuarat','Pelantikan','Penutup'].includes(b.heading))text(b.heading,true);
   text(b.body);y+=2;
  }
- for(let p=1;p<=pdf.getNumberOfPages();p++){pdf.setPage(p);pdf.setTextColor(80);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.text('DRAF - Belum diluluskan. Format sekolah perlu disahkan.',20,284);pdf.text(`${p} / ${pdf.getNumberOfPages()}`,190,284,{align:'right'});}
+ for(let p=1;p<=pdf.getNumberOfPages();p++){pdf.setPage(p);pdf.setTextColor(80);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.text('Dijana melalui Portal SMKAP Digital',20,284);pdf.text(`${p} / ${pdf.getNumberOfPages()}`,190,284,{align:'right'});}
  return pdf;
 }
