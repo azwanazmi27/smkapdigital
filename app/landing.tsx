@@ -23,7 +23,7 @@ async function loadJsPdf() {
   return jsPDF;
 }
 
-type Folder = "ibubapa" | "warga" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
+type Folder = "ibubapa" | "warga" | "assessment" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
@@ -109,6 +109,15 @@ const folderContent: Record<Exclude<Folder, null | "admin" | "oprgenerator" | "o
       { icon: CalendarRange, title: "e-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
       { icon: Search, title: "e-Pemantauan", text: "Rekod pemerhatian dan hasilkan OPR", folder: "epemantauan" },
       { icon: Trophy, title: "Arkib Kejayaan", text: "Simpan sijil dan rekod pencapaian", folder: "achievement" },
+      { icon: GraduationCap, title: "Pentaksiran dan Peperiksaan", text: "Arus Perdana dan Tingkatan Enam", folder: "assessment" },
+    ],
+  },
+  assessment: {
+    title: "Pentaksiran dan Peperiksaan",
+    intro: "Pilih sistem pentaksiran dan peperiksaan mengikut peringkat.",
+    items: [
+      { icon: BookOpen, title: "Arus Perdana", text: "Sedang dibina" },
+      { icon: GraduationCap, title: "Tingkatan Enam", text: "Buka sistem peperiksaan Tingkatan Enam", href: "https://exam.stpmsmkap.workers.dev/" },
     ],
   },
   tentang: {
@@ -279,7 +288,7 @@ export function LandingPortal() {
 
   const closeCurrentView = () => {
     if (open === "oprgenerator" || open === "oprduty") return setOpen("oprhub");
-    if (open === "oprhub") return setOpen("warga");
+    if (open === "oprhub" || open === "assessment") return setOpen("warga");
     if (open === "ekunjung") return setOpen("pengunjung");
     if (open === "etempahan") return setOpen("warga");
     if (open === "ekeberadaan") return setOpen("warga");
@@ -294,7 +303,7 @@ export function LandingPortal() {
 
   const closeViewLabel = open === "oprgenerator" || open === "oprduty"
     ? "Kembali ke Pusat OPR"
-    : open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia")
+    : open === "oprhub" || open === "assessment" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia")
       ? "Kembali ke Guru & Staf"
       : open === "ekunjung"
         ? "Kembali ke Pelawat"
@@ -353,7 +362,7 @@ export function LandingPortal() {
           <div className={`submodule-grid ${open==="warga"?"staff-submodule-grid":""}`}>{currentItems.map((item) => {
             const inside = <><GlassIcon icon={item.icon} /> <div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? <ExternalLink aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}</i></>;
             if (item.href) return <a key={item.title} href={item.href} target="_blank" rel="noreferrer">{inside}</a>;
-            return <button key={item.title} onClick={() => item.folder ? openSubmodule(item.folder,item.title) : notify(`${item.title} dipilih`)}>{inside}</button>;
+            return <button key={item.title} onClick={() => item.folder ? openSubmodule(item.folder,item.title) : notify(item.text === "Sedang dibina" ? `${item.title} sedang dibina` : `${item.title} dipilih`)}>{inside}</button>;
           })}</div>
         </>}
       </section>
