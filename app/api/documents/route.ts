@@ -72,9 +72,13 @@ export async function POST(request:Request){
       return Response.json({ok:true});
     }
     if(action==="archive"){
-      const documentId=clean(body.documentId,120),usage=await env.DB.prepare("SELECT destination_module AS module,destination_category_id AS category,destination_standard_id AS standard,mapping_status AS status FROM document_mappings WHERE document_id=?").bind(documentId).all();
+      const documentId=clean(body.documentId,120),document=await env.DB.prepare("SELECT owner_user_id AS ownerUserId,status FROM documents WHERE id=? AND archived_at=''").bind(documentId).first<{ownerUserId:string;status:string}>();
+      if(!document)return Response.json({error:"Dokumen tidak ditemui."},{status:404});
+      const isOwner=document.ownerUserId===actor.id||document.ownerUserId===actor.email;
+      if(!admin(actor.role)&&!isOwner)return Response.json({error:"Hanya pemilik fail atau pentadbir boleh memadam dokumen ini."},{status:403});
+      if(document.status==="approved"&&!admin(actor.role))return Response.json({error:"Dokumen yang telah diluluskan hanya boleh dipadam oleh pentadbir."},{status:403});
+      const usage=await env.DB.prepare("SELECT destination_module AS module,destination_category_id AS category,destination_standard_id AS standard,mapping_status AS status FROM document_mappings WHERE document_id=?").bind(documentId).all();
       if(body.confirm!==true)return Response.json({error:"Pengesahan diperlukan.",impact:usage.results},{status:409});
-      if(!admin(actor.role))return Response.json({error:"Hanya pentadbir boleh mengarkibkan dokumen."},{status:403});
       await env.DB.prepare("UPDATE documents SET status='archived',archived_at=?,updated_at=? WHERE id=?").bind(new Date().toISOString(),new Date().toISOString(),documentId).run();return Response.json({ok:true,archived:true,driveFileDeleted:false});
     }
     return Response.json({error:"Operasi tidak sah."},{status:400});
