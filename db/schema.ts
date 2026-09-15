@@ -1,6 +1,16 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
+export const aiDailyUsage = sqliteTable("ai_daily_usage", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  day: text("day").notNull(),
+  requests: integer("requests").notNull().default(0),
+  minute: integer("minute").notNull(),
+  minuteRequests: integer("minute_requests").notNull().default(0),
+  updatedAt: text("updated_at").notNull(),
+}, table => [uniqueIndex("idx_ai_daily_usage_user_day").on(table.userId, table.day)]);
+
 export const managementMaterials = sqliteTable("management_materials", {
  id:text("id").primaryKey(),schoolYear:integer("school_year").notNull(),folderId:text("folder_id").notNull(),
  title:text("title").notNull(),documentType:text("document_type").notNull(),sourceUrl:text("source_url").notNull().default(""),

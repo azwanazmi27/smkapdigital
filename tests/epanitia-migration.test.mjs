@@ -11,7 +11,7 @@ function mod(name){if(cache.has(name))return cache.get(name);let code=ts.transpi
  code=code.replace(/from ["']([^"']+)["']/g,(_,dep)=>{if(dep==='jspdf')return 'from "data:text/javascript,export const jsPDF=globalThis.migrationJsPdf"';if(dep==='cloudflare:workers')return 'from "data:text/javascript,export const env=globalThis.migrationEnv"';if(dep.endsWith('server-auth'))return 'from "data:text/javascript,export const portalActor=async()=>globalThis.migrationActor"';return 'from '+JSON.stringify(mod(path.posix.normalize(path.posix.join(path.posix.dirname(name),dep))));});
  const url='data:text/javascript;base64,'+Buffer.from(code).toString('base64');cache.set(name,url);return url;}
 const db=new DatabaseSync(':memory:');
-for(const file of ['0011_boring_professor_monster.sql','0012_whole_photon.sql'])db.exec(readFileSync(new URL('../drizzle/'+file,import.meta.url),'utf8'));
+for(const file of ['0006_skas_evidence.sql','0011_boring_professor_monster.sql','0012_whole_photon.sql'])db.exec(readFileSync(new URL('../drizzle/'+file,import.meta.url),'utf8'));
 function prepare(sql){return {bind(...args){return {first:async()=>db.prepare(sql).get(...args),all:async()=>({results:db.prepare(sql).all(...args)}),run:async()=>db.prepare(sql).run(...args),_run:()=>db.prepare(sql).run(...args)};}};}
 globalThis.migrationEnv={DB:{prepare,async batch(items){db.exec('BEGIN');try{const result=items.map(x=>x._run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}}};
 const model=await import(mod('epanitia-migration-model')),service=await import(mod('document-service')),route=await import(mod('api/documents/route'));

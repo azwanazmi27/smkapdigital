@@ -5,9 +5,9 @@ type Version={id:string;number:number;filename:string;url:string;status:string;c
 type Mapping={id:string;module:string;category:string;standard:string;status:string;versionId:string};
 const statusName=(s:string)=>({draft:'Draf',approved:'Diluluskan',active:'Aktif',pending:'Menunggu semakan',pending_review:'Menunggu semakan',rejected:'Ditolak'}[s]||s);
 const moduleName=(s:string)=>({epanitia:'Fail Panitia',management:'Pengurusan Sekolah',skas:'Pusat SK@S'}[s]||s);
-export function EPanitiaRecordDetails({documentId}:{documentId:string}){
+export function EPanitiaRecordDetails({documentId,revision=0}:{documentId:string;revision?:number}){
  const [result,setResult]=useState<{versions:Version[];mappings:Mapping[]}|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
- useEffect(()=>{const controller=new AbortController();setResult(null);setError('');fetch('/api/documents?view=record&documentId='+encodeURIComponent(documentId),{signal:controller.signal,cache:'no-store'}).then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||'Rekod tidak dapat dibaca.');setResult(data);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[documentId,retry]);
+ useEffect(()=>{const controller=new AbortController();setResult(null);setError('');fetch('/api/documents?view=record&documentId='+encodeURIComponent(documentId),{signal:controller.signal,cache:'no-store'}).then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||'Rekod tidak dapat dibaca.');setResult(data);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[documentId,retry,revision]);
  if(error)return <div role="alert"><p>{error}</p><button onClick={()=>setRetry(n=>n+1)}>Cuba semula</button></div>;
  if(!result)return <p role="status">Membaca sejarah versi dan pemetaan…</p>;
  const mappings=result.mappings.filter(m=>m.module==='epanitia'||Boolean(m.category||m.standard));

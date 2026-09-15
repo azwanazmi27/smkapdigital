@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import {parseEvidenceSuggestion} from "../../evidence-ai-model";
 import { portalActor } from "../../server-auth";
 import { addDocumentVersion, approveDocument, registerDocument } from "../../document-service";
 
@@ -20,7 +21,7 @@ async function hardDeleteDraft(actor:{id:string;email:string;role:string},docume
   if(!admin(actor.role)&&![actor.id,actor.email].includes(document.ownerUserId))throw new Error("Hanya pemilik fail atau pentadbir boleh memadam draf ini.");
   const versions=await env.DB.prepare("SELECT drive_file_id AS driveFileId FROM document_versions WHERE document_id=?").bind(documentId).all<{driveFileId:string}>();
   for(const item of versions.results)await deleteDriveCopy(item.driveFileId);
-  await env.DB.batch([env.DB.prepare("DELETE FROM document_drafts WHERE owner_user_id=? AND payload_json LIKE ?").bind(actor.id||actor.email,`%${documentId}%`),env.DB.prepare("DELETE FROM programme_documents WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_mappings WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_versions WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM documents WHERE id=?").bind(documentId)]);
+  await env.DB.batch([env.DB.prepare("DELETE FROM skas_evidence WHERE source_module='e-Panitia' AND source_record_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_drafts WHERE owner_user_id=? AND payload_json LIKE ?").bind(actor.id||actor.email,`%${documentId}%`),env.DB.prepare("DELETE FROM programme_documents WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_mappings WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM document_versions WHERE document_id=?").bind(documentId),env.DB.prepare("DELETE FROM documents WHERE id=?").bind(documentId)]);
   return true;
 }
 
@@ -84,6 +85,21 @@ export async function POST(request:Request){
     }
     if(action==="new-version")return Response.json({ok:true,...await addDocumentVersion(actor,clean(body.documentId,120),body.file as never,"draft")});
     if(action==="approve"){if(!admin(actor.role))return Response.json({error:"Hanya pentadbir boleh meluluskan dokumen."},{status:403});await approveDocument(actor,clean(body.documentId,120),clean(body.versionId,120));return Response.json({ok:true});}
+    if(action==="map-evidence"){
+      const documentId=clean(body.documentId,120),m=parseEvidenceSuggestion(body.mapping);
+      if(!m)return Response.json({error:"Pemetaan tidak sah. Jana semula cadangan."},{status:400});
+      const doc=await env.DB.prepare("SELECT d.title,d.academic_year_id AS year,d.current_version_id AS versionId,v.drive_url AS url FROM documents d JOIN document_versions v ON v.id=d.current_version_id WHERE d.id=? AND d.archived_at=''").bind(documentId).first<{title:string;year:number;versionId:string;url:string}>();
+      if(!doc)return Response.json({error:"Dokumen tidak ditemui."},{status:404});
+      if(doc.versionId!==clean(body.versionId,120))return Response.json({error:"Versi dokumen telah berubah. Buka semula dokumen dan jana cadangan baharu."},{status:409});
+      const existing=await env.DB.prepare("SELECT id FROM skas_evidence WHERE source_module='e-Panitia' AND source_record_id=?").bind(documentId).first();
+      if(existing)return Response.json({ok:true,existing:true});
+      const stamp=new Date().toISOString();
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,notes,status,submitted_by_email,submitted_by_name,source_module,source_record_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'portal',?,?,'pending',?,?,'e-Panitia',?,?,?) ON CONFLICT DO NOTHING").bind(crypto.randomUUID(),doc.year,m.domain,m.unitName,m.evidenceType,doc.title,m.standardCode,doc.url,`Cadangan AI disemak pengguna. Versi sumber: ${doc.versionId}. ${m.reason}`,actor.email,actor.name,documentId,stamp,stamp),
+        env.DB.prepare("INSERT INTO document_mappings(id,document_id,document_version_id,destination_module,destination_category_id,destination_standard_id,mapping_status,mapped_by,mapped_at,reviewed_by,reviewed_at) VALUES(?,?,?,'skas','',?,'pending_review',?,?,'','') ON CONFLICT DO NOTHING").bind(`map_${crypto.randomUUID()}`,documentId,doc.versionId,m.standardCode,actor.email,stamp),
+      ]);
+      return Response.json({ok:true});
+    }
     if(action==="map"){
       const documentId=clean(body.documentId,120),destinationModule=clean(body.destinationModule,30);if(!allowedModules.has(destinationModule))return Response.json({error:"Modul destinasi tidak sah."},{status:400});
       const current=await env.DB.prepare("SELECT current_version_id AS versionId FROM documents WHERE id=? AND archived_at=''").bind(documentId).first<{versionId:string}>();if(!current)return Response.json({error:"Dokumen tidak ditemui."},{status:404});
@@ -100,7 +116,7 @@ export async function POST(request:Request){
       if(document.status==="draft"){await hardDeleteDraft(actor,documentId);return Response.json({ok:true,deleted:true,driveFileDeleted:true});}
       const usage=await env.DB.prepare("SELECT destination_module AS module,destination_category_id AS category,destination_standard_id AS standard,mapping_status AS status FROM document_mappings WHERE document_id=?").bind(documentId).all();
       if(body.confirm!==true)return Response.json({error:"Pengesahan diperlukan.",impact:usage.results},{status:409});
-      await env.DB.prepare("UPDATE documents SET status='archived',archived_at=?,updated_at=? WHERE id=?").bind(new Date().toISOString(),new Date().toISOString(),documentId).run();return Response.json({ok:true,archived:true,driveFileDeleted:false});
+      await env.DB.batch([env.DB.prepare("UPDATE documents SET status='archived',archived_at=?,updated_at=? WHERE id=?").bind(new Date().toISOString(),new Date().toISOString(),documentId),env.DB.prepare("UPDATE skas_evidence SET status='source_deleted',updated_at=? WHERE source_module='e-Panitia' AND source_record_id=?").bind(new Date().toISOString(),documentId)]);return Response.json({ok:true,archived:true,driveFileDeleted:false});
     }
     return Response.json({error:"Operasi tidak sah."},{status:400});
   }catch(error){console.error("Shared document service",error);return Response.json({error:error instanceof Error?error.message:"Operasi dokumen gagal."},{status:500});}
