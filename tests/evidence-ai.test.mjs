@@ -75,3 +75,14 @@ test('generation shares its allowance with evidence mapping, cannot be bypassed 
  for(let i=0;i<3;i++)assert.equal((await ai.POST(req({title:'Minit Panitia'}))).status,200);
  const r=await draftRoute.POST(req({template:'appointment',notes:'Bidang tugas setiausaha panitia'}));assert.equal(r.status,429);assert.match((await r.json()).error,/Had 3/);
 });
+
+test('OPR remains unlimited and does not consume the shared daily allowance; monitoring is limited',async()=>{
+ const opr=await import(mod('api/gemini/route')),monitor=await import(mod('api/ai/monitoring-text/route'));
+ globalThis.migrationActor={...actor,id:'opr-unlimited'};globalThis.mockGenerate=async()=>({text:JSON.stringify({details:'Pelaksanaan program',objective:'Objektif',outcome:'Hasil'})});
+ for(let i=0;i<6;i++)assert.equal((await opr.POST(req({text:'Catatan program OPR'}))).status,200);
+ assert.equal((await usage.getAIUsage(globalThis.migrationActor)).used,0);
+ for(let i=0;i<3;i++)assert.equal((await monitor.POST(req({text:'Catatan pemantauan'}))).status,200);
+ assert.equal((await monitor.POST(req({text:'Catatan pemantauan'}))).status,429);
+ assert.equal((await opr.POST(req({text:'OPR selepas had AI lain habis'}))).status,200);
+ assert.equal((await usage.getAIUsage(globalThis.migrationActor)).used,3);
+});
