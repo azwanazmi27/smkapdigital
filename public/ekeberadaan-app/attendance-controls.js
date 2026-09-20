@@ -24,7 +24,7 @@ export function createAttendanceControls(React) {
     const selected=teachers.find(t=>t.id===value), input=useRef(null);
     const matches=teachers.filter(t=>t.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
     const choose=t=>{onChange(t.id);setQuery('');setOpen(false);input.current?.focus();};
-    useEffect(()=>{setQuery('');setOpen(false);setActive(0);},[value,teachers]);
+    useEffect(()=>{setQuery('');setOpen(false);setActive(0);const pick=()=>{const user=window.__SMKAP_IDENTITY;if(!user||value||!teachers.length)return;const norm=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\b(bin|binti|bt|b)\b/g,' ').replace(/\s+/g,' ').trim(),parts=norm(user.name||user.email?.split('@')[0]).split(' ').filter(p=>p.length>1),match=teachers.map(teacher=>({teacher,score:parts.filter(p=>norm(teacher.name).includes(p)).length})).sort((a,b)=>b.score-a.score)[0];if(match?.score)onChange(match.teacher.id)};pick();window.addEventListener('smkap-identity-ready',pick);return()=>window.removeEventListener('smkap-identity-ready',pick)},[value,teachers]);
     return h('div',{className:'smk-teacher-picker',onBlur:e=>{if(!e.currentTarget.contains(e.relatedTarget)){setOpen(false);setQuery('');}}},
       selected&&h('p',{className:'smk-selected-teacher'},'Dipilih: ',h('strong',null,selected.name)),
       h('div',{className:'smk-picker-input'},h('input',{
