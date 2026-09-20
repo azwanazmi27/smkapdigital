@@ -110,7 +110,6 @@ const folderContent: Record<Exclude<Folder, null | "uploads" | "admin" | "oprgen
     title: "Guru & Staf",
     intro: "Semua urusan kerja guru dan kakitangan dihimpunkan di sini.",
     items: [
-      { icon: FilePlus2, title: "Muat Naik", text: "Kertas kerja dan jadual guru bertugas", folder: "uploads" },
       { icon: FileText, title: "Pusat OPR", text: "Cipta dan semak laporan mengikut bidang", folder: "oprhub" },
       { icon: CircleCheck, title: "e-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", folder: "ekeberadaan" },
       { icon: CalendarRange, title: "e-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
@@ -286,6 +285,7 @@ export function LandingPortal() {
     currentItems.push({icon:BookOpenText,title:"e-Panitia",text:"Satu rekod dokumen untuk semua kegunaan panitia",folder:"epanitia"});
     currentItems.push({icon:ShieldCheck,title:"Pusat SK@S",text:"Dashboard evidens dan pematuhan sekolah",folder:"skas"});
   }
+  if(open==="warga")currentItems.push({icon:FilePlus2,title:"Muat Naik",text:"Kertas kerja dan jadual guru bertugas",folder:"uploads"});
   if(open==="ibubapa"){
     currentItems.splice(2,0,
       {icon:ShoppingBag,title:"Koperasi SMKAP",text:"Beli tiket bas dan barangan koperasi dalam talian",href:publicContent?.settings.parent_coop_url||"https://koperasismkap.kiah.store/"},
@@ -363,9 +363,8 @@ export function LandingPortal() {
         {identity&&open!=="admin"&&open!=="ekeberadaan"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
           {open === "uploads" ? <StaffWorkUpload isAdmin={!!identity&&["admin","super_admin"].includes(identity.role)} /> : open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={(panitia)=>{setOprCategoryGroup("Kurikulum");setOprInitialCategory(oprCategoryForPanitia(panitia));setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} initialCategory={oprInitialCategory} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);setOprInitialCategory("");openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
-          <h2 id="folder-title">{currentFolderContent?.title}</h2>
+          <div className="staff-folder-heading"><h2 id="folder-title">{currentFolderContent?.title}</h2>{open==="warga"&&identity&&<StaffWorkList openDuty={()=>setOpen("oprduty")}/>}</div>
           <p>{currentFolderContent?.intro}</p>
-          {open==="warga"&&identity&&<StaffWorkList openDuty={()=>setOpen("oprduty")}/>}
           {open==="warga"&&staffAnnouncements.length>0&&<button className="staff-announcement-entry" onClick={()=>setStaffAnnouncementOpen(true)}><Bell aria-hidden="true"/><span><strong>Pengumuman Guru & Staf</strong><small>Buka semula makluman aktif</small></span>{unreadStaffAnnouncements().length>0&&<b>{unreadStaffAnnouncements().length} baharu</b>}<ChevronRight aria-hidden="true"/></button>}
           <div className={`submodule-grid ${open==="warga"?"staff-submodule-grid":""}`}>{currentItems.map((item) => {
             const inside = <><GlassIcon icon={item.icon} /> <div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? <ExternalLink aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}</i></>;
