@@ -668,6 +668,11 @@ function AttendanceCentre({ notify, user }: { notify: (message: string) => void;
   };
   useEffect(() => { void loadData(); }, []);
   const availableTeachers = teachers.filter((teacher) => teacher.category === form.category);
+  const normaliseName = (value: string) => value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\b(bin|binti|bt|b)\b/g, " ").replace(/\s+/g, " ").trim();
+  const identityParts = normaliseName(user?.name || user?.email?.split("@")[0] || "").split(" ").filter((part) => part.length > 1);
+  const ownMatch = availableTeachers.map((teacher) => ({ teacher, score: identityParts.filter((part) => normaliseName(teacher.name).includes(part)).length })).sort((a,b)=>b.score-a.score)[0];
+  const matchedOwnTeacher = ownMatch && ownMatch.score > 0 ? ownMatch.teacher : undefined;
+  useEffect(() => { if (matchedOwnTeacher && form.teacherId !== matchedOwnTeacher.id) setForm(current => ({...current, teacherId: matchedOwnTeacher.id})); }, [matchedOwnTeacher?.id]);
   const selectedTeacher = teachers.find((teacher) => teacher.id === form.teacherId);
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value, ...(field === "category" ? { teacherId: "" } : {}) }));
   const submit = async (event: React.FormEvent) => {
