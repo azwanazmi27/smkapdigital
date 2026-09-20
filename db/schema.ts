@@ -110,3 +110,10 @@ export const documentDrafts = sqliteTable("document_drafts", {
   documentType: text("document_type").notNull(), title: text("title").notNull().default(""), payloadJson: text("payload_json").notNull().default("{}"), step: integer("step").notNull().default(1),
   ownerUserId: text("owner_user_id").notNull(), createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
 }, table => [index("idx_document_drafts_owner_updated").on(table.ownerUserId, table.updatedAt), index("idx_document_drafts_year_panel").on(table.schoolYear, table.panelId)]);
+
+export const staffWorkDocuments = sqliteTable('staff_work_documents', {
+ id:text('id').primaryKey(),ownerId:text('owner_id').notNull(),kind:text('kind').notNull(),title:text('title').notNull(),filename:text('filename').notNull(),fileKey:text('file_key').notNull(),assignmentsJson:text('assignments_json').notNull().default('[]'),published:integer('published').notNull().default(0),createdAt:text('created_at').notNull()
+});
+export const staffWorkAssignments = sqliteTable('staff_work_assignments', {
+ id:text('id').primaryKey(),documentId:text('document_id').notNull(),userId:text('user_id').notNull(),role:text('role').notNull(),startDate:text('start_date').notNull().default(''),endDate:text('end_date').notNull().default(''),completed:integer('completed').notNull().default(0)
+},t=>[index('staff_work_user').on(t.userId),index('staff_work_document').on(t.documentId)]);
