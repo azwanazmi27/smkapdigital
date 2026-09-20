@@ -69,13 +69,18 @@ function DrivePdfPreview({ fileId, title }: { fileId: string; title: string }) {
       if(!response.ok)throw new Error("PDF tidak tersedia");
       const blob=await response.blob();
       if(!blob.size||(!blob.type.includes("pdf")&&!response.headers.get("content-type")?.includes("pdf")))throw new Error("Respons bukan PDF");
-      if(cancelled)return;objectUrl=URL.createObjectURL(blob);setSource(objectUrl);setLoading(false);
+      if(cancelled)return;
+      // Android browsers do not reliably paint blob URLs inside an iframe.
+      // Keep the authenticated portal URL on mobile so the native PDF viewer
+      // receives a normal PDF response instead.
+      const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+      objectUrl=mobile?"":URL.createObjectURL(blob);setSource(mobile?previewUrl:objectUrl);setLoading(false);
     }).catch(()=>{if(!cancelled){setLoading(false);setFailed(true);}}).finally(()=>window.clearTimeout(timeout));
     return()=>{cancelled=true;controller.abort();window.clearTimeout(timeout);if(objectUrl)URL.revokeObjectURL(objectUrl);};
   },[fileId,attempt]);
   return <div className={`drive-pdf-frame drive-pdf-frame-safe${loading ? " is-loading" : ""}`} aria-busy={loading}>
     {loading && <div className="pdf-opening-state" role="status" aria-live="polite"><i aria-hidden="true"/><span><strong>Membuka pratonton PDF</strong><small>Sila tunggu sebentar…</small></span></div>}
-    {failed ? <div className="pdf-preview-fallback"><strong>Pratonton belum dapat dibuka pada peranti ini.</strong><button onClick={()=>setAttempt((value)=>value+1)}>Cuba semula</button><a href={`${previewUrl}&download=1`}>Muat turun PDF untuk dibuka</a></div> : source ? <iframe src={source} title={title} loading="eager"/> : null}
+    {failed ? <div className="pdf-preview-fallback"><strong>Pratonton belum dapat dibuka pada peranti ini.</strong><button onClick={()=>setAttempt((value)=>value+1)}>Cuba semula</button><a href={`${previewUrl}&download=1`} target="_blank" rel="noreferrer">Buka / muat turun PDF</a></div> : source ? <iframe src={source} title={title} loading="eager" allow="fullscreen"/> : null}
   </div>;
 }
 
