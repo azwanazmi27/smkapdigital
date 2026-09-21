@@ -37,6 +37,13 @@ export function ProfileCard({user,close,save,updatePhoto,logout,notify,pushState
  {error&&<p className="staff-profile-error" role="alert">{error}</p>}<footer className="staff-profile-motto"><span/>Berilmu Bertakwa<span/></footer></div>{(deleteTarget||deletedTitle)&&<PortfolioDeletePopup title={deleteTarget?.title||deletedTitle} success={!!deletedTitle} busy={busy} error={deleteError} onCancel={()=>{setDeleteTarget(null);setDeletedTitle('');setDeleteError('');}} onConfirm={()=>void deletePortfolio()}/>}</section></div>,document.body);
 }
 
+export function StaffExpertiseMarks(){
+ const [items,setItems]=useState<Array<Pick<Item,'id'|'title'|'issuer'|'featured'>>>([]);
+ useEffect(()=>{let live=true;fetch('/api/portfolio',{cache:'no-store'}).then(responseData).then(data=>{if(live)setItems(data.items||[]);}).catch(()=>{});return()=>{live=false;};},[]);
+ const featured=items.filter(item=>item.featured).slice(0,2);
+ return featured.length?<span className="module-user-expertise" aria-label={`Kepakaran: ${featured.map(item=>item.title).join(', ')}`}>{featured.map(item=><span key={item.id} title={item.title}><ExpertiseIcon title={item.title} issuer={item.issuer}/></span>)}</span>:null;
+}
+
 export function StaffExpertiseList(){
  const [items,setItems]=useState<Item[]>([]),[users,setUsers]=useState<Array<{id:string;name:string;position:string}>>([]),[search,setSearch]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(true);
  useEffect(()=>{fetch('/api/portfolio?all=1',{cache:'no-store'}).then(responseData).then(data=>{setItems(data.items);setUsers(data.users);}).catch(e=>setError(e.message)).finally(()=>setLoading(false));},[]);
