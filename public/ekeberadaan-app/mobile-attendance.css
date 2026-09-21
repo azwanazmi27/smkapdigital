@@ -26,9 +26,11 @@
 .attendance-portal .smk-reason-confirm>div{display:flex;gap:10px}
 .attendance-portal :is(button,input,select):focus-visible{outline:3px solid #188276;outline-offset:3px}
 @media(max-width:620px){
+ html,body,#relief-root,.attendance-portal{max-width:100%;overflow-x:clip}
  .attendance-portal .topbar{display:flex;flex-direction:column;gap:12px;padding:12px;position:static}
- .attendance-portal .nav-tabs{display:flex;width:100%;max-width:100%;overflow-x:auto;gap:6px;padding:2px 0 6px;scrollbar-width:thin}
- .attendance-portal .nav-tabs button{flex:0 0 auto;min-height:44px;height:auto;padding:10px 12px;font-size:14px;white-space:nowrap}
+ .attendance-portal .nav-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;max-width:100%;overflow:hidden;gap:3px;padding:2px 0 6px}
+ .attendance-portal .nav-tabs button{min-width:0;min-height:44px;height:auto;padding:8px 3px;font-size:11px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
+ .attendance-portal .nav-tabs button>span{display:none}
  .attendance-portal .brand-copy small{font-size:12px}
  .attendance-portal .report-page{width:calc(100% - 24px);padding:16px 0 28px;gap:18px}
  .attendance-portal .hero-copy{text-align:left}
