@@ -112,8 +112,14 @@ export const documentDrafts = sqliteTable("document_drafts", {
 }, table => [index("idx_document_drafts_owner_updated").on(table.ownerUserId, table.updatedAt), index("idx_document_drafts_year_panel").on(table.schoolYear, table.panelId)]);
 
 export const staffWorkDocuments = sqliteTable('staff_work_documents', {
- id:text('id').primaryKey(),ownerId:text('owner_id').notNull(),kind:text('kind').notNull(),title:text('title').notNull(),filename:text('filename').notNull(),fileKey:text('file_key').notNull(),assignmentsJson:text('assignments_json').notNull().default('[]'),published:integer('published').notNull().default(0),createdAt:text('created_at').notNull()
+ id:text('id').primaryKey(),ownerId:text('owner_id').notNull(),kind:text('kind').notNull(),title:text('title').notNull(),filename:text('filename').notNull(),fileKey:text('file_key').notNull(),contentHash:text('content_hash').notNull().default(''),assignmentsJson:text('assignments_json').notNull().default('[]'),published:integer('published').notNull().default(0),createdAt:text('created_at').notNull()
 });
 export const staffWorkAssignments = sqliteTable('staff_work_assignments', {
- id:text('id').primaryKey(),documentId:text('document_id').notNull(),userId:text('user_id').notNull(),role:text('role').notNull(),startDate:text('start_date').notNull().default(''),endDate:text('end_date').notNull().default(''),completed:integer('completed').notNull().default(0)
-},t=>[index('staff_work_user').on(t.userId),index('staff_work_document').on(t.documentId)]);
+ id:text('id').primaryKey(),documentId:text('document_id').notNull(),userId:text('user_id').notNull(),taskKey:text('task_key').notNull().default(''),role:text('role').notNull(),startDate:text('start_date').notNull().default(''),endDate:text('end_date').notNull().default(''),completed:integer('completed').notNull().default(0)
+},t=>[index('staff_work_user').on(t.userId),index('staff_work_document').on(t.documentId),uniqueIndex('staff_work_task_key').on(t.taskKey).where(sql`${t.taskKey} != ''`)]);
+export const staffTaskState=sqliteTable('staff_task_state',{
+ userId:text('user_id').notNull(),taskId:text('task_id').notNull(),dismissed:integer('dismissed').notNull().default(0),seenAt:text('seen_at').notNull().default(''),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('staff_task_state_user_task').on(t.userId,t.taskId),index('staff_task_state_user').on(t.userId)]);
+export const staffReliefLinks=sqliteTable('staff_relief_links',{
+ userId:text('user_id').primaryKey(),teacherId:text('teacher_id').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('staff_relief_teacher').on(t.teacherId)]);
