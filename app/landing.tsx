@@ -28,6 +28,14 @@ type Folder = "uploads" | "ibubapa" | "warga" | "assessment" | "tentang" | "scho
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
+const portalHistoryFolders = new Set<Exclude<Folder, null>>([
+  "uploads", "ibubapa", "warga", "assessment", "tentang", "schoolprofile", "orgchart", "announcements", "calendar", "directory", "pengunjung", "ekunjung", "ekeberadaan", "etempahan", "achievement", "epemantauan", "skas", "pengurusan", "epanitia", "oprhub", "oprgenerator", "oprduty", "admin",
+]);
+
+function historyFolder(value: unknown): Folder {
+  return typeof value === "string" && portalHistoryFolders.has(value as Exclude<Folder, null>) ? value as Folder : null;
+}
+
 let oprMemoryCache: OprReport[] | null = null;
 let oprRequest: Promise<OprReport[]> | null = null;
 
@@ -184,6 +192,9 @@ export function LandingPortal() {
   const [authError,setAuthError]=useState("");
   const [pushState,setPushState]=useState<"idle"|"loading"|"enabled"|"blocked"|"unsupported">("idle");
   const folderModalRef=useRef<HTMLElement|null>(null);
+  const historyReady=useRef(false);
+  const restoringHistory=useRef(false);
+  const replaceNextHistory=useRef(false);
   const overlayActive=Boolean(open||authOpen||welcome||profileOpen||staffAnnouncementOpen||pushNotice);
   const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["uploads","warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan","skas","pengurusan","epanitia"];return allowed.includes(value as Folder)?value as Folder:null;};
   const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
@@ -196,6 +207,35 @@ export function LandingPortal() {
     void loadIdentity(false).catch(()=>{setIdentity(null);setIdentityChecked(true);if(requestedModule()||requestedNotificationId())setAuthOpen(true);});
     return () => document.documentElement.classList.remove("portal-ready");
   }, []);
+  useEffect(() => {
+    const state = window.history.state as { smkapPortalFolder?: unknown } | null;
+    const initialFolder = historyFolder(state?.smkapPortalFolder);
+    if (initialFolder) setOpen(initialFolder);
+    else window.history.replaceState({ ...(state || {}), smkapPortalFolder: null }, "", window.location.href);
+    historyReady.current = true;
+
+    const onPopState = (event: PopStateEvent) => {
+      restoringHistory.current = true;
+      setOpen(historyFolder((event.state as { smkapPortalFolder?: unknown } | null)?.smkapPortalFolder));
+      window.setTimeout(() => { restoringHistory.current = false; }, 0);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+  useEffect(() => {
+    if (!historyReady.current) return;
+    if (restoringHistory.current) {
+      restoringHistory.current = false;
+      return;
+    }
+    const current = historyFolder((window.history.state as { smkapPortalFolder?: unknown } | null)?.smkapPortalFolder);
+    if (current === open) return;
+    const nextState = { ...(window.history.state || {}), smkapPortalFolder: open };
+    if (replaceNextHistory.current) {
+      window.history.replaceState(nextState, "", window.location.href);
+      replaceNextHistory.current = false;
+    } else window.history.pushState(nextState, "", window.location.href);
+  }, [open]);
   useEffect(()=>{
     if(!overlayActive)return;
     const scrollY=window.scrollY;
@@ -294,19 +334,23 @@ export function LandingPortal() {
     );
   }
 
+  const returnTo = (folder: Folder) => {
+    replaceNextHistory.current = true;
+    setOpen(folder);
+  };
   const closeCurrentView = () => {
-    if (open === "oprgenerator" || open === "oprduty") return setOpen("oprhub");
-    if (open === "uploads" || open === "oprhub" || open === "assessment") return setOpen("warga");
-    if (open === "ekunjung") return setOpen("pengunjung");
-    if (open === "etempahan") return setOpen("warga");
-    if (open === "ekeberadaan") return setOpen("warga");
-    if (open === "achievement") return setOpen("warga");
-    if (open === "epemantauan") return setOpen("warga");
-    if ((open === "skas" || open === "pengurusan" || open === "epanitia")) return setOpen("warga");
-    if (open === "directory") return setOpen("tentang");
-    if (open === "schoolprofile" || open === "orgchart") return setOpen("tentang");
-    if (open === "announcements" || open === "calendar") return setOpen("ibubapa");
-    setOpen(null);
+    if (open === "oprgenerator" || open === "oprduty") return returnTo("oprhub");
+    if (open === "uploads" || open === "oprhub" || open === "assessment") return returnTo("warga");
+    if (open === "ekunjung") return returnTo("pengunjung");
+    if (open === "etempahan") return returnTo("warga");
+    if (open === "ekeberadaan") return returnTo("warga");
+    if (open === "achievement") return returnTo("warga");
+    if (open === "epemantauan") return returnTo("warga");
+    if ((open === "skas" || open === "pengurusan" || open === "epanitia")) return returnTo("warga");
+    if (open === "directory") return returnTo("tentang");
+    if (open === "schoolprofile" || open === "orgchart") return returnTo("tentang");
+    if (open === "announcements" || open === "calendar") return returnTo("ibubapa");
+    returnTo(null);
   };
 
   const closeViewLabel = open === "oprgenerator" || open === "oprduty"
@@ -359,10 +403,10 @@ export function LandingPortal() {
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section ref={folderModalRef} className={`folder-modal ${open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia") ? "generator-modal" : ""} ${open === "orgchart" ? "org-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">
-        <button className="portal-home-button" onClick={() => setOpen(null)} aria-label="Kembali ke Portal Utama"><ChevronLeft aria-hidden="true" /><span>Portal Utama</span></button>
+        <button className="portal-home-button" onClick={() => returnTo(null)} aria-label="Kembali ke Portal Utama"><ChevronLeft aria-hidden="true" /><span>Portal Utama</span></button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={closeViewLabel} title={closeViewLabel}><X aria-hidden="true" /></button>
         {identity&&open!=="admin"&&open!=="ekeberadaan"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
-          {open === "uploads" ? <StaffWorkUpload isAdmin={!!identity&&["admin","super_admin"].includes(identity.role)} /> : open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => setOpen("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => setOpen("warga")} user={identity} initialTab={taskEntry==="form"||new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={(panitia)=>{setOprCategoryGroup("Kurikulum");setOprInitialCategory(oprCategoryForPanitia(panitia));setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} initialTab={taskEntry==="daily"||taskEntry==="weekly"?taskEntry:"dashboard"} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => setOpen("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} initialCategory={oprInitialCategory} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);setOprInitialCategory("");openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
+          {open === "uploads" ? <StaffWorkUpload isAdmin={!!identity&&["admin","super_admin"].includes(identity.role)} /> : open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => returnTo("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => returnTo("warga")} user={identity} initialTab={taskEntry==="form"||new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={(panitia)=>{setOprCategoryGroup("Kurikulum");setOprInitialCategory(oprCategoryForPanitia(panitia));setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} initialTab={taskEntry==="daily"||taskEntry==="weekly"?taskEntry:"dashboard"} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => returnTo("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} initialCategory={oprInitialCategory} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);setOprInitialCategory("");openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <div className="staff-folder-heading"><h2 id="folder-title">{currentFolderContent?.title}</h2>{open==="warga"&&identity&&<StaffWorkList openAction={action=>{setTaskEntry(action.module==="etempahan"?"form":action.tab||null);if(action.module==="oprgenerator"){setOprCategoryGroup("");setOprInitialCategory("");}setOpen(action.module);}}/>}</div>
           <p>{currentFolderContent?.intro}</p>
