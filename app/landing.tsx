@@ -24,12 +24,12 @@ async function loadJsPdf() {
   return jsPDF;
 }
 
-type Folder = "uploads" | "ibubapa" | "warga" | "assessment" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
+type Folder = "upload-paper" | "upload-duty" | "ibubapa" | "warga" | "assessment" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
 const portalHistoryFolders = new Set<Exclude<Folder, null>>([
-  "uploads", "ibubapa", "warga", "assessment", "tentang", "schoolprofile", "orgchart", "announcements", "calendar", "directory", "pengunjung", "ekunjung", "ekeberadaan", "etempahan", "achievement", "epemantauan", "skas", "pengurusan", "epanitia", "oprhub", "oprgenerator", "oprduty", "admin",
+  "upload-paper", "upload-duty", "ibubapa", "warga", "assessment", "tentang", "schoolprofile", "orgchart", "announcements", "calendar", "directory", "pengunjung", "ekunjung", "ekeberadaan", "etempahan", "achievement", "epemantauan", "skas", "pengurusan", "epanitia", "oprhub", "oprgenerator", "oprduty", "admin",
 ]);
 
 function historyFolder(value: unknown): Folder {
@@ -104,7 +104,7 @@ const folders = [
   { id: "pengunjung", no: "04", icon: MapPin, title: "Pelawat", text: "Daftar lawatan & panduan" },
 ] as const;
 
-const folderContent: Record<Exclude<Folder, null | "uploads" | "admin" | "oprgenerator" | "oprduty" | "ekunjung" | "directory" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "skas" | "pengurusan" | "epanitia" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan">, { title: string; intro: string; items: SubItem[] }> = {
+const folderContent: Record<Exclude<Folder, null | "upload-paper" | "upload-duty" | "admin" | "oprgenerator" | "oprduty" | "ekunjung" | "directory" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "skas" | "pengurusan" | "epanitia" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan">, { title: string; intro: string; items: SubItem[] }> = {
   ibubapa: {
     title: "Ibu Bapa / Penjaga",
     intro: "Maklumat penting sekolah yang mudah dicapai oleh ibu bapa dan penjaga.",
@@ -196,7 +196,7 @@ export function LandingPortal() {
   const restoringHistory=useRef(false);
   const replaceNextHistory=useRef(false);
   const overlayActive=Boolean(open||authOpen||welcome||profileOpen||staffAnnouncementOpen||pushNotice);
-  const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["uploads","warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan","skas","pengurusan","epanitia"];return allowed.includes(value as Folder)?value as Folder:null;};
+  const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["upload-paper","upload-duty","warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan","skas","pengurusan","epanitia"];return allowed.includes(value as Folder)?value as Folder:null;};
   const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
   const openRequestedNotification=async()=>{const id=requestedNotificationId();if(!id)return;const response=await fetch(`/api/push?view=notification&id=${encodeURIComponent(id)}`,{cache:"no-store"}),data=await response.json();if(response.ok&&data.notification)setPushNotice(data.notification);};
   const loadStaffAnnouncements=async()=>{try{const response=await fetch("/api/portal-content?view=staff",{cache:"no-store"}),data=await response.json();if(response.ok)setStaffAnnouncements(data.announcements||[]);}catch{}}
@@ -326,7 +326,10 @@ export function LandingPortal() {
     currentItems.push({icon:BookOpenText,title:"e-Panitia",text:"Satu rekod dokumen untuk semua kegunaan panitia",folder:"epanitia"});
     currentItems.push({icon:ShieldCheck,title:"Pusat SK@S",text:"Dashboard evidens dan pematuhan sekolah",folder:"skas"});
   }
-  if(open==="warga")currentItems.push({icon:FilePlus2,title:"Muat Naik",text:"Kertas kerja dan jadual guru bertugas",folder:"uploads"});
+  if(open==="warga")currentItems.push(
+    {icon:FileText,title:"Muat Naik Kertas Kerja",text:"Baca AJK dan tugasan daripada kertas kerja",folder:"upload-paper"},
+    {icon:CalendarPlus,title:"Muat Naik Guru Bertugas",text:"Baca dan semak jadual guru bertugas",folder:"upload-duty"}
+  );
   if(open==="ibubapa"){
     currentItems.splice(2,0,
       {icon:ShoppingBag,title:"Koperasi SMKAP",text:"Beli tiket bas dan barangan koperasi dalam talian",href:publicContent?.settings.parent_coop_url||"https://koperasismkap.kiah.store/"},
@@ -340,7 +343,7 @@ export function LandingPortal() {
   };
   const closeCurrentView = () => {
     if (open === "oprgenerator" || open === "oprduty") return returnTo("oprhub");
-    if (open === "uploads" || open === "oprhub" || open === "assessment") return returnTo("warga");
+    if (open === "upload-paper" || open === "upload-duty" || open === "oprhub" || open === "assessment") return returnTo("warga");
     if (open === "ekunjung") return returnTo("pengunjung");
     if (open === "etempahan") return returnTo("warga");
     if (open === "ekeberadaan") return returnTo("warga");
@@ -355,7 +358,7 @@ export function LandingPortal() {
 
   const closeViewLabel = open === "oprgenerator" || open === "oprduty"
     ? "Kembali ke Pusat OPR"
-    : open === "oprhub" || open === "assessment" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia")
+    : open === "upload-paper" || open === "upload-duty" || open === "oprhub" || open === "assessment" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia")
       ? "Kembali ke Guru & Staf"
       : open === "ekunjung"
         ? "Kembali ke Pelawat"
@@ -406,11 +409,11 @@ export function LandingPortal() {
         <button className="portal-home-button" onClick={() => returnTo(null)} aria-label="Kembali ke Portal Utama"><ChevronLeft aria-hidden="true" /><span>Portal Utama</span></button>
         <button className="folder-close" onClick={closeCurrentView} aria-label={closeViewLabel} title={closeViewLabel}><X aria-hidden="true" /></button>
         {identity&&open!=="admin"&&open!=="ekeberadaan"&&<div className="module-user-strip"><IdentityAvatar user={identity}/><div><small>WARGA SEKOLAH</small><strong>{identity.name}</strong><span>{identity.email} · {identity.position||"Warga SMKAP"}</span></div>{identity.grade&&<b>{identity.grade}</b>}</div>}
-          {open === "uploads" ? <StaffWorkUpload isAdmin={!!identity&&["admin","super_admin"].includes(identity.role)} /> : open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => returnTo("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => returnTo("warga")} user={identity} initialTab={taskEntry==="form"||new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={(panitia)=>{setOprCategoryGroup("Kurikulum");setOprInitialCategory(oprCategoryForPanitia(panitia));setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} initialTab={taskEntry==="daily"||taskEntry==="weekly"?taskEntry:"dashboard"} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => returnTo("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} initialCategory={oprInitialCategory} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);setOprInitialCategory("");openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
+          {open === "upload-paper" || open === "upload-duty" ? <StaffWorkUpload isAdmin={!!identity&&["admin","super_admin"].includes(identity.role)} kind={open==="upload-duty"?"duty":"paper"} /> : open === "admin" ? <AdminPanel notify={notify} /> : open === "schoolprofile" ? <SchoolProfile/> : open === "orgchart" ? <OrganizationChart/> : open === "announcements" ? <PublicAnnouncements/> : open === "calendar" ? <SchoolCalendar/> : open === "directory" ? <TeacherDirectory notify={notify}/> : open === "ekunjung" ? <VisitorForm notify={notify} close={() => returnTo("pengunjung")} /> : open === "ekeberadaan" ? <ReliefIntegratedApp user={identity} /> : open === "etempahan" ? <BookingCentre notify={notify} close={() => returnTo("warga")} user={identity} initialTab={taskEntry==="form"||new URLSearchParams(window.location.search).get("tab")==="form"?"form":"dashboard"} /> : open === "achievement" ? <AchievementArchive notify={notify} /> : open === "epemantauan" ? <MonitoringCentre notify={notify} user={identity} /> : open === "pengurusan" ? <ManagementCentre notify={notify} user={identity} initialFolder={new URLSearchParams(window.location.search).get("folder")||""} openSkas={()=>setOpen("skas")} /> : open === "epanitia" ? <EPanitiaCentre notify={notify} user={identity} openOpr={(panitia)=>{setOprCategoryGroup("Kurikulum");setOprInitialCategory(oprCategoryForPanitia(panitia));setOpen("oprgenerator")}} /> : open === "skas" ? <SkasCentre notify={notify} user={identity} /> : open === "oprduty" ? <OprDutyCentre notify={notify} user={identity} initialTab={taskEntry==="daily"||taskEntry==="weekly"?taskEntry:"dashboard"} /> : open === "oprgenerator" ? <OprGenerator notify={notify} close={() => returnTo("oprhub")} user={identity} initialCategoryGroup={oprCategoryGroup} initialCategory={oprInitialCategory} /> : open === "oprhub" ? <OprDashboard create={(group) => {setOprCategoryGroup(group);setOprInitialCategory("");openSubmodule("oprgenerator","Cipta OPR baharu");}} openDuty={() => openSubmodule("oprduty","Laporan Guru Bertugas")} notify={notify} user={identity} /> : <>
           <span className="modal-overline">PILIH SUBMODUL</span>
           <div className="staff-folder-heading"><h2 id="folder-title">{currentFolderContent?.title}</h2></div>
           <p>{currentFolderContent?.intro}</p>
-          {open==="warga"&&identity&&<StaffWorkList openAction={action=>{setTaskEntry(action.module==="etempahan"?"form":action.tab||null);if(action.module==="oprgenerator"){setOprCategoryGroup("");setOprInitialCategory("");}setOpen(action.module);}}/>}
+          {open==="warga"&&identity&&<StaffWorkList openAction={action=>{setTaskEntry(action.module==="etempahan"?"form":action.tab||null);if(action.module==="oprgenerator"){setOprCategoryGroup("");setOprInitialCategory("");}setOpen(action.module==="uploads"?"upload-paper":action.module);}}/>}
           {open==="warga"&&staffAnnouncements.length>0&&<button className="staff-announcement-entry" onClick={()=>setStaffAnnouncementOpen(true)}><Bell aria-hidden="true"/><span><strong>Pengumuman Guru & Staf</strong><small>Buka semula makluman aktif</small></span>{unreadStaffAnnouncements().length>0&&<b>{unreadStaffAnnouncements().length} baharu</b>}<ChevronRight aria-hidden="true"/></button>}
           <div className={`submodule-grid ${open==="warga"?"staff-submodule-grid":""}`}>{currentItems.map((item) => {
             const inside = <><GlassIcon icon={item.icon} /> <div><strong>{item.title}</strong><small>{item.text}</small></div>{item.badge && <b>{item.badge}</b>}<i>{item.href ? <ExternalLink aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}</i></>;
