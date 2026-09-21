@@ -33,3 +33,13 @@ test('personal tasks, coordinator replacement, ownership and completion persiste
  actor={id:'b',role:'teacher'};assert.equal((await get()).tasks[0].completed,0);
  actor={id:'c',role:'teacher'};assert.equal((await post({action:'coordinator',userId:'a',enabled:true})).status,403);
 });
+
+test('task actions use assigned responsibilities and supported portal destinations',()=>{
+ assert.deepEqual(model.workActions({kind:'paper',role:'AJK makanan dan minuman'}),[]);
+ assert.equal(model.workActions({kind:'paper',role:'Sediakan OPR program'} )[0].module,'oprgenerator');
+ assert.equal(model.workActions({kind:'paper',role:'Menyediakan laporan program'} )[0].module,'oprgenerator');
+ assert.deepEqual(model.workActions({kind:'duty',role:'Guru bertugas'}),[{module:'oprduty',label:'Buat laporan guru bertugas',tab:'daily'}]);
+ assert.equal(model.workActions({kind:'duty',role:'Laporan mingguan guru bertugas'})[0].tab,'weekly');
+ assert.deepEqual(model.workActions({kind:'paper',role:'Tempah dewan dan sediakan OPR'}).map(a=>a.module),['oprgenerator','etempahan']);
+ assert.deepEqual(model.workActions({kind:'paper',role:'Dokumentasi gambar'}),[]);
+});
