@@ -24,6 +24,13 @@ test('kunci tugasan stabil untuk muat naik semula dan berubah bagi perubahan sub
  assert.equal(sameA,sameB);assert.notEqual(sameA,changed);
 });
 
+test('nama ringkas relief dipadankan dengan nama penuh akaun portal',()=>{
+ assert.equal(model.sameReliefIdentity('NORASYIKIN BT MOHD ANUAR','NORASYIKIN BINTI MOHD ANUAR'),true);
+ assert.equal(model.sameReliefIdentity('TG MOHD HILMI TG MOHD DAUD','TENGKU MOHD HILMI B. TENGKU MUHAMMAD DAUD'),true);
+ assert.equal(model.sameReliefIdentity('WAN MAYZAITU WAHIDAH','WAN MAYZAITU WAHIDAH BINTI MAT RANI'),true);
+ assert.equal(model.sameReliefIdentity('WAN HARUN BIN WAN ALI','WAN MAYZAITU WAHIDAH BINTI MAT RANI'),false);
+});
+
 test('tarikh dokumen dan tindakan portal disahkan',()=>{
  assert.equal(model.validDate('2026-02-30'),false);assert.equal(model.validDate('2026-11-09'),true);
  assert.equal(model.workActions({kind:'paper',role:'Sediakan OPR program'})[0].module,'oprgenerator');

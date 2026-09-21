@@ -1,5 +1,14 @@
 export type WorkAssignment={userId:string;name:string;role:string;startDate:string;endDate:string};
 export const normalName=(s:string)=>s.toUpperCase().replace(/\b(CIKGU|ENCIK|PUAN|USTAZAH|USTAZ|DR)\b/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+export const reliefNameKey=(s:string)=>normalName(s)
+ .replace(/\bTG\b/g,'TENGKU')
+ .replace(/\b(?:BT|BTE)\b/g,'BINTI')
+ .replace(/\bB\b/g,'BIN')
+ .replace(/\b(?:MUHAMMAD|MOHAMAD|MOHAMMAD|MOHAMMED)\b/g,'MOHD')
+ .replace(/\b(?:BIN|BINTI)\b/g,'')
+ .replace(/\s+/g,' ')
+ .trim();
+export function sameReliefIdentity(a:string,b:string){const left=reliefNameKey(a),right=reliefNameKey(b),shorter=left.length<=right.length?left:right,longer=left.length<=right.length?right:left;return left===right||(shorter.split(' ').length>=3&&longer.startsWith(shorter+' '));}
 export function validDate(s:string){return typeof s==='string'&&/^20\d{2}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s+'T12:00:00Z'))&&new Date(s+'T12:00:00Z').toISOString().slice(0,10)===s;}
 export function currentWeek(now=new Date()){const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);const start=d.toISOString().slice(0,10);d.setUTCDate(d.getUTCDate()+6);return {start,end:d.toISOString().slice(0,10)};}
 
