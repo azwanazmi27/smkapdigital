@@ -1,0 +1,251 @@
+{
+  "warning": "Non-transactional bounded reader captures; NOT a verified database backup. Counts are observed only, not reconciled.",
+  "tables": [
+    {
+      "table": "absence_reason_settings",
+      "captured_rows": 1,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "absence_reasons",
+      "captured_rows": 9,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "absences",
+      "captured_rows": 31,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "admin_module_permissions",
+      "captured_rows": 3,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "ai_daily_usage",
+      "captured_rows": 7,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "document_drafts",
+      "captured_rows": 5,
+      "complete": false,
+      "issue": "projection truncation"
+    },
+    {
+      "table": "document_mapping_rules",
+      "captured_rows": 0,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "admin_audit_logs",
+      "captured_rows": 131,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "document_versions",
+      "captured_rows": 56,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "documents",
+      "captured_rows": 56,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "management_materials",
+      "captured_rows": 25,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "document_mappings",
+      "captured_rows": 142,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "ekunjung_records",
+      "captured_rows": 21,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "management_report_folders",
+      "captured_rows": 2,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "opr_intake_metadata",
+      "captured_rows": 22,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "opr_duty_reports",
+      "captured_rows": 12,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "portal_calendar",
+      "captured_rows": 0,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "portal_announcements",
+      "captured_rows": 3,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "portal_profiles",
+      "captured_rows": 12,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "portal_settings",
+      "captured_rows": 22,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "opr_reports",
+      "captured_rows": 60,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "programme_documents",
+      "captured_rows": 0,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "portal_sessions",
+      "captured_rows": 79,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "programmes",
+      "captured_rows": 0,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "portal_users",
+      "captured_rows": 62,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "push_notifications",
+      "captured_rows": 12,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "relief_plans",
+      "captured_rows": 9,
+      "complete": false,
+      "issue": "projection truncation; NOT a lossless export"
+    },
+    {
+      "table": "push_subscriptions",
+      "captured_rows": 12,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "relief_settings",
+      "captured_rows": 1,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "relief_schedules",
+      "captured_rows": 3,
+      "complete": false,
+      "issue": "projection truncation; NOT a lossless export"
+    },
+    {
+      "table": "school_document_identity",
+      "captured_rows": 0,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "skas_evidence",
+      "captured_rows": 29,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "relief_teacher_review",
+      "captured_rows": 55,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "skas_mapping_rules",
+      "captured_rows": 0,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "skas_years",
+      "captured_rows": 2,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "staff_portfolio",
+      "captured_rows": 4,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "staff_task_state",
+      "captured_rows": 7,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "staff_relief_links",
+      "captured_rows": 5,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "staff_work_assignments",
+      "captured_rows": 21,
+      "complete": true,
+      "issue": null
+    },
+    {
+      "table": "staff_work_documents",
+      "captured_rows": 2,
+      "complete": false,
+      "issue": "projection truncation"
+    },
+    {
+      "table": "teachers",
+      "captured_rows": 63,
+      "complete": true,
+      "issue": null
+    }
+  ]
+}

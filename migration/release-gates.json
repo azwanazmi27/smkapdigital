@@ -1,0 +1,14 @@
+{
+  "cutover_allowed": false,
+  "gates": {
+    "lossless_database_backup": "BLOCKED",
+    "all_uploaded_files_backup": "BLOCKED",
+    "isolated_restore": "BLOCKED",
+    "source_destination_reconciliation": "BLOCKED",
+    "google_oauth_origins": "BLOCKED",
+    "apps_script_versions_and_triggers": "BLOCKED",
+    "production_secret_recovery": "BLOCKED",
+    "role_and_api_e2e": "BLOCKED",
+    "rollback_write_preservation": "BLOCKED"
+  }
+}

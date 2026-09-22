@@ -1,0 +1,315 @@
+[
+  {
+    "path": "/api/absence-summary-job",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [
+      "authorization"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/achievement-ocr",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/admin-users",
+    "methods": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "authorization",
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ai/evidence-mapping",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ai/health",
+    "methods": [
+      "GET"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ai/monitoring-text",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ai/panitia-document",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ai/usage",
+    "methods": [
+      "GET"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/documents",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/drive",
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ekeberadaan",
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "portalActor",
+      "x-admin-pin"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/ekunjung",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/etempahan",
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/gemini",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/opr-duty",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth_markers": [],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/opr-management",
+    "methods": [
+      "POST",
+      "GET"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/pengurusan",
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/portal-content",
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE",
+      "PUT"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/portfolio",
+    "methods": [
+      "GET",
+      "PUT",
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/push",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/relief-import",
+    "methods": [
+      "POST"
+    ],
+    "auth_markers": [
+      "authorization"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/relief-legacy/[...path]",
+    "methods": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "x-access-pin",
+      "x-admin-pin",
+      "x-delete-password"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/session",
+    "methods": [
+      "POST",
+      "DELETE"
+    ],
+    "auth_markers": [],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/skas",
+    "methods": [
+      "GET",
+      "POST",
+      "PATCH",
+      "DELETE"
+    ],
+    "auth_markers": [
+      "portalActor",
+      "requireAdmin"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/staff-work",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth_markers": [
+      "portalActor"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  },
+  {
+    "path": "/api/teacher-review",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth_markers": [
+      "x-admin-pin"
+    ],
+    "test_status": "NOT TESTED",
+    "evidence": "Static inventory only; browser/isolated records required"
+  }
+]

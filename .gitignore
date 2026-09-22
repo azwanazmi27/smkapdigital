@@ -40,3 +40,10 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+
+# Migration evidence and local credentials
+/tmp/
+/backups/
+/migration/targets.local.json
+/migration/release-evidence.local.json
+.dev.vars*
