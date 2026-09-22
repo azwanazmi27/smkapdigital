@@ -56,3 +56,7 @@ See GOOGLE-ACCESS-PROGRESS.md: school owner Apps Script access and personal-acco
 R2 is now activated with explicit user authorization and billing completed by user. Staging R2 bucket and D1 created; see CLOUDFLARE-STAGING-STATUS.md for exact IDs and verification. No Worker deployed or data imported. Prior R2-deferred statements are superseded. CLI auth refresh required; full source export remains blocked.
 
 Staging schema now imported: 41 tables verified, zero portal_users. Pinned Wrangler authentication works; prior CLI-auth blocker resolved. See CLOUDFLARE-STAGING-STATUS.md. Local generator work/prepare_staging_schema.py and SQL work/staging-schema.sql are outside repo; never use as production export. Source-derived schema is for empty staging only; no data migration or Worker deployment completed.
+
+## Current staging preview
+
+See STAGING-PREVIEW.md, which supersedes older statements that no Worker exists. Google origin saved after user confirmation. Staging-only account seeded after verified staging SQL export restoration. Production cutover remains blocked.

@@ -15,6 +15,7 @@ const clean=(v:unknown,n=160)=>typeof v==="string"?v.trim().slice(0,n):"";
 
 let preparation: Promise<void> | null = null;
 async function prepare(){
+  if(env.MIGRATION_MODE === "isolated-staging")return; // Schema is provisioned separately; never seed school accounts in staging.
   if(preparation)return preparation;
   preparation=(async()=>{
   await env.DB.batch([
