@@ -54,3 +54,9 @@ Worker deployment, production SSO secrets, Apps Script production URL/token, and
 - Primary URL: `https://smkapdigital.smkapdigital.workers.dev`
 - Version: `c40d4e59-99ee-4dcb-a9b6-db1cab425112`
 - GET `/` returns the portal HTML; the Google client configuration endpoint responds successfully.
+
+## Friendly production URL
+
+- Official URL: `https://portal.smkapdigital.workers.dev`
+- Version: `37309631-cbc5-43fa-9f54-f1685871996e`
+- GET `/` returns the portal HTML and `/api/admin-users?resource=config` returns the Google client configuration.
