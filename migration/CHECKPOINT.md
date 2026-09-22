@@ -181,3 +181,7 @@ Authenticated staging super_admin session submitted synthetic e-Panitia Minit Me
 - `PRODUCTION_API_TOKEN` property name is prepared in the new project's settings, but no credential value was entered or saved. A new production token must be entered through the user handoff; the web app is not deployed yet.
 - Cloudflare Worker `portal` settings showed an empty Production runtime variables/secrets table. Therefore OPR_APPS_SCRIPT_URL/TOKEN and all AI provider keys are absent; upload and AI are BLOCKED. The existing D1 binding remains present.
 - An empty `SMKAP Digital Cloudflare Production 20260923` Drive folder was created before the user clarified the preference for the existing root. It is unused and retained; nothing was moved or deleted.
+
+## 2026-09-23 — AI production check
+- Cloudflare `portal` Worker Production runtime variables/secrets table is empty. No AI provider key is configured there, so live AI generation cannot succeed. This is a configuration blocker, not evidence of an AI provider outage.
+- Updated the OpenRouter `HTTP-Referer` header in source to the official Worker URL instead of the old ChatGPT Sites URL. Focused AI tests PASS 20/20. The change is not yet deployed to production; provider credentials and synthetic live generation remain required.
