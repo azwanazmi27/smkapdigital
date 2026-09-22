@@ -48,3 +48,9 @@ Worker deployment, production SSO secrets, Apps Script production URL/token, and
 - Google client configuration endpoint returns the existing client ID.
 - No custom DNS was changed.
 - Apps Script production credentials and production Drive folder are not configured yet, so integration write paths remain unavailable until those secrets are added.
+
+## Requested production URL
+
+- Primary URL: `https://smkapdigital.smkapdigital.workers.dev`
+- Version: `c40d4e59-99ee-4dcb-a9b6-db1cab425112`
+- GET `/` returns the portal HTML; the Google client configuration endpoint responds successfully.
