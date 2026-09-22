@@ -104,3 +104,8 @@ Evidence: staff-work-access-results.json and portfolio-access-results.json; repr
 ## Automation preparation and remaining work
 
 Manual staging-only GitHub workflow prepared; not activated. Configuration rehearsal PASS in temporary directory: exact isolated target, no crons, no production target, refuses overwrite of existing local config. Administrator token/environment setup remains required. See ADMIN-HANDOFF.md for consolidated remaining work; it explicitly distinguishes non-admin tests still pending. Runtime code unchanged this checkpoint; no redeploy necessary.
+
+## 22 September — Drive-first storage direction
+User requested all files in Google Drive where possible, reducing Cloudflare storage dependence. Added DRIVE-STORAGE-PLAN.md with per-component treatment, copy-only transfer, permission-preserving adapter, verification and rollback for new writes. No production storage changed or source objects deleted. Static browser-local inventory now includes relief-plans fallback and relief-params; per-device export is a release dependency.
+
+Staging browser file chooser now works. Synthetic PNG submission reached D1/R2; remote download SHA-256 equals source f3ec9e14b9c085b55edc96155f7bd26b6fdeda2462f02af4e0279d8319b365e3, 68 bytes. Full refresh shows two same-title test records (0a15dfb8-1f60-48cb-9b69-1f53bc909623 and fa78efc4-f5a6-477b-827f-e4fd01ea6121, six seconds apart). Duplicate submission origin not established; retain records and investigate before claiming duplicate protection. No errors/warnings captured in limited browser log sample. Full role E2E, server logs and full integration checks incomplete. Deployment workflow preparation committed/pushed cf59bc0; not enabled.
