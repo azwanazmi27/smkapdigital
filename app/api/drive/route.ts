@@ -203,10 +203,10 @@ async function replaceReportCache(files: OprFile[]) {
     const previous = categoryById.get(file.id);
     return previous && previous !== file.category && driveCategory(previous) === file.category ? { ...file,category:previous } : file;
   });
-  await env.DB.batch([
-    env.DB.prepare("DELETE FROM opr_reports"),
-    ...preserved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?)").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)),
-  ]);
+  // A Drive listing can be empty or partial while Apps Script is unavailable.
+  // Never turn that response into deletion of the last known report index.
+  if (!preserved.length) return;
+  await env.DB.batch(preserved.map((file) => env.DB.prepare("INSERT INTO opr_reports (id,name,category,created_at,updated_at,view_url,preview_url,download_url,synced_at) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,created_at=excluded.created_at,updated_at=excluded.updated_at,view_url=excluded.view_url,preview_url=excluded.preview_url,download_url=excluded.download_url,synced_at=excluded.synced_at").bind(file.id,file.name,file.category,file.createdAt,file.updatedAt,file.viewUrl,file.previewUrl,file.downloadUrl,syncedAt)));
 }
 
 function validMagic(raw: Uint8Array, mimeType: string) {
