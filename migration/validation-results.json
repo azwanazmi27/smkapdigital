@@ -22,7 +22,7 @@
   {
     "check": "GitHub clean install/build/test",
     "status": "PASS",
-    "evidence": "Actions run 35684854085 on 686303c271b42e06962505370b32bbbc3a82f505"
+    "evidence": "Actions run 35730455445 on 3e479e1e2a0932d8f154f11454a5670bfd6d72cd SUCCESS; runtime-source run 35730433643 also SUCCESS."
   },
   {
     "check": "Private repository and rollback ref",
@@ -112,11 +112,16 @@
   {
     "check": "SKAS duplicate submission safety",
     "status": "NOT TESTED",
-    "evidence": "Synchronous UI submission lock has two local tests PASS. No claim of server idempotency or established root cause of earlier duplicate records."
+    "evidence": "Local lock tests PASS; staging browser double-click produced exactly one matching synthetic record, D1 count=1 and UI visible. Server retry/cross-tab idempotency remains NOT TESTED."
   },
   {
     "check": "Google Drive-primary transport",
     "status": "BLOCKED",
     "evidence": "Inactive verified-read adapter and manifest comparison prepared/tested. Live transport needs isolated Apps Script configuration; original storage unchanged."
+  },
+  {
+    "check": "Staging DB isolated restoration after file upload",
+    "status": "PASS",
+    "evidence": "Private SQL export restored to separate SQLite; integrity_check=ok, 41 tables, 61 users, 3 SKAS records before subsequent double-click test. Both referenced test PNGs downloaded, 68 bytes each, SHA-256 equal source. Not source-production backup or full bucket inventory."
   }
 ]
