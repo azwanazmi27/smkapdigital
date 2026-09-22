@@ -1,0 +1,33 @@
+# Empty production migration plan
+
+This plan prepares a new production portal with the migrated application and no historical portal data. The original portal remains untouched.
+
+## Ready to carry forward
+
+- React/Vinext application, API handlers and UI assets from the migration branch.
+- D1 schema and migrations; create a dedicated production database and run migrations only.
+- Google SSO validation, role checks and session protections.
+- Google Drive storage design; production folders and Apps Script deployment must be separate from staging.
+- GitHub Actions deployment workflow with a production approval gate.
+- Rollback reference `rollback/pre-cloudflare-20260922` and the original portal URL.
+
+## Must be re-entered in the new portal
+
+- users, Google identities, roles and module permissions;
+- school leadership records and organisation chart images;
+- announcements, calendar events, profile photos and public settings;
+- module records, documents, attachments and Drive links;
+- Apps Script production URL/token and production Drive folder IDs;
+- provider credentials and production AI configuration.
+
+## Production release gates
+
+1. Dedicated production D1 and Google Drive root verified.
+2. Production SSO origins and callbacks verified.
+3. Production secrets entered as platform secrets; none committed.
+4. Synthetic role matrix passes for super admin, admin, teacher and unauthenticated visitor.
+5. Upload/download persistence passes against production Drive test folder.
+6. DNS/TLS and rollback instructions reviewed.
+7. User gives final cutover confirmation.
+
+No production resource is created or traffic is changed by this document. It is a preparation checklist only.
