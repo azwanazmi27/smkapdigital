@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "scope": "Remote R2 CLI put/get only; browser upload blocked by Chrome extension local-file permission",
+  "bucket": "smkapdigital-staging-files",
+  "key": "migration-tests/20260922-8c53b9fa/MIGRATION-TEST-ONLY.png",
+  "bytes": 68,
+  "sha256": "f3ec9e14b9c085b55edc96155f7bd26b6fdeda2462f02af4e0279d8319b365e3",
+  "original_matches_download": true,
+  "test_object_retained": true
+}

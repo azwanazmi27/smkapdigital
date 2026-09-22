@@ -43,3 +43,11 @@ Build and 93 application tests PASS. Actual documents handlers in isolated SQLit
 Live browser e-Panitia PASS: Panitia Bahasa Melayu loaded; clearly labelled test-only Takwim draft saved; after refresh it appears under Draf Tersimpan / Sambung kerja. D1 readback confirms record. Kept for review. Staff-work/portfolio role/browser matrix not yet verified. Full e-Panitia generation/Drive publishing remains blocked; do not label full module migration complete.
 
 Worker version cfde3014-1ce7-4c39-8179-bd838e59b55c. Next: live R2 roundtrip, remaining local read/auth matrix, isolated Google integrations. Source data export/reconciliation remains a production release gate.
+
+## Remote R2 verification — 22 September 2026
+
+Remote CLI upload/download PASS for a synthetic 68-byte PNG in smkapdigital-staging-files, unique key migration-tests/20260922-8c53b9fa/MIGRATION-TEST-ONLY.png. Downloaded bytes equal original, SHA256 f3ec9e14b9c085b55edc96155f7bd26b6fdeda2462f02af4e0279d8319b365e3. Retained test object; no school data used or overwritten. Evidence: r2-roundtrip-results.json.
+
+Browser upload attempt BLOCKED: Chrome extension fileChooser.setFiles returned Not allowed. Official troubleshooting requires enabling Allow access to file URLs for the ChatGPT browser extension. User informed. No SKAS evidence record created for this failed browser upload. Remote CLI verification does not establish end-to-end app upload/download or metadata/permission parity with production.
+
+Browser staff-work read PASS (school test admin): uploads hub and Kertas Kerja list load, showing empty isolated data. Upload/AI processing remain blocked by staging policy. No new application deployment needed this checkpoint.
