@@ -17,5 +17,3 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: node scripts/test-application.mjs
-# Deployment deliberately remains unconfigured until isolated resources,
-# recovered secrets, billing approval where needed, and release gates are verified.

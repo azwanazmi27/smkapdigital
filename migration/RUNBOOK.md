@@ -1,12 +1,12 @@
 # Migration, deployment and rollback runbook
 
-Status: preparation only. Do not run a production deployment while release-gates.json is blocked.
+Status: limited staging deployed; production release blocked. Do not run a production deployment while release-gates.json is blocked.
 
 ## Architecture
 
-Retain vinext/React and existing dependencies; move the application Worker and static assets into the user's Cloudflare account. Use D1 binding DB and R2 binding FILES with physically separate staging and production resources. Preserve Google DELIMa OAuth client/identities, Sheets, Drive, and Apps Script. Preserve AI provider configuration and limits. No new paid service is authorized.
+Retain vinext/React and existing dependencies; move the application Worker and static assets into the user's Cloudflare account. Use D1 binding DB and R2 binding FILES with physically separate staging and production resources. Preserve Google DELIMa OAuth client/identities, Sheets, Drive, and Apps Script. Preserve AI provider configuration and limits. R2 usage-billed subscription was explicitly authorized and activated; no additional paid service is authorized.
 
-Use `smkapdigital-staging` and `smkapdigital` as proposed Worker names under the already-observed `smkapdigital.workers.dev` account subdomain. These are proposed names, not deployed URLs. No custom-domain purchase or DNS changes are requested after the user's prefixed-URL clarification. The existing `portal` Worker stays unchanged.
+Use `smkapdigital-staging` and `smkapdigital` as proposed Worker names under the already-observed `smkapdigital.workers.dev` account subdomain. Staging is deployed at https://smkapdigital-staging.smkapdigital.workers.dev; production remains proposed. No custom-domain purchase or DNS changes are requested after the user's prefixed-URL clarification. The existing `portal` Worker stays unchanged.
 
 ## Backup and migration gates
 
@@ -58,3 +58,13 @@ Before cutover, implement and rehearse either a full mutation journal covering i
 On rollback: freeze the new environment and scheduler; retain a complete destination DB/R2 backup and Google changes; identify every post-cutover mutation including deletions; replay/reconcile into the original source by stable IDs with duplicate protection and conflict review; verify counts, relationships and object hashes; then restore old routing/scheduler and allow writes. If replay cannot be proven safe, stay in maintenance rather than reverting traffic and losing writes. DNS/URL rollback alone is insufficient.
 
 Never delete the old deployment, database, files, Google resources or backups without separate authorization.
+
+## GitHub staging deployment
+
+Workflow deploy-staging.yml supports manual deployment from migration/cloudflare-20260922 only. It builds and tests before deploying to fixed verified staging D1/R2 resources, with MIGRATION_MODE isolation. No production target, data import, scheduler or external integration secrets are supplied.
+
+ADMIN SETUP REQUIRED: configure GitHub environment staging with deployment branch restriction, suitable required reviewers where supported, a narrowly scoped Cloudflare deployment API token as CLOUDFLARE_API_TOKEN, and variable STAGING_DEPLOY_ENABLED=true after review. Token permissions must match Cloudflare official deployment requirements; restrict to the target account and use additional resource constraints where supported. Do not reuse or upload local Wrangler OAuth/refresh credentials. Workflow has not been dispatched; end-to-end deployment automation remains BLOCKED until administrator setup.
+
+For manual rollback of staging code, inspect deployed versions using pinned Wrangler and select the previously validated compatible version. A Worker rollback does not roll back D1/R2 or external changes. Export current staging data before any rollback involving schema incompatibility; preserve new records and files. Do not run production rollback until the final-sync/reverse-reconciliation procedure above is rehearsed.
+
+Official references checked 22 September 2026: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/ and https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/ .

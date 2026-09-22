@@ -100,3 +100,7 @@ Actual staff-work handlers passed isolated tests with SQLite/R2 adapters and syn
 Portfolio actual handlers passed isolated tests: anonymous/all-users teacher reads rejected, own-user filtering, admin aggregate listing, deleted-material exclusion, foreign/duplicate featured selection rejection, own featured update persisted without changing another owner. Enabled PUT /api/portfolio only after these tests. POST upload still blocked because it requires Google Drive. These are local handler tests, not all-role browser/production validation. No actual user portfolio records modified by tests.
 
 Evidence: staff-work-access-results.json and portfolio-access-results.json; reproducible local harnesses work/test-staff-work-access.mjs and work/test-portfolio-access.mjs outside checkout. Google integrations/full source export/live browser upload remain outstanding as previously recorded.
+
+## Automation preparation and remaining work
+
+Manual staging-only GitHub workflow prepared; not activated. Configuration rehearsal PASS in temporary directory: exact isolated target, no crons, no production target, refuses overwrite of existing local config. Administrator token/environment setup remains required. See ADMIN-HANDOFF.md for consolidated remaining work; it explicitly distinguishes non-admin tests still pending. Runtime code unchanged this checkpoint; no redeploy necessary.

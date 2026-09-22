@@ -1,0 +1,35 @@
+name: Deploy isolated Cloudflare staging
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-isolated-staging
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/migration/cloudflare-20260922'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check administrator setup
+        env:
+          ENABLED: ${{ vars.STAGING_DEPLOY_ENABLED }}
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          test "$ENABLED" = "true" || { echo 'Staging deployment is not enabled by the environment administrator.'; exit 1; }
+          test -n "$TOKEN" || { echo 'Missing staging deployment token.'; exit 1; }
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/test-application.mjs
+      - name: Prepare verified isolated target
+        run: node scripts/prepare-staging-ci.mjs
+      - name: Deploy staging only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node node_modules/wrangler/bin/wrangler.js deploy --config dist/server/wrangler.staging.json
