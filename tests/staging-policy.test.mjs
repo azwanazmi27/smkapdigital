@@ -34,8 +34,15 @@ test('only local draft writes are enabled; external document actions remain bloc
  assert.equal(stagingDocumentActionAllowed('isolated-staging','save-draft'),true);
  for(const action of ['delete-draft','register','new-version','approve','unknown','']) assert.equal(stagingDocumentActionAllowed('isolated-staging',action),false);
  assert.equal(stagingDocumentActionAllowed(undefined,'delete-draft'),true);
- for(const path of ['/api/staff-work','/api/portfolio']) {
+ for(const path of ['/api/staff-work']) {
   assert.equal(stagingBlock(new Request('https://staging.example'+path),'isolated-staging'),null);
   assert.equal(stagingBlock(new Request('https://staging.example'+path,{method:'POST'}),'isolated-staging').status,503);
  }
 });
+
+ test('isolated Drive only enables portfolio upload and authenticated file/health handlers',()=>{
+ for(const path of ['/api/pengurusan?file=synthetic-id','/api/pengurusan?health=1']) assert.equal(stagingBlock(new Request('https://staging.example'+path),'isolated-staging'),null);
+ assert.equal(stagingBlock(new Request('https://staging.example/api/portfolio',{method:'POST'}),'isolated-staging'),null);
+ for(const method of ['POST','PUT','DELETE','PATCH']) assert.equal(stagingBlock(new Request('https://staging.example/api/pengurusan?file=synthetic-id',{method}),'isolated-staging').status,503);
+ assert.equal(stagingBlock(new Request('https://staging.example/api/pengurusan'),'isolated-staging').status,503);
+ });
