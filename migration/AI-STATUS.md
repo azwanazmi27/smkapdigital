@@ -17,3 +17,7 @@ Next steps: complete Gemini replacement through user interaction; sign in to exi
 
 ## 2026-09-22 — Three staging provider credentials configured
 After explicit user approval, created smkapdigital-staging keys in Groq Personal/Default Project, Mistral Default Workspace and OpenRouter Default Workspace. All expire 2026-10-22; Mistral Shared connectors only; OpenRouter credit limit USD 0. Transferred directly in browser memory to encrypted Worker secrets GROQ_API_KEY, MISTRAL_API_KEY, OPENROUTER_API_KEY. Cloudflare settings verified all three as Value encrypted. Secret variables nulled after transfer; no key values written to this repository or logs. Existing portal keys untouched. No billing activation or credit purchase. Live provider calls still NOT TESTED and AI staging routes still blocked. Gemini replacement and Cloudflare AI runtime credential remain unresolved.
+
+
+## Live staging AI health verification
+Commit 5c6f30e enabled only GET /api/ai/health in isolated staging. GitHub Actions run 35738424778 succeeded and deployed. Live response at https://smkapdigital-staging.smkapdigital.workers.dev/api/ai/health: Gemini online, Groq online, Mistral online, OpenRouter online, Cloudflare offline. This is provider configuration/health status, not a generation call. AI generation routes remain blocked until an authenticated synthetic end-to-end test is performed; Cloudflare AI remains unavailable because no Workers AI runtime credential/binding is configured.
