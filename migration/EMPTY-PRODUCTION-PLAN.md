@@ -31,3 +31,11 @@ This plan prepares a new production portal with the migrated application and no 
 7. User gives final cutover confirmation.
 
 No production resource is created or traffic is changed by this document. It is a preparation checklist only.
+
+## Provisioned resources
+
+- Production D1: `smkapdigital-production-db`, ID `24214079-2cb4-41f8-b708-b4cda7784047`.
+- Production R2 bucket: `smkapdigital-production-files` (kept empty; Google Drive remains the intended file store).
+- Production D1 schema applied and 61 active users inserted: 2 `super_admin`, 59 `teacher`.
+
+Worker deployment, production SSO secrets, Apps Script production URL/token, and DNS remain gated until their values are configured and tested.
