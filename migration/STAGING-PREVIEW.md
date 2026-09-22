@@ -10,10 +10,12 @@ The full application bundle is deployed on the isolated Cloudflare Worker. Brows
 - Before seeding, remote staging SQL export restored in isolated local SQLite: integrity_check=ok, zero users. This verifies staging backup only, not the incomplete production backup.
 - Build and 91 selected application tests passed. Starter rendered-html assertion is excluded because it checks the old starter skeleton.
 - Google OAuth staging origin saved with explicit user confirmation and read back alongside original origin. Same client/provider; no scopes or credentials rotated.
-- Google SSO PASS: school account logged in, one session confirmed in staging D1, identity persisted after refresh, Super Admin panel opened. Logout and repeat login: NOT YET VERIFIED. Panel count 61 reflects bundled seed plus one test user, not migrated production data.
+- Google SSO PASS: school account logged in, one session confirmed in staging D1, identity persisted after refresh, Super Admin panel opened. Logout PASS: browser returned to login and D1 session count returned to zero. Repeat login and other roles: NOT YET VERIFIED. Panel count 61 reflects bundled seed plus one test user, not migrated production data.
 - CLI HTTPS probes returned uniform 403 and cannot be used as evidence of application authorization. Direct browser API navigation was blocked by client. Browser in-app testing is required.
 - Source full SQL export, four truncated captured tables, full source R2 bytes, restoration/reconciliation and external integration workflows remain BLOCKED pending source administrator export. Source administrator work is deferred per user, not waived.
 
 Local evidence outside Git: work/staging-before-test-user.sql (restricted), work/staging-build.log, work/staging-tests.log, work/staging-deploy.log. Export logs may contain temporary signed download URLs and must not be published.
 
 Resume: verify latest isolation-hardening deployment then browser admin login; test isolated content upload/persistence/logout; enable each remaining integration only after isolated resources and credentials exist. Retain old portal and all backups. No production cutover.
+
+Latest deployed Worker version: ea202c3d-bc64-4446-8c43-b494898afe0d. Final hardening build and 91 tests PASS. Browser session survived reload on final build; logout passed.
