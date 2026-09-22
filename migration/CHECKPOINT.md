@@ -137,3 +137,6 @@ User saved STAGING_API_TOKEN; property name present and read-only before edit. N
 
 ## User accepts retaining exposed staging token
 User explicitly declined replacement and accepted continued use for staging. This supersedes the prior stop-for-rotation instruction; do not rotate without authorization or claim token remains confidential. Prepared New deployment as Web app, execute as school owner, access Anyone, management-only code rooted in staging folder. Asked exact action-time confirmation for public endpoint access with existing token; Deploy not clicked. No new Google scopes granted. Browser deployment dialog retained for continuation.
+
+## 22 September — Drive portfolio now live in staging
+Apps Script v1 deployment URL and approvals recorded in GOOGLE-STAGING-SETUP.md. Worker secrets URL/token configured directly through UI; user accepted existing exposed token specifically for staging. CI 35734479971 SUCCESS (105 tests), Worker 130a5bba-5a1d-4108-a03b-6492bbfb4b04. Synthetic portfolio upload via Google Drive succeeded; record559aa0f3-6a10-4999-837a-af4bec2b618b persists after refresh, profile count1. Authenticated file response identified as image/png by browser; exact downloaded checksum not verified. Wrangler D1 remote read now 7403 unauthorized; no permission escalation performed. Full source SQL/R2 exports still absent. Production unchanged.

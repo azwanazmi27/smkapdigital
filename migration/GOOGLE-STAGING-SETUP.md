@@ -19,3 +19,15 @@ Read the OPR backup Code.gs through the editor into memory; inspected management
 Corrected editor replacement issue; verified exact 4230-character code equality by reopening fresh editor and reading back. Code not executed/deployed or Google-authorized yet. Current management upload duplicate handling retains the original same-name behavior; checksum-aware conflict/idempotency extension is still needed before general storage migration.
 
 Project Settings is prepared with Property STAGING_API_TOKEN and Value empty (not saved). Credential entry is a user handoff under browser control policy. User should generate a unique random token of at least 32 characters with a password manager, enter/save it in this staging script only, and retain it securely for the Worker staging secret. Do not send it in chat. Subsequent authorization/deployment must be reviewed at action time; no new OAuth grants yet. Folder ACL verification remains pending.
+
+## Live staging integration — 22 September 2026
+User explicitly accepted retaining the exposed staging token, approved web-app access Anyone under school identity, and approved Google Drive-wide OAuth scope. No production root used. OAuth callback returned a Google error page, but after reopening deployment the authorized project deployed successfully.
+
+Apps Script version 1 deployment:
+https://script.google.com/macros/s/AKfycbxL_Fxqo13T-HGfGeZDwSx09Cq9U0zeSV8mA3EknzVV9lTbHlZ9hLAgE0qdmsSSp_q8sg/exec
+
+The existing token and URL were transferred directly into encrypted Worker secrets OPR_APPS_SCRIPT_TOKEN and OPR_APPS_SCRIPT_URL, without printing their values during transfer. Staging policy enables portfolio POST and pengurusan GET only for file or health queries; other management mutations and other external integrations remain blocked. CI deployment run 35734479971 succeeded, 105 tests, Worker version 130a5bba-5a1d-4108-a03b-6492bbfb4b04 (source e4d280d).
+
+Browser synthetic upload PASS: portfolio ID 559aa0f3-6a10-4999-837a-af4bec2b618b, title UJIAN MIGRASI SAHAJA — DRIVE PORTFOLIO 20260922, 68-byte synthetic PNG. Successful portfolio card appears; after full refresh profile count=1. Authenticated file API opens image/png, confirmed by browser Page resource tree. Byte-for-byte download comparison NOT TESTED: browser resource-content retrieval unavailable. Console ORB failure was for favicon.ico, not evidence that the image request failed. Local Wrangler D1 read now returns authorization error 7403; database record reconciliation for this new item BLOCKED on CLI auth refresh. Do not print credentials or silently broaden CI token permissions.
+
+This enables limited portfolio upload using Drive. It does not migrate all R2 objects, enable the full Google workflows, establish all-role browser coverage, or approve production cutover.
