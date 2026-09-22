@@ -1,0 +1,75 @@
+{
+  "relationships": [
+    {
+      "relationship": "portal_profiles.user_id -> portal_users.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "portal_sessions.user_id -> portal_users.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "admin_module_permissions.user_id -> portal_users.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "staff_portfolio.user_id -> portal_users.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "staff_task_state.user_id -> portal_users.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "staff_work_assignments.user_id -> portal_users.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "absences.teacher_id -> teachers.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "document_versions.document_id -> documents.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "document_mappings.document_id -> documents.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "document_mappings.document_version_id -> document_versions.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    },
+    {
+      "relationship": "documents.current_version_id -> document_versions.id",
+      "missing_parent_count": 0,
+      "status": "PASS",
+      "scope": "captured rows only; not transactionally consistent"
+    }
+  ],
+  "roles": {
+    "teacher": 60,
+    "super_admin": 2
+  },
+  "full_reconciliation": "BLOCKED"
+}

@@ -1,0 +1,15 @@
+[
+  {
+    "source": "document_versions.drive_file_id",
+    "reference_count": 56,
+    "outside_inventoried_root": 0,
+    "status": "PASS"
+  },
+  {
+    "source": "management_materials.storage_key",
+    "reference_count": 25,
+    "outside_inventoried_root": 1,
+    "status": "PASS",
+    "explanation": "The outside-root reference belongs to a soft-deleted source record. Its metadata is accessible and a separate private backup copy succeeded; original left unchanged. This explains the inventory discrepancy, not full production reconciliation."
+  }
+]

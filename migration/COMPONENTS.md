@@ -1,6 +1,6 @@
 # Component migration checklist
 
-Every row is currently BLOCKED for migration completion. “Retain” describes the intended treatment, not a verified reconnection. The current portal remains operational and unchanged.
+Git history has migrated; application hosting and data migration remain BLOCKED. “Retain” describes the intended treatment, not a verified reconnection. The current portal remains operational and unchanged.
 
 | Component | Current location | Target / treatment | Migration method | Verification / blocker |
 |---|---|---|---|---|
@@ -14,9 +14,9 @@ Every row is currently BLOCKED for migration completion. “Retain” describes 
 | Legacy relief PINs/import token | Runtime secret store + relief API | Cloudflare secrets, same enforcement | Secure recovery; test each path | Secrets masked; no replacement or bypass |
 | OPR/management/e-Kunjung Drive workflows | OPR Apps Script deployment; school Drive | Retain and reconnect | Preserve deployment identity/scopes, file IDs, folder structure | Full script unavailable; two supplementary .gs source files backed up |
 | e-Tempahan | Separate Apps Script URL/token | Retain and reconnect | Preserve API contract and script properties | Active version, backing resources, triggers and secrets unverified |
-| Attendance Sheets mirror | DATA E-KEBERADAAN SMKAP; service account | Retain same spreadsheet | Preserve row IDs, service account ACL and upsert/delete behavior | Metadata/ACL readable; export reference generated but download 403; no restore |
-| Visitor Sheet and photographs | REKOD E-KUNJUNG SMKAP; Drive photo folders | Retain | Export data/files/ACL before changes; reconnect existing handlers | Root children discovered; recursive inventory/export incomplete |
-| School Drive root and 16 draft/final folder settings | PORTAL DIGITAL SMKAP; runtime settings | Retain IDs and permissions | Backup bytes/native exports + ACL/ownership manifest | Root owner/service account permissions captured; full descendants not backed up |
+| Attendance Sheets mirror | DATA E-KEBERADAAN SMKAP; service account | Retain same spreadsheet | Preserve row IDs, service account ACL and upsert/delete behavior | Native backup + isolated restore PASS: 38 populated rows/formulas equal; XLSX download failed 403 |
+| Visitor Sheet and photographs | REKOD E-KUNJUNG SMKAP; Drive photo folders | Retain | Export data/files/ACL before changes; reconnect existing handlers | Native backup PASS: visitor 29 rows, booking 18 rows; formulas/values equal; photographs copied |
+| School Drive root and 16 draft/final folder settings | PORTAL DIGITAL SMKAP; runtime settings | Retain IDs and permissions | Backup bytes/native exports + ACL/ownership manifest | 191 subfolders/231 files inventoried and copied; all copy MIME/parent/private ACL and binary sizes verified; full byte hashes NOT TESTED |
 | Daily absence summary scheduler | Apps Script every-minute trigger, properties, locks | Retain one trigger, change target at cutover | Backup properties, active version, trigger owner; preserve deterministic IDs | Only source helper available; active trigger not verified; do not run setup helper during tests |
 | Other scheduled jobs/webhooks | Sites schedules and external scripts | Retain/reconnect after inventory | Enumerate provider configurations and delivery logs | Sites schedule field unavailable; full external trigger inventory blocked |
 | AI providers | Gemini, Groq, Cloudflare AI, OpenRouter; Mistral adapter | Retain provider order, models and limits | Move secrets/config, use safe test prompts after access | 87 tests include router tests; live providers NOT TESTED; Mistral key not in returned runtime entries |
@@ -26,6 +26,6 @@ Every row is currently BLOCKED for migration completion. “Retain” describes 
 | External exam/shop/payment/donation links | exam.stpmsmkap.workers.dev, shop and Herepay links | Retain destinations | Preserve links and ownership; do not clone unrelated external services | Integrations versus links need owner scope confirmation; no payment actions performed |
 | IMAGES optimization hook | Worker /_vinext/image, no manifest binding | Investigate actual usage | Retain behavior only if supported and authorized | Binding/cost/runtime behavior not verified; no paid Images enabled |
 | Persistent filesystem/volumes | No production volume binding found in manifest | Do not infer absent from all external systems | Provider inventory and script audit | Local .wrangler state is not a production backup |
-| Git history and configuration | Original Sites Git origin | Private azwanazmi27/smkapdigital | Preserve 259 local commits, original remote and rollback ref | Source bundle + restore PASS; historical review/push checkpoint tracked separately |
-| CI/deployment configuration | Sites pipeline; manual existing proxy Worker | GitHub validation and Cloudflare builds | Manual validation prepared; deploy automation after secure connection/gates | No automatic production deploy enabled |
+| Git history and configuration | Original Sites Git origin | Private azwanazmi27/smkapdigital | Preserve 259 local commits, original remote and rollback ref | MIGRATED: private repo, full available history, migration branch and rollback tag pushed; original origin preserved |
+| CI/deployment configuration | Sites pipeline; manual existing proxy Worker | GitHub validation and Cloudflare builds | Push/manual validation PASS; deploy automation blocked pending stores/secrets and release gates | No automatic production deploy enabled |
 | Domains/TLS | Current Sites URL; separate portal.smkapdigital.workers.dev | Proposed smkapdigital-prefixed workers.dev URL | No domain purchase/DNS change; verify generated TLS/SSO origins | New URL not deployed; old URLs remain |

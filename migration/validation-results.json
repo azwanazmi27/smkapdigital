@@ -1,0 +1,107 @@
+[
+  {
+    "check": "Source commit matches live version 252",
+    "status": "PASS",
+    "evidence": "fd66112bbe29710638b1b5b3d3b598281eea8104; successful Sites deployment inspected"
+  },
+  {
+    "check": "Source backup restoration",
+    "status": "PASS",
+    "evidence": "Git bundle verified; 208 tracked files match SHA-256 after isolated clone"
+  },
+  {
+    "check": "Local application build",
+    "status": "PASS",
+    "evidence": "npm run build; no dependency upgrades"
+  },
+  {
+    "check": "Application tests",
+    "status": "PASS",
+    "evidence": "87 existing tests; stale starter rendered-html test excluded"
+  },
+  {
+    "check": "GitHub clean install/build/test",
+    "status": "PASS",
+    "evidence": "Actions run 35684854085 on 686303c271b42e06962505370b32bbbc3a82f505"
+  },
+  {
+    "check": "Private repository and rollback ref",
+    "status": "PASS",
+    "evidence": "GitHub API isPrivate=true; pushed branch and rollback tag verified"
+  },
+  {
+    "check": "11 captured-data relationships",
+    "status": "PASS",
+    "evidence": "No missing parents in observed captures; not a consistent snapshot"
+  },
+  {
+    "check": "Full DB/R2 export and restoration",
+    "status": "BLOCKED",
+    "evidence": "Four tables truncate; source R2 access/export absent"
+  },
+  {
+    "check": "Source/destination reconciliation",
+    "status": "BLOCKED",
+    "evidence": "No full destination data exists"
+  },
+  {
+    "check": "Google attendance Sheet copy",
+    "status": "PASS",
+    "evidence": "38 populated rows; bounded full-grid formulas/values equal; owner-only backup ACL"
+  },
+  {
+    "check": "Google Drive binary content hashes",
+    "status": "NOT TESTED",
+    "evidence": "231 root copies verified by metadata/ACL/parent and binary size; sample PDF extracted content equal. Full byte-level checksums not tested."
+  },
+  {
+    "check": "Live Google SSO/roles/unauthorized/logout/session expiry",
+    "status": "BLOCKED",
+    "evidence": "No isolated deployed environment, approved test users or OAuth console access"
+  },
+  {
+    "check": "All 26 API routes and dynamic subroutes E2E",
+    "status": "BLOCKED",
+    "evidence": "api-matrix.json; no writes to real records"
+  },
+  {
+    "check": "Apps Script versions/scopes/execution identities/triggers",
+    "status": "BLOCKED",
+    "evidence": "School owner not signed into Apps Script browser; connector search returned no script projects"
+  },
+  {
+    "check": "Browser-local state and origin transition",
+    "status": "NOT TESTED",
+    "evidence": "Main storage keys found; all legacy/user-device data unavailable"
+  },
+  {
+    "check": "Paid-service activation",
+    "status": "PASS",
+    "evidence": "No paid services activated; user explicitly deferred R2"
+  },
+  {
+    "check": "Production cutover/rollback rehearsal",
+    "status": "BLOCKED",
+    "evidence": "Backups, integration tests, final sync and preservation of new writes not proven"
+  },
+  {
+    "check": "All 231 root Drive backup copies",
+    "status": "PASS",
+    "evidence": "No metadata verification problems; MIME/parent/owner-only ACL and binary sizes verified; 2 additional external-reference originals copied separately."
+  },
+  {
+    "check": "Attendance isolated restoration",
+    "status": "PASS",
+    "evidence": "Restore copy from backup; all 38 populated rows/formulas match. ACL/history/script restoration not covered."
+  },
+  {
+    "check": "Visitor and booking native Sheet backups",
+    "status": "PASS",
+    "evidence": "Full bounded grids compared: 29 visitor and 18 booking populated rows/formulas equal."
+  },
+  {
+    "check": "Representative PDF backup readability",
+    "status": "PASS",
+    "evidence": "1080 characters extracted source/copy content equal; not a byte checksum."
+  }
+]
