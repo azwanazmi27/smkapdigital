@@ -23,3 +23,13 @@ Latest deployed Worker version: ea202c3d-bc64-4446-8c43-b494898afe0d. Final hard
 ## User-confirmed access expansion — 22 September 2026
 
 User explicitly confirmed all listed users and their roles. Removed the single-email staging restriction and obsolete MIGRATION_TEST_EMAIL configuration. Existing Google audience/verified-email/domain validation, active/non-deleted user lookup and database role checks remain unchanged. No user records or roles modified. Read-only D1 inventory: 61 active users (59 teacher, 2 super_admin). Automatic source-code seeding remains disabled in staging; external integration API restrictions remain enabled. Build and 91 application tests PASS. These counts are not production data reconciliation; individual login for every account remains untested.
+
+## SKAS staging — 22 September 2026
+
+Enabled /api/skas after dependency audit: D1/R2 only, no external outbound calls. Existing handler authentication/role rules preserved. Enabled local directory/staff-picker/public-settings reads needed by existing UI. Drive-backed portfolio, document deletion and AI-dependent staff-work remain blocked.
+
+Build and 92 application tests PASS. Actual SKAS handlers tested using isolated SQLite and in-memory R2 adapters with synthetic local sessions: anonymous read/download rejected; teacher create/review/delete rejected; admin create/upload/read/review/download byte equality/delete PASS. This is not live R2 validation or SSO evidence. Rehearsal script: work/test-skas-isolated.mjs outside checkout; result: migration/skas-isolated-results.json.
+
+Live Cloudflare browser: repeat Google school-owner login PASS; year 2026 loaded; SKAS dashboard loaded; explicit test-only link record UJIAN MIGRASI SAHAJA — SKAS 20260922 created and remained after refresh. D1 readback confirmed the test record. Kept clearly labelled test record for review. No school operational records modified and no notifications sent. Live R2 upload/download, all-role browser matrix and production reconciliation remain NOT TESTED/BLOCKED as applicable.
+
+Worker version dec316f7-437f-480e-a20b-915637311b8e. Staging URL: https://smkapdigital-staging.smkapdigital.workers.dev/?module=skas .

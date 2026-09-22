@@ -23,3 +23,9 @@ test('login config exception never enables admin mutations', () => {
 test('production behavior is unchanged', () => {
   assert.equal(stagingBlock(new Request('https://production.example/api/push')), null);
 });
+
+test('isolated SKAS CRUD reaches original authorization handlers', () => {
+  for (const method of ['GET','POST','PATCH','DELETE']) {
+    assert.equal(stagingBlock(new Request('https://staging.example/api/skas', {method}), 'isolated-staging'), null);
+  }
+});

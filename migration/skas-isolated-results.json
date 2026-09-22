@@ -1,0 +1,14 @@
+{
+  "scope": "Actual SKAS handlers with isolated SQLite D1 adapter and in-memory R2 adapter; synthetic local sessions only; no Google SSO or live Cloudflare claim",
+  "checks": [
+    "anonymous read rejected",
+    "teacher create/review/delete rejected",
+    "admin upload/create",
+    "read stored record",
+    "review update persisted",
+    "download bytes matched",
+    "anonymous download rejected",
+    "test-only delete removed row and object"
+  ],
+  "status": "PASS"
+}
