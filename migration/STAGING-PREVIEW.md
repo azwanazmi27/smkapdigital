@@ -19,3 +19,7 @@ Local evidence outside Git: work/staging-before-test-user.sql (restricted), work
 Resume: verify latest isolation-hardening deployment then browser admin login; test isolated content upload/persistence/logout; enable each remaining integration only after isolated resources and credentials exist. Retain old portal and all backups. No production cutover.
 
 Latest deployed Worker version: ea202c3d-bc64-4446-8c43-b494898afe0d. Final hardening build and 91 tests PASS. Browser session survived reload on final build; logout passed.
+
+## User-confirmed access expansion — 22 September 2026
+
+User explicitly confirmed all listed users and their roles. Removed the single-email staging restriction and obsolete MIGRATION_TEST_EMAIL configuration. Existing Google audience/verified-email/domain validation, active/non-deleted user lookup and database role checks remain unchanged. No user records or roles modified. Read-only D1 inventory: 61 active users (59 teacher, 2 super_admin). Automatic source-code seeding remains disabled in staging; external integration API restrictions remain enabled. Build and 91 application tests PASS. These counts are not production data reconciliation; individual login for every account remains untested.

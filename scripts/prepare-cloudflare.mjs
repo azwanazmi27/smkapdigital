@@ -19,7 +19,6 @@ if (target === 'production') {
   const gates = JSON.parse(await readFile('migration/release-gates.json', 'utf8'));
   if (gates.cutover_allowed !== true || Object.values(gates.gates).some(v => v !== 'PASS')) throw new Error('Production release gates are blocked');
 }
-if (target === 'staging' && !selected.test_email?.endsWith('@moe-dl.edu.my')) throw new Error('Staging test email required');
 const config = JSON.parse(await readFile('dist/server/wrangler.json', 'utf8'));
 config.name = selected.name;
 config.account_id = selected.account_id;
@@ -27,7 +26,7 @@ config.workers_dev = true;
 config.preview_urls = false;
 config.d1_databases = [{ binding: 'DB', database_name: selected.database_name, database_id: selected.database_id }];
 config.r2_buckets = [{ binding: 'FILES', bucket_name: selected.bucket_name }];
-config.vars = target === 'staging' ? { MIGRATION_MODE: 'isolated-staging', MIGRATION_TEST_EMAIL: selected.test_email } : {};
+config.vars = target === 'staging' ? { MIGRATION_MODE: 'isolated-staging' } : {};
 config.triggers = {};
 delete config.routes;
 delete config.dispatch_namespaces;

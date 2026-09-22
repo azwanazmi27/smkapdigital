@@ -49,7 +49,6 @@ export async function verifyGoogleCredential(credential: string) {
   if (!response.ok) return null;
   const data = await response.json() as GoogleIdentity;
   if (data.aud !== GOOGLE_CLIENT_ID || String(data.email_verified) !== "true" || !data.email?.toLowerCase().endsWith("@moe-dl.edu.my")) return null;
-  if (env.MIGRATION_MODE === "isolated-staging" && data.email.toLowerCase() !== env.MIGRATION_TEST_EMAIL) return null;
   return { ...data, email: data.email.toLowerCase() };
 }
 
@@ -100,7 +99,6 @@ export async function portalActor(request: Request): Promise<PortalActor | null>
   let actor: PortalActor | null;
   try { actor = await readActor(); }
   catch { await ensureSessionTable(); actor = await readActor(); }
-  if (env.MIGRATION_MODE === "isolated-staging" && actor?.email !== env.MIGRATION_TEST_EMAIL) return null;
   if (actor) void env.DB.prepare("UPDATE portal_sessions SET last_seen_at=? WHERE token_hash=?").bind(new Date().toISOString(), hash).run();
   return actor || null;
 }
