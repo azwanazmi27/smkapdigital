@@ -26,7 +26,12 @@ config.workers_dev = true;
 config.preview_urls = false;
 config.d1_databases = [{ binding: 'DB', database_name: selected.database_name, database_id: selected.database_id }];
 config.r2_buckets = [{ binding: 'FILES', bucket_name: selected.bucket_name }];
-config.vars = target === 'staging' ? { MIGRATION_MODE: 'isolated-staging' } : {};
+config.vars = target === 'staging' ? {
+  MIGRATION_MODE: 'isolated-staging',
+  // Pin staging to provider models with current public API support.
+  GEMINI_MODEL: 'gemini-2.5-flash',
+  GROQ_MODEL: 'llama-3.3-70b-versatile',
+} : {};
 config.triggers = {};
 delete config.routes;
 delete config.dispatch_namespaces;
