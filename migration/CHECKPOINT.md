@@ -169,3 +169,7 @@ Authenticated staging super_admin session submitted synthetic e-Panitia Minit Me
 - `node scripts/test-application.mjs`: PASS, 105/105 tests.
 - `npm run build`: PASS (Cloudflare/Vinext build completed).
 - Production Google OAuth origin gate updated to PASS. Full production role/API/upload E2E remains pending because production Apps Script/Drive credentials and a complete role test matrix are not yet configured.
+
+## 2026-09-22 — Production Drive/App Script audit
+- Verified the school account `sekolah-2508@moe-dl.edu.my` has an existing shared folder `PORTAL DIGITAL SMKAP` (folder ID recorded only in browser evidence) containing production module folders: OPR, E-Keberadaan, E-Relief, E-Kunjung, E-Tempahan and Pengurusan Sekolah. No new folder or existing content was deleted or overwritten.
+- Verified Apps Script project `Copy of Portal OPR SMKAP - Drive` under the school account contains the Drive handlers and production folder mappings. A web-app deployment was prepared as execute-as-school-owner / Anyone, but Google’s OAuth consent return did not complete and Apps Script still reports no active deployment. Production upload remains BLOCKED until the deployment is successfully created and its URL/token are configured in the Worker.
