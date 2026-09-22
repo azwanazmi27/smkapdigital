@@ -140,3 +140,15 @@ User explicitly declined replacement and accepted continued use for staging. Thi
 
 ## 22 September — Drive portfolio now live in staging
 Apps Script v1 deployment URL and approvals recorded in GOOGLE-STAGING-SETUP.md. Worker secrets URL/token configured directly through UI; user accepted existing exposed token specifically for staging. CI 35734479971 SUCCESS (105 tests), Worker 130a5bba-5a1d-4108-a03b-6492bbfb4b04. Synthetic portfolio upload via Google Drive succeeded; record559aa0f3-6a10-4999-837a-af4bec2b618b persists after refresh, profile count1. Authenticated file response identified as image/png by browser; exact downloaded checksum not verified. Wrangler D1 remote read now 7403 unauthorized; no permission escalation performed. Full source SQL/R2 exports still absent. Production unchanged.
+
+
+## 2026-09-22 AI connection checkpoint
+User approved creating Gemini key smkapdigital-staging in oprsmkap (gen-lang-client-0855567570), storing it in Cloudflare staging, and synthetic-only tests. AI Studio shows Free tier. Creation attempted; no new key appeared after reload. A second attempt returned: "Failed to generate API key, The request is suspicious. Please try again." Stopped automated creation; prepared named form for user handoff. No new key copied or stored, no billing enabled, no AI request made. AI staging routes remain blocked. Existing portal key unchanged. Model gemini-3.6-flash confirmed in official model documentation: https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash . Next: user completes key creation in AI Studio; transfer directly to Worker secret without exposing value, then enable only audited isolated AI routes and run synthetic authenticated tests.
+
+
+## AI multi-provider audit continuation
+See AI-STATUS.md. All five source adapters retained; 20/20 focused mocked tests pass. User-created Gemini staging key was exposed during new-format UI inspection; replacement creation rejected by Google suspicious-request protection. Other provider login pages prepared. No provider secrets added to Worker, no live AI requests, no billing changes.
+
+
+## 2026-09-22 — Three staging provider credentials configured
+After explicit user approval, created smkapdigital-staging keys in Groq Personal/Default Project, Mistral Default Workspace and OpenRouter Default Workspace. All expire 2026-10-22; Mistral Shared connectors only; OpenRouter credit limit USD 0. Transferred directly in browser memory to encrypted Worker secrets GROQ_API_KEY, MISTRAL_API_KEY, OPENROUTER_API_KEY. Cloudflare settings verified all three as Value encrypted. Secret variables nulled after transfer; no key values written to this repository or logs. Existing portal keys untouched. No billing activation or credit purchase. Live provider calls still NOT TESTED and AI staging routes still blocked. Gemini replacement and Cloudflare AI runtime credential remain unresolved.
