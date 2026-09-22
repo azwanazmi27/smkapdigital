@@ -21,3 +21,10 @@ After explicit user approval, created smkapdigital-staging keys in Groq Personal
 
 ## Live staging AI health verification
 Commit 5c6f30e enabled only GET /api/ai/health in isolated staging. GitHub Actions run 35738424778 succeeded and deployed. Live response at https://smkapdigital-staging.smkapdigital.workers.dev/api/ai/health: Gemini online, Groq online, Mistral online, OpenRouter online, Cloudflare offline. This is provider configuration/health status, not a generation call. AI generation routes remain blocked until an authenticated synthetic end-to-end test is performed; Cloudflare AI remains unavailable because no Workers AI runtime credential/binding is configured.
+
+
+## Live synthetic AI generation result
+Authenticated staging super_admin session submitted synthetic e-Panitia Minit Mesyuarat prompt. UI returned generic temporary AI outage after fallback. Admin AI status recorded: Gemini Offline SERVER (0/2), Groq Offline BAD_REQUEST (0/1), Mistral Offline RATE_LIMIT (0/2), OpenRouter Offline AUTH (0/1), Cloudflare Offline API_KEY_MISSING (0/0). No school data used and no document saved. Health endpoint configuration status is therefore insufficient; live generation is FAIL/BLOCKED pending provider-specific credential/model/API compatibility fixes.
+## Model pin follow-up
+
+Staging now pins Gemini to `gemini-2.5-flash` and Groq to `llama-3.3-70b-versatile` (commit `19b0dd1`, workflow `35739856177` succeeded). Post-deployment health remains Gemini/Groq/Mistral/OpenRouter online and Cloudflare offline. A fresh authenticated generation test is still required; no claim of live generation success is made.
