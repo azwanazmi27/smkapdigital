@@ -5,7 +5,7 @@
     "all_uploaded_files_backup": "BLOCKED",
     "isolated_restore": "BLOCKED",
     "source_destination_reconciliation": "BLOCKED",
-    "google_oauth_origins": "BLOCKED",
+    "google_oauth_origins": "PASS (production origin saved; browser sign-in dialog verified)",
     "apps_script_versions_and_triggers": "BLOCKED",
     "production_secret_recovery": "BLOCKED",
     "role_and_api_e2e": "BLOCKED",

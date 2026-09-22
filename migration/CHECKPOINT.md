@@ -164,3 +164,8 @@ Authenticated staging super_admin session submitted synthetic e-Panitia Minit Me
 ## 2026-09-22 — Production OAuth origin fixed
 - Added and saved `https://portal.smkapdigital.workers.dev` to Google OAuth client `Portal SMKAP Web` in project `portal-digital-smkap`; existing portal and staging origins preserved.
 - Browser verification: production portal loads and Google sign-in dialog opens without `origin_mismatch`. Current browser session showed an unregistered personal Gmail account; final role test still requires selecting a registered `@moe-dl.edu.my` account.
+
+## 2026-09-22 — Post-login validation
+- `node scripts/test-application.mjs`: PASS, 105/105 tests.
+- `npm run build`: PASS (Cloudflare/Vinext build completed).
+- Production Google OAuth origin gate updated to PASS. Full production role/API/upload E2E remains pending because production Apps Script/Drive credentials and a complete role test matrix are not yet configured.
