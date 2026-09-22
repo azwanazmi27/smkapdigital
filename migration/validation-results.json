@@ -17,7 +17,7 @@
   {
     "check": "Application tests",
     "status": "PASS",
-    "evidence": "87 existing tests; stale starter rendered-html test excluded"
+    "evidence": "104 application tests PASS; starter rendered-html test excluded; includes 9 Drive preparation and 2 submission-lock tests."
   },
   {
     "check": "GitHub clean install/build/test",
@@ -56,8 +56,8 @@
   },
   {
     "check": "Live Google SSO/roles/unauthorized/logout/session expiry",
-    "status": "BLOCKED",
-    "evidence": "No isolated deployed environment, approved test users or OAuth console access"
+    "status": "NOT TESTED",
+    "evidence": "Staging Google SSO login, refresh and logout PASS. Full roles, unauthorized browser matrix and expiry remain incomplete."
   },
   {
     "check": "All 26 API routes and dynamic subroutes E2E",
@@ -67,17 +67,17 @@
   {
     "check": "Apps Script versions/scopes/execution identities/triggers",
     "status": "BLOCKED",
-    "evidence": "School owner not signed into Apps Script browser; connector search returned no script projects"
+    "evidence": "Owner access recovered; production deployment versions and one time trigger inspected; backup copies retained. Complete source/properties audit and isolated live integration tests remain blocked."
   },
   {
     "check": "Browser-local state and origin transition",
-    "status": "NOT TESTED",
-    "evidence": "Main storage keys found; all legacy/user-device data unavailable"
+    "status": "BLOCKED",
+    "evidence": "Static inventory includes bundled relief-plans fallback and relief-params. Device-owner exports and reconciliation pending; BROWSER-STATE.md."
   },
   {
     "check": "Paid-service activation",
     "status": "PASS",
-    "evidence": "No paid services activated; user explicitly deferred R2"
+    "evidence": "R2 activation explicitly authorized and staging bucket active. No additional paid plans or domain purchases authorized."
   },
   {
     "check": "Production cutover/rollback rehearsal",
@@ -103,5 +103,20 @@
     "check": "Representative PDF backup readability",
     "status": "PASS",
     "evidence": "1080 characters extracted source/copy content equal; not a byte checksum."
+  },
+  {
+    "check": "Staging SKAS synthetic file persistence",
+    "status": "PASS",
+    "evidence": "Browser upload reached D1/R2; 68-byte remote download SHA-256 matches source; records visible after refresh. Duplicate test records retained and investigation incomplete."
+  },
+  {
+    "check": "SKAS duplicate submission safety",
+    "status": "NOT TESTED",
+    "evidence": "Synchronous UI submission lock has two local tests PASS. No claim of server idempotency or established root cause of earlier duplicate records."
+  },
+  {
+    "check": "Google Drive-primary transport",
+    "status": "BLOCKED",
+    "evidence": "Inactive verified-read adapter and manifest comparison prepared/tested. Live transport needs isolated Apps Script configuration; original storage unchanged."
   }
 ]

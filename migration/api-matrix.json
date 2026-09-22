@@ -7,8 +7,8 @@
     "auth_markers": [
       "authorization"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/achievement-ocr",
@@ -18,8 +18,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/admin-users",
@@ -34,7 +34,7 @@
       "portalActor"
     ],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Staging approved active accounts can login; local seed disabled; live role mutations blocked."
   },
   {
     "path": "/api/ai/evidence-mapping",
@@ -44,8 +44,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/ai/health",
@@ -55,8 +55,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/ai/monitoring-text",
@@ -64,8 +64,8 @@
       "POST"
     ],
     "auth_markers": [],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/ai/panitia-document",
@@ -75,8 +75,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/ai/usage",
@@ -86,8 +86,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/documents",
@@ -99,7 +99,7 @@
       "portalActor"
     ],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Local owner draft access tests PASS; browser draft persistence PASS; Drive generation blocked."
   },
   {
     "path": "/api/drive",
@@ -111,8 +111,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/ekeberadaan",
@@ -125,8 +125,8 @@
       "portalActor",
       "x-admin-pin"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/ekunjung",
@@ -137,8 +137,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/etempahan",
@@ -150,8 +150,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/gemini",
@@ -159,8 +159,8 @@
       "POST"
     ],
     "auth_markers": [],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/opr-duty",
@@ -169,8 +169,8 @@
       "POST"
     ],
     "auth_markers": [],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/opr-management",
@@ -181,8 +181,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/pengurusan",
@@ -194,8 +194,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/portal-content",
@@ -209,7 +209,7 @@
       "portalActor"
     ],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Full method/role E2E incomplete; see scoped evidence below."
   },
   {
     "path": "/api/portfolio",
@@ -222,7 +222,7 @@
       "portalActor"
     ],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Local owner filtering and featured selection PASS; Drive upload transport blocked."
   },
   {
     "path": "/api/push",
@@ -233,8 +233,8 @@
     "auth_markers": [
       "portalActor"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/relief-import",
@@ -244,8 +244,8 @@
     "auth_markers": [
       "authorization"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/relief-legacy/[...path]",
@@ -260,8 +260,8 @@
       "x-admin-pin",
       "x-delete-password"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   },
   {
     "path": "/api/session",
@@ -271,7 +271,7 @@
     ],
     "auth_markers": [],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Google login/refresh/logout browser PASS; expiry and all-role matrix incomplete."
   },
   {
     "path": "/api/skas",
@@ -286,7 +286,7 @@
       "requireAdmin"
     ],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Local role CRUD/download tests PASS; browser link and PNG persistence PASS; duplicate investigation outstanding."
   },
   {
     "path": "/api/staff-work",
@@ -298,7 +298,7 @@
       "portalActor"
     ],
     "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "evidence": "Local owner/assignment reads and download checks PASS; live writes blocked."
   },
   {
     "path": "/api/teacher-review",
@@ -309,7 +309,7 @@
     "auth_markers": [
       "x-admin-pin"
     ],
-    "test_status": "NOT TESTED",
-    "evidence": "Static inventory only; browser/isolated records required"
+    "test_status": "BLOCKED",
+    "evidence": "Staging integration disabled pending isolated services/configuration. Full E2E not verified."
   }
 ]
