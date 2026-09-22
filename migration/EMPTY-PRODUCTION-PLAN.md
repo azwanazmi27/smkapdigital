@@ -39,3 +39,12 @@ No production resource is created or traffic is changed by this document. It is 
 - Production D1 schema applied and 61 active users inserted: 2 `super_admin`, 59 `teacher`.
 
 Worker deployment, production SSO secrets, Apps Script production URL/token, and DNS remain gated until their values are configured and tested.
+
+## First production deployment
+
+- URL: `https://smkapdigital-production.smkapdigital.workers.dev`
+- Version: `c47b5d3b-4271-42dc-a526-83228a44fa6a`
+- Root smoke test: HTTP 200.
+- Google client configuration endpoint returns the existing client ID.
+- No custom DNS was changed.
+- Apps Script production credentials and production Drive folder are not configured yet, so integration write paths remain unavailable until those secrets are added.
