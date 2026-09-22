@@ -12,7 +12,9 @@ export function stagingBlock(request: Request, mode?: string): Response | null {
   const isolatedDriveRead = path === "/api/pengurusan" && request.method === "GET" &&
     (Boolean(url.searchParams.get("file")) || url.searchParams.get("health") === "1");
   const aiHealth = path === "/api/ai/health" && request.method === "GET";
-  const allowed = isolatedDriveRead || aiHealth || portfolioSelection || localRead || documentDrafts || loginRead || path === "/api/session" || path === "/api/portal-content" || path === "/api/skas";
+  const aiGeneration = path.startsWith("/api/ai/") && request.method === "POST" &&
+    ["/api/ai/evidence-mapping", "/api/ai/monitoring-text", "/api/ai/panitia-document"].includes(path);
+  const allowed = isolatedDriveRead || aiHealth || aiGeneration || portfolioSelection || localRead || documentDrafts || loginRead || path === "/api/session" || path === "/api/portal-content" || path === "/api/skas";
   if ((path === "/api" || path.startsWith("/api/")) && !allowed) {
     return Response.json({ error: "Modul staging ini belum diaktifkan: pengasingan integrasi masih dalam pengesahan.", code: "STAGING_INTEGRATION_BLOCKED" }, {
       status: 503, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
