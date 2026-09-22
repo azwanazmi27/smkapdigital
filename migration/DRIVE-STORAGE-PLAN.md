@@ -37,3 +37,18 @@ User direction: keep all application files in Google Drive where possible and re
 - Full source exports, isolated Google configuration and secrets remain administrator-dependent. No Drive destination switch or R2 deletion is authorized solely by this plan.
 
 Status: architecture plan PREPARED; implementation and transfer NOT STARTED; original production intact. User requested administrator work last. The migration cannot be declared complete until data and access gates pass.
+
+## Prepared code and verification — 22 September 2026
+
+- `migration/lib/verified-file-read.mjs`: inactive, transport-injected read adapter. Unmapped/pending files use the legacy reader; verified Drive mappings require matching logical key, file identity, byte length and SHA-256. Missing/corrupt verified Drive files fail visibly rather than silently reading an outdated R2 copy. Authorization remains the responsibility of each existing API route before calling this adapter. No endpoint or secret is assumed.
+- `scripts/reconcile-drive-files.mjs`: offline comparison of source and Drive binary-file manifests. Detects missing/extra objects, duplicate keys, reused Drive IDs, size and checksum mismatches. Writes a new mode-0600 report and refuses overwrite; stdout contains counts only. This does not itself hash downloaded files or verify permissions and never approves production cutover.
+- Input schema: JSON array of `{key,size,sha256}`; destination adds `driveFileId`. SHA-256 must be lowercase 64-character hex computed from complete downloaded bytes. Store input/output manifests outside Git because logical keys may contain school information. Use a fresh report path for each run.
+- Run: `node scripts/reconcile-drive-files.mjs /private/path/source.json /private/path/drive.json /private/path/new-report.json`. Exit 0 means content inventories match, 1 means discrepancies, 2 means invalid input/report error. None means migration completion.
+- Nine new isolated tests cover corruption, truncation, missing files, transport failure, unmapped fallback, invalid mappings, inventory discrepancies and duplicate protection in comparison. Full application test runner: 102 PASS. These are synthetic/local tests, not Google live integration tests.
+
+The existing Apps Script source/configuration must be audited before implementing its upload transport. No live upload backend was replaced. The current Google `files` resource exposes binary-file checksums where available; use downloaded bytes when no authoritative checksum is returned. Native Google documents need export/content-specific reconciliation rather than pretending their content is a binary object. Private custom properties are available for application metadata but are not proof of idempotent creation. Apps Script quotas also require representative load tests.
+
+Official references checked 22 September 2026:
+- https://developers.google.com/workspace/drive/api/reference/rest/v3/files
+- https://developers.google.com/workspace/drive/api/guides/properties
+- https://developers.google.com/apps-script/guides/services/quotas
