@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "table_count": 41,
+  "missing": [],
+  "extra": [],
+  "scope": "Source-derived empty staging schema; NOT a production schema export or data restoration. Static runtime ALTER statements included; production schema/index/trigger equality still requires full export."
+}

@@ -48,3 +48,11 @@ CLI configuration: `work/cli-config` outside this checkout. Never commit credent
 - Raw SQL/schema/R2 backups, production secrets, OAuth/Apps Script settings, staging deployment and cutover remain BLOCKED. R2 activation is explicitly deferred by the user.
 
 - Final verification: all 231 root-file copies passed metadata/parent/owner-only ACL checks; binary sizes match. Native Sheet size differences are expected metadata differences and full-range formulas/values match. Total 233 original files backed up plus one isolated attendance restoration copy. Binary checksums and complete original ACL/history restoration remain unverified.
+
+## Google owner audit continuation
+
+See GOOGLE-ACCESS-PROGRESS.md: school owner Apps Script access and personal-account Google OAuth access resolved. Native copies of both script projects created with zero triggers/executions, but full source/properties/ACL restoration not verified. Both active deployment URLs match saved production runtime configuration (apps-script-url-verification.json). Google Client ID exactly matches source; original JavaScript origin only, no redirect URIs, External/In production. No production settings changed. R2 permission and complete source D1/R2 export remain pending; source export request prepared in workspace outputs, not sent.
+
+R2 is now activated with explicit user authorization and billing completed by user. Staging R2 bucket and D1 created; see CLOUDFLARE-STAGING-STATUS.md for exact IDs and verification. No Worker deployed or data imported. Prior R2-deferred statements are superseded. CLI auth refresh required; full source export remains blocked.
+
+Staging schema now imported: 41 tables verified, zero portal_users. Pinned Wrangler authentication works; prior CLI-auth blocker resolved. See CLOUDFLARE-STAGING-STATUS.md. Local generator work/prepare_staging_schema.py and SQL work/staging-schema.sql are outside repo; never use as production export. Source-derived schema is for empty staging only; no data migration or Worker deployment completed.

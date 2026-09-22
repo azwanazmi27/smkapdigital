@@ -1,0 +1,13 @@
+{
+  "basis": "Saved production runtime configuration compared to owner-console active deployments on 2026-09-22; not live endpoint testing",
+  "results": [
+    {
+      "variable": "ETEMPAHAN_APPS_SCRIPT_URL",
+      "matched_deployment": "ETEMPAHAN"
+    },
+    {
+      "variable": "OPR_APPS_SCRIPT_URL",
+      "matched_deployment": "OPR"
+    }
+  ]
+}
