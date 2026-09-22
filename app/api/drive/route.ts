@@ -217,6 +217,8 @@ function validMagic(raw: Uint8Array, mimeType: string) {
 }
 
 export async function GET(request: Request) {
+  const actor = await portalActor(request);
+  if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah." }, { status: 401 });
   const url=new URL(request.url),fileId=url.searchParams.get("file");
   try {
     const download=url.searchParams.get("download")==="1";
@@ -253,6 +255,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const actor = await portalActor(request);
+  if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah." }, { status: 401 });
   try {
     const webAppUrl = process.env.OPR_APPS_SCRIPT_URL;
     const token = process.env.OPR_APPS_SCRIPT_TOKEN;
@@ -279,7 +283,6 @@ export async function POST(request: Request) {
       return Response.json({success:true,root,ensured:result.ensured||0});
     }
     if(body.action==="document-upload"){
-      const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk dengan akaun sekolah."},{status:401});
       if(typeof body.documentId==="string"&&body.documentId){const owner=await env.DB.prepare("SELECT owner_user_id AS owner FROM documents WHERE id=? AND archived_at='' ").bind(body.documentId).first<{owner:string}>();if(!owner||(!['admin','super_admin'].includes(actor.role)&&![actor.id,actor.email].includes(owner.owner)))return Response.json({error:'Anda tidak dibenarkan menambah versi dokumen ini.'},{status:403});}
       const item=Array.isArray(body.files)?body.files[0] as UploadFile:undefined;
       const mimeType=typeof item?.mimeType==="string"?item.mimeType:"",base64=typeof item?.base64==="string"?item.base64:"";
@@ -336,12 +339,11 @@ export async function POST(request: Request) {
     }
     if (metadata && saved[0]) {
       await prepareOprMetadata();
-      const actor = await portalActor(request);
       const now = new Date().toISOString();
       const suggestions = suggestedSkas(category, metadata);
       await env.DB.prepare("INSERT INTO opr_intake_metadata (report_id,created_by_email,category,competition_status,external_involvement_status,suggested_skas_json,payload_json,review_status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(report_id) DO UPDATE SET created_by_email=excluded.created_by_email,category=excluded.category,competition_status=excluded.competition_status,external_involvement_status=excluded.external_involvement_status,suggested_skas_json=excluded.suggested_skas_json,payload_json=excluded.payload_json,review_status='pending',updated_at=excluded.updated_at")
-        .bind(saved[0].id, actor?.email || metadata.createdBy, category, metadata.competition.enabled ? "1" : "0", metadata.external.enabled ? "1" : "0", JSON.stringify(suggestions), JSON.stringify(metadata), "pending", now, now).run();
-      if(actor)await registerDocument(actor,{
+        .bind(saved[0].id, actor.email, category, metadata.competition.enabled ? "1" : "0", metadata.external.enabled ? "1" : "0", JSON.stringify(suggestions), JSON.stringify(metadata), "pending", now, now).run();
+      await registerDocument(actor,{
         title:metadata.title||saved[0].name.replace(/\.pdf$/i,""),documentType:"Laporan OPR",sourceModule:"Pusat OPR",schoolYear:Number(metadata.programDate.slice(0,4))||new Date().getFullYear(),
         panelId:category,status:"draft",file:{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType:"application/pdf"},metadata:{suggestedSkas:suggestions},
       });

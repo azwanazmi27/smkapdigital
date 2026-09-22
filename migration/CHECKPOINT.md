@@ -180,6 +180,13 @@ Authenticated staging super_admin session submitted synthetic e-Panitia Minit Me
 - Its code was derived from the verified staging management-only contract, changed to `PRODUCTION_API_TOKEN` and the existing school Drive root, then read back byte-for-byte before saving. It has no triggers and does not contain an embedded token. The earlier `Copy of Portal OPR SMKAP - Drive` project, which displays a hardcoded token, remains undeployed and is not the intended Cloudflare backend.
 - `PRODUCTION_API_TOKEN` property name is prepared in the new project's settings, but no credential value was entered or saved. A new production token must be entered through the user handoff; the web app is not deployed yet.
 - Cloudflare Worker `portal` settings showed an empty Production runtime variables/secrets table. Therefore OPR_APPS_SCRIPT_URL/TOKEN and all AI provider keys are absent; upload and AI are BLOCKED. The existing D1 binding remains present.
+
+### 2026-09-23 continuation: production Drive authorization and OPR access gate
+
+- The school account entered and saved `PRODUCTION_API_TOKEN` in the new Apps Script project's Script Properties. Its value was displayed by the settings UI during inspection; it is not copied into this repository. The user explicitly chose to keep it despite the recommendation to rotate it. Avoid printing or reading the value again.
+- With user confirmation, configured a Web app deployment to execute as `sekolah-2508@moe-dl.edu.my` with `Anyone` access. Deployment is **not complete**: Google Drive consent redirects to a `script.google.com/accounts` "Page not found" error, twice. The deployment dialog remains at "Authorize access"; no `/exec` URL has been obtained. No production Cloudflare Drive secrets have been added.
+- The new script supports only `management_health/upload/download/trash`; OPR list/upload, E-Kunjung and E-Tempahan actions still need a reviewed implementation and tests before parity can be claimed. The old Drive root remains unchanged.
+- Audited `/api/drive`: unauthenticated requests could list/download OPR files and upload to Drive once connected. Added `portalActor` checks for all GET and POST requests before enabling production integration. `node scripts/test-application.mjs` passed 105/105 and `npm run build` passed. This code is on the migration branch and is not deployed to production.
 - An empty `SMKAP Digital Cloudflare Production 20260923` Drive folder was created before the user clarified the preference for the existing root. It is unused and retained; nothing was moved or deleted.
 
 ## 2026-09-23 — AI production check
