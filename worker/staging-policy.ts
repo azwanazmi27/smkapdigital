@@ -8,7 +8,8 @@ export function stagingBlock(request: Request, mode?: string): Response | null {
     [null, "config", "me", "staff-picker", "directory", "public-settings"].includes(url.searchParams.get("resource"));
   const localRead = request.method === "GET" && ["/api/staff-work", "/api/portfolio"].includes(path);
   const documentDrafts = path === "/api/documents" && ["GET", "POST"].includes(request.method);
-  const allowed = localRead || documentDrafts || loginRead || path === "/api/session" || path === "/api/portal-content" || path === "/api/skas";
+  const portfolioSelection = path === "/api/portfolio" && request.method === "PUT";
+  const allowed = portfolioSelection || localRead || documentDrafts || loginRead || path === "/api/session" || path === "/api/portal-content" || path === "/api/skas";
   if ((path === "/api" || path.startsWith("/api/")) && !allowed) {
     return Response.json({ error: "Modul staging ini belum diaktifkan: pengasingan integrasi masih dalam pengesahan.", code: "STAGING_INTEGRATION_BLOCKED" }, {
       status: 503, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },

@@ -1,0 +1,14 @@
+{
+  "scope": "Actual portfolio handlers, SQLite and R2 adapters, synthetic local sessions; no live data or SSO",
+  "status": "PASS",
+  "checks": [
+    "anonymous denied",
+    "teacher all-users listing denied",
+    "teacher sees own portfolio only",
+    "admin sees both test portfolios",
+    "deleted material excluded",
+    "foreign selection rejected",
+    "duplicate selection rejected",
+    "own featured update persisted without altering other owner"
+  ]
+}

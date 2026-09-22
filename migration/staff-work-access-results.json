@@ -1,0 +1,13 @@
+{
+  "scope": "Actual staff-work handlers, SQLite and R2 adapters, synthetic local sessions; no live data or SSO",
+  "status": "PASS",
+  "checks": [
+    "anonymous denied",
+    "unrelated teacher private/duty files denied",
+    "owner and assigned teacher file bytes match",
+    "admin duty access allowed",
+    "admin unrelated private paper denied",
+    "uploads filtered by ownership",
+    "assigned task list returned"
+  ]
+}

@@ -92,3 +92,11 @@ Remote CLI upload/download PASS for a synthetic 68-byte PNG in smkapdigital-stag
 Browser upload attempt BLOCKED: Chrome extension fileChooser.setFiles returned Not allowed. Official troubleshooting requires enabling Allow access to file URLs for the ChatGPT browser extension. User informed. No SKAS evidence record created for this failed browser upload. Remote CLI verification does not establish end-to-end app upload/download or metadata/permission parity with production.
 
 Browser staff-work read PASS (school test admin): uploads hub and Kertas Kerja list load, showing empty isolated data. Upload/AI processing remain blocked by staging policy. No new application deployment needed this checkpoint.
+
+## Task/portfolio access verification — 22 September 2026
+
+Actual staff-work handlers passed isolated tests with SQLite/R2 adapters and synthetic local sessions: unauthenticated access denied; unrelated private/duty files denied to teacher; owner/assigned file bytes match; admin duty access allowed but unrelated private paper denied; uploads ownership filtering and assigned-task listing passed.
+
+Portfolio actual handlers passed isolated tests: anonymous/all-users teacher reads rejected, own-user filtering, admin aggregate listing, deleted-material exclusion, foreign/duplicate featured selection rejection, own featured update persisted without changing another owner. Enabled PUT /api/portfolio only after these tests. POST upload still blocked because it requires Google Drive. These are local handler tests, not all-role browser/production validation. No actual user portfolio records modified by tests.
+
+Evidence: staff-work-access-results.json and portfolio-access-results.json; reproducible local harnesses work/test-staff-work-access.mjs and work/test-portfolio-access.mjs outside checkout. Google integrations/full source export/live browser upload remain outstanding as previously recorded.
