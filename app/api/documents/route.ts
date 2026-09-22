@@ -1,3 +1,4 @@
+import { stagingDocumentActionAllowed } from "../../../worker/staging-policy";
 import { env } from "cloudflare:workers";
 import {parseEvidenceSuggestion} from "../../evidence-ai-model";
 import { portalActor } from "../../server-auth";
@@ -60,6 +61,7 @@ export async function POST(request:Request){
   const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk."},{status:401});
   try{
     const body=await request.json() as Record<string,unknown>,action=clean(body.action,40);
+    if(!stagingDocumentActionAllowed(env.MIGRATION_MODE,action))return Response.json({error:"Tindakan dokumen ini menunggu pengasingan Google Drive staging.",code:"STAGING_INTEGRATION_BLOCKED"},{status:503});
     if(action==="register")return Response.json({ok:true,...await registerDocument(actor,{...(body.input as Record<string,unknown>),status:"draft"} as never)});
     if(action==="register-link"){
       const title=clean(body.title),url=clean(body.url,1200),documentType=clean(body.documentType)||"Pautan dokumen",schoolYear=Number(body.schoolYear);

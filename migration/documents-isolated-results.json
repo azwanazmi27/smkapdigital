@@ -1,0 +1,14 @@
+{
+  "scope": "Actual documents handlers with isolated SQLite D1 adapter, synthetic local sessions, external fetch forbidden; not Cloudflare browser or Google SSO",
+  "checks": [
+    "anonymous read rejected",
+    "teacher draft created",
+    "cross-owner edit rejected",
+    "year mismatch rejected",
+    "own draft updated",
+    "readback persisted payload and ownership",
+    "Drive-related writes blocked",
+    "no storage objects created"
+  ],
+  "status": "PASS"
+}

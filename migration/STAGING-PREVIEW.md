@@ -33,3 +33,13 @@ Build and 92 application tests PASS. Actual SKAS handlers tested using isolated 
 Live Cloudflare browser: repeat Google school-owner login PASS; year 2026 loaded; SKAS dashboard loaded; explicit test-only link record UJIAN MIGRASI SAHAJA — SKAS 20260922 created and remained after refresh. D1 readback confirmed the test record. Kept clearly labelled test record for review. No school operational records modified and no notifications sent. Live R2 upload/download, all-role browser matrix and production reconciliation remain NOT TESTED/BLOCKED as applicable.
 
 Worker version dec316f7-437f-480e-a20b-915637311b8e. Staging URL: https://smkapdigital-staging.smkapdigital.workers.dev/?module=skas .
+
+## e-Panitia and local reads — 22 September 2026
+
+Enabled documents GET and save-draft POST only. All other document POST actions are rejected in staging before execution, including delete-draft because it may delete Drive copies. Original owner/year checks retained. Enabled staff-work GET and portfolio GET only; POST uploads/AI remain blocked. No external credentials added.
+
+Build and 93 application tests PASS. Actual documents handlers in isolated SQLite rehearsal PASS: anonymous read rejected, teacher draft create/update/read, cross-owner/year mismatch rejection, persisted payload/ownership, Drive-related action rejection, zero storage objects. See documents-isolated-results.json; local harness work/test-documents-isolated.mjs outside checkout.
+
+Live browser e-Panitia PASS: Panitia Bahasa Melayu loaded; clearly labelled test-only Takwim draft saved; after refresh it appears under Draf Tersimpan / Sambung kerja. D1 readback confirms record. Kept for review. Staff-work/portfolio role/browser matrix not yet verified. Full e-Panitia generation/Drive publishing remains blocked; do not label full module migration complete.
+
+Worker version cfde3014-1ce7-4c39-8179-bd838e59b55c. Next: live R2 roundtrip, remaining local read/auth matrix, isolated Google integrations. Source data export/reconciliation remains a production release gate.

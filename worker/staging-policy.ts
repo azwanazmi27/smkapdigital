@@ -6,11 +6,17 @@ export function stagingBlock(request: Request, mode?: string): Response | null {
   const path = url.pathname;
   const loginRead = path === "/api/admin-users" && request.method === "GET" &&
     [null, "config", "me", "staff-picker", "directory", "public-settings"].includes(url.searchParams.get("resource"));
-  const allowed = loginRead || path === "/api/session" || path === "/api/portal-content" || path === "/api/skas";
+  const localRead = request.method === "GET" && ["/api/staff-work", "/api/portfolio"].includes(path);
+  const documentDrafts = path === "/api/documents" && ["GET", "POST"].includes(request.method);
+  const allowed = localRead || documentDrafts || loginRead || path === "/api/session" || path === "/api/portal-content" || path === "/api/skas";
   if ((path === "/api" || path.startsWith("/api/")) && !allowed) {
     return Response.json({ error: "Modul staging ini belum diaktifkan: pengasingan integrasi masih dalam pengesahan.", code: "STAGING_INTEGRATION_BLOCKED" }, {
       status: 503, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
     });
   }
   return null;
+}
+
+export function stagingDocumentActionAllowed(mode: string | undefined, action: string): boolean {
+  return mode !== "isolated-staging" || action === "save-draft";
 }

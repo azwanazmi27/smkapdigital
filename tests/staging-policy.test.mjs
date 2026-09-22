@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stagingBlock } from '../worker/staging-policy.ts';
+import { stagingBlock, stagingDocumentActionAllowed } from '../worker/staging-policy.ts';
 
 test('staging blocks jobs, external workflows and unknown APIs for every method', async () => {
   for (const path of ['/api/absence-summary-job', '/api/push', '/api/drive', '/api/etempahan', '/api/unknown', '/api/session/extra', '/api']) {
@@ -28,4 +28,14 @@ test('isolated SKAS CRUD reaches original authorization handlers', () => {
   for (const method of ['GET','POST','PATCH','DELETE']) {
     assert.equal(stagingBlock(new Request('https://staging.example/api/skas', {method}), 'isolated-staging'), null);
   }
+});
+
+test('only local draft writes are enabled; external document actions remain blocked', () => {
+ assert.equal(stagingDocumentActionAllowed('isolated-staging','save-draft'),true);
+ for(const action of ['delete-draft','register','new-version','approve','unknown','']) assert.equal(stagingDocumentActionAllowed('isolated-staging',action),false);
+ assert.equal(stagingDocumentActionAllowed(undefined,'delete-draft'),true);
+ for(const path of ['/api/staff-work','/api/portfolio']) {
+  assert.equal(stagingBlock(new Request('https://staging.example'+path),'isolated-staging'),null);
+  assert.equal(stagingBlock(new Request('https://staging.example'+path,{method:'POST'}),'isolated-staging').status,503);
+ }
 });
