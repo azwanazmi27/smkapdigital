@@ -160,3 +160,7 @@ Commit 5c6f30e enabled only GET /api/ai/health in isolated staging. GitHub Actio
 
 ## Live synthetic AI generation result
 Authenticated staging super_admin session submitted synthetic e-Panitia Minit Mesyuarat prompt. UI returned generic temporary AI outage after fallback. Admin AI status recorded: Gemini Offline SERVER (0/2), Groq Offline BAD_REQUEST (0/1), Mistral Offline RATE_LIMIT (0/2), OpenRouter Offline AUTH (0/1), Cloudflare Offline API_KEY_MISSING (0/0). No school data used and no document saved. Health endpoint configuration status is therefore insufficient; live generation is FAIL/BLOCKED pending provider-specific credential/model/API compatibility fixes.
+
+## 2026-09-22 — Production OAuth origin fixed
+- Added and saved `https://portal.smkapdigital.workers.dev` to Google OAuth client `Portal SMKAP Web` in project `portal-digital-smkap`; existing portal and staging origins preserved.
+- Browser verification: production portal loads and Google sign-in dialog opens without `origin_mismatch`. Current browser session showed an unregistered personal Gmail account; final role test still requires selecting a registered `@moe-dl.edu.my` account.
