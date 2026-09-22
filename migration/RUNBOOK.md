@@ -29,7 +29,7 @@ Use `smkapdigital-staging` and `smkapdigital` as proposed Worker names under the
 - Run `node scripts/prepare-cloudflare.mjs staging` to generate `dist/server/wrangler.staging.json`. Inspect the generated config and local logs without secrets.
 - Once all staging prerequisites pass, deploy with `npx wrangler deploy --config dist/server/wrangler.staging.json`. Capture the actual returned URL/version. No deployment has been performed in this audit.
 - Store staging-only runtime secrets using Wrangler/platform secure configuration. Verify no secret enters client assets.
-- GitHub validation is manual (`validate-migration.yml`). Deployment automation still requires a repository-scoped Cloudflare GitHub connection or restricted deployment credential, environment controls and verified resource IDs. Never enable automatic production deployment from this migration branch before release gates pass.
+- GitHub validation runs on migration-branch pushes and supports manual dispatch (`validate-migration.yml`). Deployment automation still requires a repository-scoped Cloudflare GitHub connection or restricted deployment credential, environment controls and verified resource IDs. Never enable automatic production deployment from this migration branch before release gates pass.
 
 ## Validation
 

@@ -3,7 +3,7 @@
 Production cutover: BLOCKED. No production data, DNS, deployment or Google workflow changed.
 
 - User chose Cloudflare, authorized private GitHub repository `azwanazmi27/smkapdigital`, and accepted a prefixed workers.dev address instead of buying a domain.
-- Repository created and Private badge verified. It is still empty remotely pending CLI authorization and final private-data review.
+- Repository created and Private badge verified. Migration branch and rollback tag pushed and verified by GitHub API.
 - Working branch: `migration/cloudflare-20260922`.
 - Rollback tag: `rollback/pre-cloudflare-20260922`.
 - Live source: `fd66112bbe29710638b1b5b3d3b598281eea8104`, Sites version 252, deployment succeeded.
