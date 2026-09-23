@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { portalActor } from "../../server-auth";
 
 type VisitorBody = Record<string, unknown>;
+class GoogleActionError extends Error {}
 
 const textLimits: Record<string, number> = {
   date: 10, timeIn: 5, visitorName: 120, phone: 30, vehicleNo: 30,
@@ -21,20 +22,54 @@ function connection() {
 
 async function callGoogle(payload: Record<string, unknown>) {
   const { url, token } = connection();
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, token }),
-    redirect: "follow",
-    cache: "no-store",
-  });
-  const result = await response.json() as Record<string, unknown>;
-  if (!response.ok || result.ok !== true) throw new Error(typeof result.error === "string" ? result.error : "Sambungan Google gagal");
-  return result;
+  const readOnly = payload.action === "ekunjung_active";
+  for (let attempt = 0; attempt < (readOnly ? 2 : 1); attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, token }),
+        redirect: "follow",
+        cache: "no-store",
+        signal: AbortSignal.timeout(readOnly ? 8_000 : 20_000),
+      });
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("json")) throw new Error("Google Apps Script memulangkan halaman bukan JSON.");
+      const result = await response.json() as Record<string, unknown>;
+      if (!response.ok || result.ok !== true) throw new GoogleActionError(typeof result.error === "string" ? result.error : "Sambungan Google gagal");
+      return result;
+    } catch (error) {
+      if (!readOnly || attempt === 1) {
+        if (readOnly) throw error;
+        if (error instanceof GoogleActionError) throw error;
+        throw new Error("Pengesahan Google mengambil terlalu lama atau gagal. Rekod mungkin sudah disimpan; semak senarai sebelum cuba lagi.");
+      }
+    }
+  }
+  throw new Error("Sambungan Google gagal");
 }
 
 type VisitorRecord = { id:string;date:string;timeIn:string;timeOut:string;name:string;phone:string;vehicleNo:string;organisation:string;purpose:string;staff:string;meetingPlace:string;notes:string;status:string };
 const visitorColumns = "id,date,time_in AS timeIn,time_out AS timeOut,name,phone,vehicle_no AS vehicleNo,organisation,purpose,staff,meeting_place AS meetingPlace,notes,status";
+type ActiveRow = { id:string;date:string;timeIn:string;name:string;vehicleNo:string };
+type ActiveCache = { records:ActiveRow[]; checkedAt:number };
+const activeCacheKey = (request:Request) => new Request(new URL("/__internal/ekunjung-active",request.url));
+const edgeCache = () => (globalThis as unknown as {caches?:{default?:{match(key:Request):Promise<Response|undefined>;put(key:Request,value:Response):Promise<void>;delete(key:Request):Promise<boolean>}}}).caches?.default;
+async function cachedActive(request:Request) {
+  const edge=edgeCache(),key=activeCacheKey(request);
+  let saved:ActiveCache|null=null;
+  try{const hit=await edge?.match(key);if(hit?.ok)saved=await hit.json() as ActiveCache;}catch{}
+  if(saved&&Date.now()-saved.checkedAt<15_000)return {records:saved.records,stale:false};
+  try{
+    const result=await callGoogle({action:"ekunjung_active"}),records=activeRows(result.records);
+    try{await edge?.put(key,Response.json({records,checkedAt:Date.now()},{headers:{"Cache-Control":"s-maxage=60"}}));}catch{}
+    return {records,stale:false};
+  }catch(error){
+    if(saved&&Date.now()-saved.checkedAt<60_000)return {records:saved.records,stale:true};
+    throw error;
+  }
+}
+async function clearActive(request:Request){try{await edgeCache()?.delete(activeCacheKey(request));}catch{}}
 async function ensureVisitorArchive() {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS ekunjung_records (id TEXT PRIMARY KEY,date TEXT NOT NULL,time_in TEXT NOT NULL,time_out TEXT NOT NULL DEFAULT '',name TEXT NOT NULL,phone TEXT NOT NULL DEFAULT '',vehicle_no TEXT NOT NULL DEFAULT '',organisation TEXT NOT NULL DEFAULT '',purpose TEXT NOT NULL DEFAULT '',staff TEXT NOT NULL DEFAULT '',meeting_place TEXT NOT NULL DEFAULT '',notes TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT 'DALAM KAWASAN',created_at TEXT NOT NULL,updated_at TEXT NOT NULL)").run();
 }
@@ -49,10 +84,9 @@ function activeRows(value: unknown) {
 
 export async function GET(request:Request) {
   try {
-    const result = await callGoogle({ action: "ekunjung_active" });
-    const records = activeRows(result.records);
+    const {records,stale}=await cachedActive(request);
     const params=new URL(request.url).searchParams;
-    if(params.get("view")!=="admin") return Response.json({ success: true, records, activeCount:records.length }, { headers: { "Cache-Control": "private, no-store" } });
+    if(params.get("view")!=="admin") return Response.json({ success: true, records, activeCount:records.length, stale }, { headers: { "Cache-Control": "private, no-store" } });
     const actor=await portalActor(request);
     if(!actor||!["admin","super_admin"].includes(actor.role))return Response.json({error:"Akses pentadbir diperlukan."},{status:403});
     const date=cleanText(params.get("date"),10)||new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_Lumpur"});
@@ -61,7 +95,7 @@ export async function GET(request:Request) {
     const archive=(await env.DB.prepare(`SELECT ${visitorColumns} FROM ekunjung_records WHERE date=? ORDER BY time_in DESC`).bind(date).all<VisitorRecord>()).results;
     const byId=new Map(archive.map(row=>[row.id,row]));
     records.filter(row=>row.date===date&&!byId.has(row.id)).forEach(row=>byId.set(row.id,{...row,timeOut:"",phone:"",organisation:"",purpose:"",staff:"",meetingPlace:"",notes:"",status:"DALAM KAWASAN"}));
-    return Response.json({success:true,activeCount:records.length,records:Array.from(byId.values()).sort((a,b)=>b.timeIn.localeCompare(a.timeIn))},{headers:{"Cache-Control":"private, no-store"}});
+    return Response.json({success:true,activeCount:records.length,stale,records:Array.from(byId.values()).sort((a,b)=>b.timeIn.localeCompare(a.timeIn))},{headers:{"Cache-Control":"private, no-store"}});
   } catch (error) {
     console.error("E-Kunjung active list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Senarai pelawat aktif tidak dapat dibaca sekarang." }, { status: 502 });
@@ -79,6 +113,7 @@ export async function POST(request: Request) {
       const result = await callGoogle({ action: "ekunjung_checkout", id, timeOut });
       await ensureVisitorArchive();
       await env.DB.prepare("UPDATE ekunjung_records SET time_out=?,status='TELAH KELUAR',updated_at=? WHERE id=?").bind(timeOut,new Date().toISOString(),id).run();
+      await clearActive(request);
       return Response.json({ success: true, id: result.id, name: result.name, timeOut: result.timeOut, status: result.status });
     }
     if (action !== "create") return Response.json({ error: "Tindakan tidak sah." }, { status: 400 });
@@ -103,6 +138,7 @@ export async function POST(request: Request) {
     const now=new Date().toISOString();
     await env.DB.prepare("INSERT OR REPLACE INTO ekunjung_records(id,date,time_in,time_out,name,phone,vehicle_no,organisation,purpose,staff,meeting_place,notes,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
       .bind(String(result.id),data.date,data.timeIn,"",data.visitorName,data.phone,data.vehicleNo,data.organisation,data.purpose,data.staff,data.meetingPlace,data.notes,String(result.status||"DALAM KAWASAN"),now,now).run();
+    await clearActive(request);
     return Response.json({ success: true, id: result.id, status: result.status });
   } catch (error) {
     console.error("E-Kunjung save error", error instanceof Error ? error.message : error);

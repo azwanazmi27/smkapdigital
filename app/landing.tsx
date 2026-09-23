@@ -1195,6 +1195,11 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
 }
 
 type VisitorAdminRecord={id:string;date:string;timeIn:string;timeOut:string;name:string;phone:string;vehicleNo:string;organisation:string;purpose:string;staff:string;meetingPlace:string;notes:string;status:string};
+async function visitorJson<T>(response:Response, mutation=false):Promise<T>{
+  const text=await response.text();
+  try{return JSON.parse(text) as T;}
+  catch{throw new Error(mutation?"Sambungan terganggu selepas penghantaran. Semak senarai pelawat sebelum cuba lagi supaya rekod tidak berganda.":"Senarai pelawat belum dapat dibaca. Sila cuba semula.");}
+}
 function VisitorForm({ notify, close }: { notify: (message: string) => void; close: () => void }) {
   const now = new Date();
   const [photo, setPhoto] = useState("");
@@ -1206,6 +1211,7 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
   const [checkoutTime, setCheckoutTime] = useState(now.toTimeString().slice(0, 5));
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [activeRecords, setActiveRecords] = useState<Array<{ id: string; date: string; timeIn: string; name: string; vehicleNo: string }>>([]);
+  const [activeStale,setActiveStale]=useState(false);
   const [loadingActive, setLoadingActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -1221,9 +1227,9 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
     if (checkoutDone) return;
     setLoadingActive(true); setSaveError("");
     void fetch("/api/ekunjung", { cache: "no-store" }).then(async (response) => {
-      const result = await response.json() as { records?: typeof activeRecords; error?: string };
+      const result = await visitorJson<{ records?: typeof activeRecords; stale?:boolean; error?: string }>(response);
       if (!response.ok) throw new Error(result.error || "Senarai pelawat tidak tersedia");
-      setActiveRecords(result.records||[]);
+      setActiveRecords(result.records||[]);setActiveStale(!!result.stale);
     }).catch((error) => setSaveError(error instanceof Error ? error.message : "Senarai pelawat tidak tersedia")).finally(() => setLoadingActive(false));
   }, [visitMode, checkoutDone]);
   const photoPayload = async (file: File) => {
@@ -1241,7 +1247,7 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
     setSaving(true); setSaveError("");
     try {
       const response = await fetch("/api/ekunjung", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, photo: await photoPayload(photoFile) }) });
-      const result = await response.json() as { id?: string; status?: string; error?: string };
+      const result = await visitorJson<{ id?: string; status?: string; error?: string }>(response,true);
       if (!response.ok || !result.id) throw new Error(result.error || "Rekod tidak dapat disimpan");
       setSavedRecord({ id: result.id, status: result.status || "DALAM KAWASAN" }); notify("Daftar masuk berjaya disimpan");
     } catch (error) { setSaveError(error instanceof Error ? error.message : "Rekod tidak dapat disimpan"); }
@@ -1251,7 +1257,7 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
     setSaving(true); setSaveError("");
     try {
       const response = await fetch("/api/ekunjung", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "checkout", id: checkoutId, timeOut: checkoutTime }) });
-      const result = await response.json() as { name?: string; error?: string };
+      const result = await visitorJson<{ name?: string; error?: string }>(response,true);
       if (!response.ok) throw new Error(result.error || "Masa keluar tidak dapat disimpan");
       if (result.name) setCheckoutName(result.name); setCheckoutDone(true); notify("Masa keluar telah disahkan");
     } catch (error) { setSaveError(error instanceof Error ? error.message : "Masa keluar tidak dapat disimpan"); }
@@ -1260,7 +1266,7 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
   if (visitMode === "out") return <div className="visitor-form-shell">
     <span className="modal-overline">E-KUNJUNG SMKAP</span><h2 id="folder-title">Daftar keluar pelawat</h2><p>Pelawat atau pengawal boleh melengkapkan daftar keluar dengan dua langkah sahaja.</p>
     <div className="visitor-mode-tabs"><button onClick={() => setVisitMode("in")}>Daftar masuk</button><button className="active">Daftar keluar</button></div>
-    <div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar</span></div>
+    <div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar{activeStale?" · Senarai mungkin lewat dikemas kini":""}</span></div>
     <div className="visitor-checkout-card"><span>↗</span><div><strong>Daftar keluar pelawat</strong><small>Cari nama seperti dalam rekod daftar masuk</small></div></div>
     {checkoutDone ? <div className="visitor-complete"><span>✓</span><strong>SELESAI</strong><p>{checkoutName} telah didaftarkan keluar pada {checkoutTime}.</p><button onClick={() => { setCheckoutDone(false); setCheckoutName(""); setCheckoutId(""); setCheckoutTime(new Date().toTimeString().slice(0, 5)); }}>Daftar keluar pelawat lain</button></div> : <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); void checkoutVisit(); }}>
       <label>Pilih pelawat *<select autoFocus value={checkoutId} onChange={(event) => { const id = event.target.value; setCheckoutId(id); setCheckoutName(activeRecords.find((record) => record.id === id)?.name || ""); }} required disabled={loadingActive}><option value="">{loadingActive ? "Membaca rekod..." : activeRecords.length ? "Pilih nama pelawat" : "Tiada pelawat aktif"}</option>{activeRecords.map((record) => <option key={record.id} value={record.id}>{record.name}{record.vehicleNo ? ` · ${record.vehicleNo}` : ""} · masuk {record.timeIn}</option>)}</select></label>
@@ -1282,7 +1288,7 @@ function VisitorForm({ notify, close }: { notify: (message: string) => void; clo
   return <div className="visitor-form-shell">
     <span className="modal-overline">DAFTAR PELAWAT</span><h2 id="folder-title">E-Kunjung SMKAP</h2><p>Daftar masuk ke SMKAP dengan pantas.</p>
     <div className="visitor-mode-tabs"><button className="active">Daftar masuk</button><button onClick={() => setVisitMode("out")}>Daftar keluar</button></div>
-    <div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar</span></div>
+    <div className="visitor-active-summary"><strong>{activeRecords.length}</strong><span>pelawat masih belum daftar keluar{activeStale?" · Senarai mungkin lewat dikemas kini":""}</span></div>
     <div className="visitor-time-strip"><span>◷</span><div><small>Tarikh masuk</small><strong>{new Intl.DateTimeFormat("ms-MY", { dateStyle: "long" }).format(new Date(`${form.date}T12:00:00`))}</strong></div><label><small>Masa masuk — boleh dilaras</small><input type="time" value={form.timeIn} onChange={(event) => setVisitorField("timeIn",event.target.value)} required /></label></div>
     <form className="visitor-form" onSubmit={(event) => { event.preventDefault(); if (complete) setReview(true); }}>
       <label>Nama pelawat *<input autoFocus value={form.visitorName} onChange={(event) => setVisitorField("visitorName",event.target.value)} onBlur={() => tidyVisitorField("visitorName")} placeholder="Masukkan nama penuh" required /></label>
