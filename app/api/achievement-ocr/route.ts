@@ -1,5 +1,4 @@
 import { portalActor } from "../../server-auth";
-import { allowAIRequest } from "../../services/ai/rate-limit";
 import { generateAI } from "../../services/ai/router";
 import { reserveAIUsage } from "../../services/ai/usage";
 
@@ -8,7 +7,6 @@ export async function POST(request: Request) {
   try {
     const actor = await portalActor(request);
     if (!actor) return Response.json({ error: "Sila log masuk untuk menggunakan Bantuan Bang Wan." }, { status: 401 });
-    if (!allowAIRequest(request, 12)) return Response.json({ error: "Terlalu banyak permintaan. Sila cuba semula sebentar lagi." }, { status: 429 });
     const body = await request.json() as { base64?: unknown }, base64 = typeof body.base64 === "string" ? body.base64 : "";
     if (!base64 || base64.length > 9_000_000 || !/^[A-Za-z0-9+/=]+$/.test(base64)) return Response.json({ error: "Halaman PDF terlalu besar atau tidak sah." }, { status: 400 });
     const quota = await reserveAIUsage(actor);

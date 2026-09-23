@@ -1,7 +1,6 @@
 import {reserveAIUsage} from "../../../services/ai/usage";
 import {portalActor} from '../../../server-auth';
 import {generateAI} from '../../../services/ai/router';
-import {allowAIRequest} from '../../../services/ai/rate-limit';
 import {evidencePanitiaCategories, parseEvidenceSuggestion} from '../../../evidence-ai-model';
 import {skasDomains, skasStandards, skasEvidenceTypes} from '../../../skas-catalog';
 
@@ -9,7 +8,6 @@ export async function POST(request: Request) {
   try {
     const actor=await portalActor(request);
     if (!actor) return Response.json({error:'Sila log masuk untuk menggunakan Bantuan Bang Wan.'},{status:401});
-    if (!allowAIRequest(request)) return Response.json({error:'Terlalu banyak permintaan. Cuba semula sebentar lagi.'},{status:429});
     const raw=await request.text();
     if(raw.length>16000)return Response.json({error:'Ringkaskan maklumat eviden kepada 6,000 aksara.'},{status:400});
     let body: Record<string,unknown>;

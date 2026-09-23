@@ -9,7 +9,7 @@ const clean = (value: unknown, max: number) => typeof value === "string" ? value
 export async function generateReportText(request: Request, limited: boolean) {
   try {
     const actor=await portalActor(request);if(!actor)return Response.json({error:"Sila log masuk untuk menggunakan AI."},{status:401});
-    if (!allowAIRequest(request)) return Response.json({ error: "Terlalu banyak permintaan. Sila cuba semula sebentar lagi." }, { status: 429 });
+    if (!limited && !allowAIRequest(request)) return Response.json({ error: "Terlalu banyak permintaan. Sila cuba semula sebentar lagi." }, { status: 429 });
     const body = await request.json() as Record<string, unknown>;
     const text = clean(body.text, 6000), title = clean(body.title, 180), category = clean(body.category, 100), objective = clean(body.objective, 1000), outcome = clean(body.outcome, 1000);
     if (!text) return Response.json({ error: "Ringkasan program diperlukan." }, { status: 400 });
