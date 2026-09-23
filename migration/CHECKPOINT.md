@@ -1,5 +1,11 @@
 # Cloudflare migration checkpoint — 22 September 2026, Malaysia
 
+## 23 September 2026, 09:25 MYT — school Chrome profile verification
+- Opened the production Apps Script in the dedicated Chrome **School** profile (`sekolah-2508@moe-dl.edu.my`), without the stale `/u/5` account selector. The read-only `authorizeServices` execution completed at 09:13:06, granting the missing Sheets/Mail scopes. Live deployment remains version 6; no new deployment or Sheet write was made.
+- Production `/api/ekunjung` returned `success:true`, zero active records after authorization. Read-only E-Kunjung path is PASS; create/checkout remain NOT TESTED.
+- Authenticated e-Tempahan UI reached the school Sheet bridge but the status/list view ended with `Status bilik tidak dapat dibaca sekarang.` Apps Script version 6 `doPost` executions completed in 1–3 seconds; its generic catch obscures the cause. E-Tempahan remains FAIL. The untested booking create/delete/email paths must not be treated as working. A read-only diagnostic helper was added only to the Apps Script editor draft, not the deployed version.
+- Chrome's native automation can select the School profile and inspect pages, but the editor function picker did not respond to accessibility clicks; diagnosis is unfinished. No production Worker or DNS changes occurred in this continuation.
+
 ## 23 September 2026, 08:45 MYT — continuation
 - Production Worker secret-name audit found only `OPR_APPS_SCRIPT_URL` and `OPR_APPS_SCRIPT_TOKEN`. Cloudflare AI binding generated synthetic text successfully earlier, but external Gemini/Groq/Mistral/OpenRouter production credentials are absent and those provider paths are not verified. E-Keberadaan Google Sheet service-account variables and VAPID private key are also absent, so Sheet mirroring and push parity must remain unverified. Do not infer these modules work from the successful AI binding test.
 - The earlier Apps Script link with `/u/5` was wrong for the owner's fresh, school-only Chrome profile. The owner confirmed that the corrected profile-neutral editor URL opens. Authorization completion is still pending at this checkpoint.
