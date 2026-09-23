@@ -1,33 +1,33 @@
 import { jsPDF } from 'jspdf';
 
-export type AbsenceSummaryRow = { teacherName:string; absenceDate:string; endDate:string|null; reason:string };
+export type AbsenceSummaryRow = { teacherName:string; absenceDate:string; endDate:string|null; reason:string; note:string };
 export function malaysiaClock(now = new Date()) {
   const local = new Date(now.getTime() + 8 * 3600000).toISOString();
   return { date:local.slice(0,10), time:local.slice(11,16) };
 }
 const dateLabel = (date:string) => new Date(date+'T12:00:00+08:00').toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Kuala_Lumpur'});
 export function buildAbsenceSummaryPdf(date:string, rows:AbsenceSummaryRow[]) {
-  const pdf = new jsPDF({unit:'mm',format:'a4',compress:true});
-  const widths=[12,67,47,52],left=16,bottom=276;
+  const pdf = new jsPDF({unit:'mm',format:'a4',orientation:'landscape',compress:true});
+  const widths=[12,70,50,43,94],left=14,bottom=190;
   let y=0;
   const heading=()=>{
     pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.setTextColor(18,63,100);
-    pdf.text('RUMUSAN KEBERADAAN GURU',105,22,{align:'center'});
-    pdf.text('SMK AGAMA PAHANG',105,29,{align:'center'});
-    pdf.setDrawColor(18,63,100);pdf.line(left,34,194,34);
+    pdf.text('RUMUSAN KEBERADAAN GURU',148.5,22,{align:'center'});
+    pdf.text('SMK AGAMA PAHANG',148.5,29,{align:'center'});
+    pdf.setDrawColor(18,63,100);pdf.line(left,34,283,34);
     pdf.setFont('helvetica','normal');pdf.setFontSize(11);pdf.setTextColor(20,30,40);
-    pdf.text('Tarikh: '+dateLabel(date),105,43,{align:'center'});
+    pdf.text('Tarikh: '+dateLabel(date),148.5,43,{align:'center'});
     y=51;let x=left;
-    ['Bil.','Nama guru','Tarikh bercuti','Sebab'].forEach((label,i)=>{
+    ['Bil.','Nama guru','Tarikh bercuti','Sebab','Catatan'].forEach((label,i)=>{
       pdf.setFillColor(18,63,100);pdf.rect(x,y,widths[i],10,'F');
       pdf.setTextColor(255);pdf.setFont('helvetica','bold');pdf.text(label,x+2,y+6.5);x+=widths[i];
     });y+=10;pdf.setTextColor(20,30,40);pdf.setFont('helvetica','normal');pdf.setFontSize(10);
   };
   heading();
-  if(!rows.length){pdf.text('Tiada ketidakhadiran direkodkan.',105,y+10,{align:'center'});}
+  if(!rows.length){pdf.text('Tiada ketidakhadiran direkodkan.',148.5,y+10,{align:'center'});}
   rows.forEach((row,index)=>{
     const range=dateLabel(row.absenceDate)+(row.endDate&&row.endDate!==row.absenceDate?' - '+dateLabel(row.endDate):'');
-    const cells=[String(index+1),row.teacherName,range,row.reason||'-'].map((value,i)=>pdf.splitTextToSize(value,widths[i]-4) as string[]);
+    const cells=[String(index+1),row.teacherName,range,row.reason||'-',row.note?.trim()||'-'].map((value,i)=>pdf.splitTextToSize(value,widths[i]-4) as string[]);
     let offset=0;const total=Math.max(...cells.map(lines=>lines.length));
     while(offset<total){
       if(bottom-y<12){pdf.addPage();heading();}
@@ -38,6 +38,6 @@ export function buildAbsenceSummaryPdf(date:string, rows:AbsenceSummaryRow[]) {
     }
   });
   const pages=pdf.getNumberOfPages();
-  for(let page=1;page<=pages;page++){pdf.setPage(page);pdf.setFontSize(8);pdf.setTextColor(85,98,110);pdf.text('Dijana daripada Portal SMKAP Digital',16,288);pdf.text(`${page} / ${pages}`,194,288,{align:'right'});}
+  for(let page=1;page<=pages;page++){pdf.setPage(page);pdf.setFontSize(8);pdf.setTextColor(85,98,110);pdf.text('Dijana daripada Portal SMKAP Digital',14,201);pdf.text(`${page} / ${pages}`,283,201,{align:'right'});}
   return pdf.output('arraybuffer');
 }

@@ -28,7 +28,7 @@ export async function POST(request:Request){
     let bytes:ArrayBuffer;
     if(object)bytes=await object.arrayBuffer();
     else{
-      const result=await env.DB.prepare("SELECT teacher_name AS teacherName,absence_date AS absenceDate,end_date AS endDate,reason FROM absences WHERE absence_date<=? AND COALESCE(NULLIF(end_date,''),absence_date)>=? ORDER BY teacher_name,id").bind(clock.date,clock.date).all<AbsenceSummaryRow>();
+      const result=await env.DB.prepare("SELECT teacher_name AS teacherName,absence_date AS absenceDate,end_date AS endDate,reason,note FROM absences WHERE absence_date<=? AND COALESCE(NULLIF(end_date,''),absence_date)>=? ORDER BY teacher_name,id").bind(clock.date,clock.date).all<AbsenceSummaryRow>();
       bytes=buildAbsenceSummaryPdf(clock.date,result.results);
       await env.FILES.put(key,bytes,{httpMetadata:{contentType:'application/pdf'}});
     }
