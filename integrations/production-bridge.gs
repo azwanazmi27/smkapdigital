@@ -20,7 +20,11 @@ function doPost(e) {
  if(body.action==='etempahan_create') return createEtempahan_(body);
  if(body.action==='etempahan_delete'||body.action==='etempahan_cancel') return deleteEtempahan_(body);
  return json_({ok:false,error:'Tindakan tidak sah'});
- } catch(error) { return json_({ok:false,error:'Staging Drive request failed'}); }
+ } catch(error) {
+   // Keep internal details in the Apps Script execution log, never in the API response.
+   console.error('Production bridge request failed', error);
+   return json_({ok:false,error:'Production bridge request failed'});
+ }
 }
 function doGet(){return json_({ok:false,error:'POST required'});}
 function json_(body){return ContentService.createTextOutput(JSON.stringify(body)).setMimeType(ContentService.MimeType.JSON);}

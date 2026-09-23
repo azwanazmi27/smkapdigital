@@ -1,5 +1,10 @@
 # Cloudflare migration checkpoint — 22 September 2026, Malaysia
 
+## 23 September 2026, 09:35 MYT — E-Tempahan diagnosis pending
+- The school Sheet backup's `REKOD_TEMPAHAN` headers match the bridge's twelve expected columns. Existing `authorizeServices` execution in the school Chrome profile succeeded, and E-Kunjung read remains healthy. E-Tempahan still displays the generic 502 on the authenticated production UI; no booking row was created or changed.
+- Added server-side Apps Script error logging in the repository's production bridge source while retaining a generic API response. Syntax check passed. This source change is **not deployed**; live web app remains version 6. Do not interpret it as a fix until a new script version is deployed and the portal passes an end-to-end read.
+- A read-only `debugBookingReadOnly` helper exists in the school Apps Script editor draft. Chrome's native automation could not operate the function picker reliably; the owner has been asked to select that helper and press Run, then report only the error text. Do not log, transmit or request the API token.
+
 ## 23 September 2026, 09:25 MYT — school Chrome profile verification
 - Opened the production Apps Script in the dedicated Chrome **School** profile (`sekolah-2508@moe-dl.edu.my`), without the stale `/u/5` account selector. The read-only `authorizeServices` execution completed at 09:13:06, granting the missing Sheets/Mail scopes. Live deployment remains version 6; no new deployment or Sheet write was made.
 - Production `/api/ekunjung` returned `success:true`, zero active records after authorization. Read-only E-Kunjung path is PASS; create/checkout remain NOT TESTED.
