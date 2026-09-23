@@ -7,8 +7,9 @@ const purposes = new Set(["PdPC", "Mesyuarat", "Taklimat", "Perjumpaan", "Latiha
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 
 function connection() {
-  const url = process.env.ETEMPAHAN_APPS_SCRIPT_URL;
-  const token = process.env.ETEMPAHAN_APPS_SCRIPT_TOKEN;
+  const dedicated = Boolean(process.env.ETEMPAHAN_APPS_SCRIPT_URL && process.env.ETEMPAHAN_APPS_SCRIPT_TOKEN);
+  const url = dedicated ? process.env.ETEMPAHAN_APPS_SCRIPT_URL : process.env.OPR_APPS_SCRIPT_URL;
+  const token = dedicated ? process.env.ETEMPAHAN_APPS_SCRIPT_TOKEN : process.env.OPR_APPS_SCRIPT_TOKEN;
   if (!url || !token) throw new Error("Sambungan Google Sheet belum dikonfigurasi");
   return { url, token };
 }

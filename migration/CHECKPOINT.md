@@ -1,5 +1,19 @@
 # Cloudflare migration checkpoint — 22 September 2026, Malaysia
 
+## Current production checkpoint — 23 September 2026, 08:15 MYT
+
+The older sections below are historical. The user has authorized a **new** Cloudflare production portal without importing the inaccessible historical Sites database. Do not describe that choice as a complete data migration. The original Sites portal and its data remain intact; the full source export and reconciliation gate has not been met.
+
+- Production Worker: `portal` at https://portal.smkapdigital.workers.dev, current version `7423ec76-b02a-412e-a0c6-e90b1159176f`; rollback code version `bd11ad9b-e8b5-466c-ad8a-4dd9f8d4637d`. Production D1 `smkapdigital-production-db` and R2 `smkapdigital-production-files` remain separate from staging. No DNS change or purchased custom domain.
+- Google SSO: production login was verified with the school account. Live synthetic document generation using the Cloudflare AI binding succeeded; this verifies text generation only, not all AI workflows. The account has Workers Free and R2 Paid; no Workers Paid activation occurred.
+- Google Drive: production Apps Script `SMKAP Digital Cloudflare Production Drive 20260923` deployment ID `AKfycbyNjYkzKd_sdLYMkvhXkXEsf2X7jaMkHU67JGaPj9BS6c90dAzaj2cPjmHnJ0c6BPS9bA` updated to **version 4**. The `/exec` URL is unchanged. Management-file upload/read was previously verified with a synthetic PDF in the existing school Drive root.
+- E-Kunjung and e-Tempahan code was added to this Apps Script and version 4 deployed. **Both live Sheet-backed reads FAIL**: Google has not granted `https://www.googleapis.com/auth/spreadsheets` to this project. Editor execution of a read-only authorization helper confirmed the missing scope. Google’s “Review permissions” flow opens a “Page not found” URL under `script.google.com/accounts?authuser=5`; no grant was completed. Do not test creates, checkout, cancellation, or booking e-mail until authorization and read-only checks succeed. An authorization helper exists in the editor draft only, not deployed version 4 or this repository.
+- The school-owned `REKOD E-KUNJUNG SMKAP` Sheet was exported to owner-restricted ignored `work/backups/rekod-ekunjung-etempahan-20260923-0755.xlsx` (SHA-256 `3ec5d2b29918ca5bb59c62d70033c984daac162f07aff1b834a685dc88e97959`). ZIP integrity passed. An isolated local reconstruction read 32 nonempty rows including header in the visitor tab and 18 in the booking tab; this is not a Google Sheet restore or a complete old-portal backup.
+- Current local branch `migration/cloudflare-20260922` has unpushed Cloudflare AI binding and e-Tempahan bridge fallback changes at this checkpoint. Private GitHub gained the production bridge file through the browser at commit `4a86555f01cf94786c158141e2bffd76c8323065`, but local and remote histories must be reconciled before a CLI push. No force push. GitHub CLI OAuth is awaiting user authorization.
+- Local build and `scripts/test-application.mjs` passed (105 tests). Browser production checks: Google login PASS, synthetic text AI PASS, management Drive upload/read PASS (earlier), e-Tempahan list FAIL, E-Kunjung active list FAIL. Other roles and write flows remain NOT TESTED. No historical Sites DB or R2 reconciliation; do not claim full parity or zero data loss.
+
+Next: resolve school-owner Apps Script Sheets/Mail authorization; rerun read-only visitor/booking calls; then test isolated create/update/delete paths without real notifications; sync reviewed branch to private GitHub; complete the wider role/API matrix and source-data status.
+
 Production cutover: BLOCKED. No production data, DNS, deployment or Google workflow changed.
 
 - User chose Cloudflare, authorized private GitHub repository `azwanazmi27/smkapdigital`, and accepted a prefixed workers.dev address instead of buying a domain.

@@ -18,7 +18,7 @@ export function configuredProviders(env: NodeJS.ProcessEnv = process.env): Recor
     groq: groqProvider(config.models.groq, env.GROQ_API_KEY),
     mistral: mistralProvider(config.models.mistral, env.MISTRAL_API_KEY),
     openrouter: openRouterProvider(config.models.openrouter, env.OPENROUTER_API_KEY),
-    cloudflare: cloudflareProvider(config.models.cloudflare, env.CLOUDFLARE_ACCOUNT_ID, env.CLOUDFLARE_API_TOKEN),
+    cloudflare: cloudflareProvider(config.models.cloudflare, env.CLOUDFLARE_ACCOUNT_ID, env.CLOUDFLARE_API_TOKEN, env.CLOUDFLARE_AI_BINDING === "1"),
   };
 }
 
