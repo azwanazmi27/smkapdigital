@@ -8,7 +8,7 @@ const compiled=ts.transpileModule(source.replace(/^import .*;\n/gm,'').replace(/
 function fixture(){
  const sql=new DatabaseSync(':memory:');
  const db={prepare(q){let args=[];return {bind(...a){args=a;return this;},async first(){return sql.prepare(q).get(...args)||null;},async all(){return {results:sql.prepare(q).all(...args)};},async run(){return sql.prepare(q).run(...args);}};},async batch(items){sql.exec('BEGIN');try{const results=[];for(const item of items)results.push(await item.run());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}};
- const {GET,POST,DELETE}=new Function('env','portalActor','upsertAbsenceToSheet',compiled+';return {GET,POST,DELETE};')({DB:db,RELIEF_ADMIN_PIN:'123456'},async()=>null,async()=>true);
+ const {GET,POST,DELETE}=new Function('env','portalActor','upsertAbsenceToSheet','verifyReliefPin',compiled+';return {GET,POST,DELETE};')({DB:db},async()=>null,async()=>true,async pin=>pin==='123456');
  const req=(method,reason,pin='123456')=>new Request('https://test/api/ekeberadaan?resource=reasons'+(method==='DELETE'?'&reason='+encodeURIComponent(reason):''),{method,headers:{'Content-Type':'application/json','x-admin-pin':pin},...(method==='POST'?{body:JSON.stringify({reason})}:{})});
  return {sql,list:async()=>{const r=await GET(req('GET'));assert.equal(r.status,200);return (await r.json()).reasons;},add:(r,p)=>POST(req('POST',r,p)),remove:(r,p)=>DELETE(req('DELETE',r,p))};
 }

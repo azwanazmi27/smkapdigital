@@ -7,7 +7,7 @@ import ts from 'typescript';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const compile=source=>ts.transpileModule(source.replace(/^import .*;\n/gm,'').replace(/export /g,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
 const {syncTeacherReview,teacherNameKey,reviewNames}=new Function(compile(read('app/lib/teacher-review.ts'))+';return {syncTeacherReview,teacherNameKey,reviewNames};')();
-const createRoutes=new Function('env','syncTeacherReview',compile(read('app/api/teacher-review/route.ts'))+';return {GET,POST};');
+const createRoutes=new Function('env','syncTeacherReview','verifyReliefPin',compile(read('app/api/teacher-review/route.ts'))+';return {GET,POST};');
 function fixture(){
  const sql=new DatabaseSync(':memory:');
  sql.exec(`CREATE TABLE teachers(id TEXT PRIMARY KEY,name TEXT,category TEXT,created_at TEXT);
@@ -15,7 +15,7 @@ function fixture(){
  CREATE TABLE absences(id TEXT PRIMARY KEY,teacher_id TEXT,teacher_name TEXT,category TEXT,absence_date TEXT,end_date TEXT,reason TEXT,duration TEXT,start_time TEXT,end_time TEXT,note TEXT,relief_status TEXT,created_at TEXT,updated_at TEXT);`);
  sql.exec(read('drizzle/0008_striped_punisher.sql'));
  const db={prepare(query){let args=[];const stmt=sql.prepare(query);return {bind(...a){args=a;return this;},async all(){return {results:stmt.all(...args)};},async first(){return stmt.get(...args)||null;},async run(){return stmt.run(...args);}};},async batch(statements){sql.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());sql.exec('COMMIT');return result;}catch(error){sql.exec('ROLLBACK');throw error;}}};
- const routes=createRoutes({DB:db,RELIEF_ADMIN_PIN:'test-pin'},syncTeacherReview);
+ const routes=createRoutes({DB:db},syncTeacherReview,async pin=>pin==='test-pin');
  const request=(body,pin='test-pin')=>new Request('https://example.test/api/teacher-review',{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-admin-pin':pin},...(body?{body:JSON.stringify(body)}:{})});
  const post=async body=>{const res=await routes.POST(request(body));return {status:res.status,...await res.json()};};
  const schedule=async(id,names)=>{sql.prepare("UPDATE relief_schedules SET is_active='0'").run();sql.prepare('INSERT INTO relief_schedules VALUES(?,?,?,?,?)').run(id,id+'.pdf',JSON.stringify(names.map(name=>({name}))), '1',id);await syncTeacherReview(db,id,id+'.pdf',names.map(name=>({name})));};

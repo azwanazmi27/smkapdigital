@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { upsertAbsenceToSheet } from "../../lib/google-sheets";
 import { portalActor } from "../../server-auth";
+import { verifyReliefPin } from "../../lib/relief-pin";
 
 const form6 = ["DESFITRI BINTI MOHD NASIR","MOHD FADIL BIN ABDULLAH","NOOR AZWAN BIN AZMI","NOR ATIKAH BINTI MOHAMED","NOR RABIATUL ADAWIAH BINTI RAMELI","NORHASHIDAH BINTI MOHD NORHANI","SARIZAN BINTI SULONG","SITI NUR AISYAH BINTI MOHD NAYAI"];
 const defaultReasons = ["MC", "CRK", "Mesyuarat", "Kursus / Latihan", "Urusan Rasmi", "Bertugas Warden", "Hal Kecemasan", "Lain-lain"];
@@ -8,7 +9,7 @@ const mainstream = ["AFFROSH KHANA BT AHMAD","AHMAD NAJIB BIN AZMI","AINUL HUSNA
 
 async function reasonAdmin(request: Request) {
   const pin = request.headers.get("x-admin-pin");
-  if (env.RELIEF_ADMIN_PIN && pin === env.RELIEF_ADMIN_PIN) return true;
+  if (await verifyReliefPin(pin)) return true;
   const actor = await portalActor(request);
   return !!actor && ["admin", "super_admin"].includes(actor.role);
 }

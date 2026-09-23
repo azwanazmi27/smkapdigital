@@ -114,7 +114,7 @@ document.head.append(summaryStyle);
 
 const coordinatorStyle = document.createElement("style");
 coordinatorStyle.textContent = `
-  .smk-coordinator-admin{padding:24px;margin:20px 0;background:#fff;border:1px solid #cadfd6;border-radius:16px;color:#173e36}.smk-coordinator-admin h2{margin:0 0 8px;font-size:22px}.smk-coordinator-admin>p{font-size:16px;line-height:1.5}.smk-coordinator-list{display:grid;gap:9px}.smk-coordinator-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.smk-coordinator-row input,.smk-coordinator-add input{min-width:0;min-height:44px;padding:9px 11px;border:1px solid #9bbfbc;border-radius:9px;color:#173b43;background:#fff;font:inherit}.smk-coordinator-row button,.smk-coordinator-add button,.smk-coordinator-save{min-height:44px;padding:10px 13px;border:1px solid #31776f;border-radius:9px;color:#fff;background:#176b61;font:800 14px Arial;cursor:pointer}.smk-coordinator-row button{border-color:#ae5660;background:#a6424e}.smk-coordinator-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:13px}.smk-coordinator-save{width:100%;margin-top:16px;background:#0f6070}.smk-coordinator-message{min-height:20px;margin-top:12px!important;color:#a03542;font-weight:700}.smk-coordinator-message.ok{color:#176b61}@media(max-width:640px){.smk-coordinator-admin{padding:16px}.smk-coordinator-add{grid-template-columns:1fr}.smk-coordinator-add button{width:100%}}
+  .smk-coordinator-admin,.smk-relief-pin-admin{padding:24px;margin:20px 0;background:#fff;border:1px solid #cadfd6;border-radius:16px;color:#173e36}.smk-coordinator-admin h2,.smk-relief-pin-admin h2{margin:0 0 8px;font-size:22px}.smk-coordinator-admin>p,.smk-relief-pin-admin>p{font-size:16px;line-height:1.5}.smk-coordinator-list{display:grid;gap:9px}.smk-coordinator-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.smk-coordinator-row input,.smk-coordinator-add input,.smk-relief-pin-admin input{min-width:0;min-height:44px;padding:9px 11px;border:1px solid #9bbfbc;border-radius:9px;color:#173b43;background:#fff;font:inherit}.smk-coordinator-row button,.smk-coordinator-add button,.smk-coordinator-save,.smk-relief-pin-admin button{min-height:44px;padding:10px 13px;border:1px solid #31776f;border-radius:9px;color:#fff;background:#176b61;font:800 14px Arial;cursor:pointer}.smk-coordinator-row button{border-color:#ae5660;background:#a6424e}.smk-coordinator-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:13px}.smk-coordinator-save{width:100%;margin-top:16px;background:#0f6070}.smk-coordinator-message,.smk-relief-pin-message{min-height:20px;margin-top:12px!important;color:#a03542;font-weight:700}.smk-coordinator-message.ok,.smk-relief-pin-message.ok{color:#176b61}.smk-relief-pin-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.smk-relief-pin-fields label{display:grid;gap:5px;font-weight:700}.smk-relief-pin-admin button:disabled{opacity:.6;cursor:wait}@media(max-width:640px){.smk-coordinator-admin,.smk-relief-pin-admin{padding:16px}.smk-coordinator-add,.smk-relief-pin-fields{grid-template-columns:1fr}.smk-coordinator-add button{width:100%}}
 `;
 document.head.append(coordinatorStyle);
 
@@ -145,6 +145,31 @@ const addCoordinatorAdmin = () => {
 };
 const coordinatorAdminObserver = new MutationObserver(addCoordinatorAdmin);
 coordinatorAdminObserver.observe(root, {childList:true, subtree:true});
+const addReliefPinAdmin = () => {
+  const target = root.querySelector(".summary-page.view-enter .admin-layout");
+  if (!target || root.querySelector(".smk-relief-pin-admin")) return;
+  const panel = document.createElement("section"); panel.className = "smk-relief-pin-admin";
+  panel.innerHTML = `<h2>PIN E-Keberadaan &amp; E-Relief</h2><p>Satu PIN untuk akses penyelaras Relief dan fungsi pentadbir E-Keberadaan. Penukaran hanya boleh dibuat oleh pentadbir portal yang telah log masuk.</p><form autocomplete="off"><div class="smk-relief-pin-fields"><label>PIN semasa<input name="currentPin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="off"></label><label>PIN baharu<input name="newPin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="new-password"></label><label>Ulang PIN baharu<input name="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="new-password"></label></div><button type="submit">Tukar PIN</button><p class="smk-relief-pin-message" role="status" aria-live="polite"></p></form>`;
+  target.before(panel);
+  const form = panel.querySelector("form"), message = panel.querySelector(".smk-relief-pin-message"), button = panel.querySelector("button");
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const currentPin = form.elements.currentPin.value, newPin = form.elements.newPin.value;
+    message.className = "smk-relief-pin-message";
+    if (newPin !== form.elements.confirmPin.value) { message.textContent = "Ulangan PIN baharu tidak sepadan."; return; }
+    button.disabled = true; message.textContent = "Menukar PIN…";
+    try {
+      const response = await fetch("/api/relief-pin", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({currentPin,newPin})});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "PIN tidak dapat ditukar.");
+      form.reset(); message.className = "smk-relief-pin-message ok";
+      message.textContent = "PIN berjaya ditukar. Masuk semula ke E-Keberadaan dan E-Relief menggunakan PIN baharu.";
+    } catch (error) { message.textContent = error?.message || "PIN tidak dapat ditukar."; }
+    finally { button.disabled = false; }
+  };
+};
+const reliefPinAdminObserver = new MutationObserver(addReliefPinAdmin);
+reliefPinAdminObserver.observe(root, {childList:true, subtree:true});
 void loadCoordinators();
 
 try {

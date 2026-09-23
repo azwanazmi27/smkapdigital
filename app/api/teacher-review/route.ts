@@ -1,10 +1,11 @@
 import { env } from 'cloudflare:workers';
 import { syncTeacherReview } from '../../lib/teacher-review';
+import { verifyReliefPin } from '../../lib/relief-pin';
 const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'private, no-store'}});
-const authorized=(request:Request)=>Boolean(env.RELIEF_ADMIN_PIN)&&request.headers.get('x-admin-pin')===env.RELIEF_ADMIN_PIN;
+const authorized=(request:Request)=>verifyReliefPin(request.headers.get('x-admin-pin'));
 
 export async function GET(request:Request) {
- if(!authorized(request)) return json({error:'PIN pentadbir diperlukan.'},401);
+ if(!await authorized(request)) return json({error:'PIN pentadbir diperlukan.'},401);
  const [candidates,teachers]=await env.DB.batch([
   env.DB.prepare("SELECT name_key AS nameKey,name,source_label AS sourceLabel,status,teacher_id AS teacherId FROM relief_teacher_review WHERE schedule_id IN (SELECT id FROM relief_schedules WHERE is_active='1') ORDER BY status,name"),
   env.DB.prepare('SELECT id,name,category FROM teachers ORDER BY name'),
@@ -13,7 +14,7 @@ export async function GET(request:Request) {
 }
 
 export async function POST(request:Request) {
- if(!authorized(request)) return json({error:'PIN pentadbir diperlukan.'},401);
+ if(!await authorized(request)) return json({error:'PIN pentadbir diperlukan.'},401);
  const body=await request.json() as {action?:string;nameKey?:string;category?:string;teacherId?:string};
  if(body.action==='sync') {
   const schedule=await env.DB.prepare("SELECT id,source_label,teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC LIMIT 1").first<{id:string;source_label:string;teachers_json:string}>();
