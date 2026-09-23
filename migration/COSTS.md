@@ -1,4 +1,14 @@
-# Operating cost assumptions — checked 22 September 2026
+# Operating cost assumptions — checked 23 September 2026
+
+Current account status supersedes the historical wording below: Workers **Free** is active, while the R2 usage-billed subscription was activated with explicit user approval. No Workers Paid plan, domain purchase, or Images service was activated. The production Worker uses a Workers AI binding for text generation. Actual monthly charges cannot be calculated until measured storage, operation counts, traffic, and external provider usage are known.
+
+- Workers Free allows 100,000 requests/day and 10 ms CPU time per invocation under the standard pricing table; over-limit behavior must be monitored. [Official Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
+- D1 Free includes 5 million rows read/day, 100,000 rows written/day and 5 GB total storage. [Official D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/).
+- R2 Standard's monthly free allowance is 10 GB-month, 1 million Class A operations and 10 million Class B operations; usage beyond the allowance is billable on the active R2 subscription. Direct R2 egress is free. [Official R2 pricing](https://developers.cloudflare.com/r2/pricing/).
+- Workers AI includes 10,000 Neurons/day at no charge on Workers Free. Excess on Free fails; paid usage requires Workers Paid, which has not been activated. The currently selected model must remain eligible for Free. [Official Workers AI pricing, updated 17 September 2026](https://developers.cloudflare.com/workers-ai/platform/pricing/).
+- Google Workspace, Apps Script, Sheets, Drive and the other AI providers retain their own quotas/billing. No assumption of free or unlimited use.
+
+## Historical pre-activation assumptions (22 September 2026)
 
 No paid plan, domain purchase, R2 subscription or Images service was activated. Actual cost is not established because production storage size, traffic, CPU usage, provider quotas and paid-account eligibility remain unverified.
 
