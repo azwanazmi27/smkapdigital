@@ -1,5 +1,9 @@
 # Cloudflare migration checkpoint — 22 September 2026, Malaysia
 
+## 23 September 2026, 09:40 MYT — booking diagnostic editor state
+- The school-profile Apps Script editor briefly contained a malformed unsaved `function ()` line; the read-only helper was restored to the syntactically valid `debugBookingReadOnly` declaration. The editor displayed `Saved to Drive` once, but subsequently continued to show `Code.gs unsaved`/`Saving project...`; persistence of that draft is not verified. The active web-app deployment remains version 6 and was not changed.
+- Native Chrome accessibility could inspect the editor and close two duplicate project tabs, but could not select `debugBookingReadOnly` from the function picker. A 09:40:23 execution completed with `doPost` still selected and no diagnostic result, so E-Tempahan's exception is still unknown. Do not infer that the booking read passed. Do not deploy this draft until its full source and save state are verified.
+
 ## 23 September 2026, 09:35 MYT — E-Tempahan diagnosis pending
 - The school Sheet backup's `REKOD_TEMPAHAN` headers match the bridge's twelve expected columns. Existing `authorizeServices` execution in the school Chrome profile succeeded, and E-Kunjung read remains healthy. E-Tempahan still displays the generic 502 on the authenticated production UI; no booking row was created or changed.
 - Added server-side Apps Script error logging in the repository's production bridge source while retaining a generic API response. Syntax check passed. This source change is **not deployed**; live web app remains version 6. Do not interpret it as a fix until a new script version is deployed and the portal passes an end-to-end read.
