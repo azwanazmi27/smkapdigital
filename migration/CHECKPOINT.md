@@ -1,5 +1,8 @@
 # Cloudflare migration checkpoint — 22 September 2026, Malaysia
 
+## 23 September 2026 — targeted legacy import (latest)
+- Active user directory details, organisation chart, profile pictures and Portfolio Kepakaran were imported from the old Sites portal into the separate Cloudflare production portal. See [TARGETED-IMPORT-20260923.md](TARGETED-IMPORT-20260923.md) for counts, backup evidence, checks and recovery limits. The original Sites portal and all unrelated data remain intact. This is a targeted import, not a full historical migration.
+
 ## 23 September 2026, 09:40 MYT — booking diagnostic editor state
 - The school-profile Apps Script editor briefly contained a malformed unsaved `function ()` line; the read-only helper was restored to the syntactically valid `debugBookingReadOnly` declaration. The editor displayed `Saved to Drive` once, but subsequently continued to show `Code.gs unsaved`/`Saving project...`; persistence of that draft is not verified. The active web-app deployment remains version 6 and was not changed.
 - Native Chrome accessibility could inspect the editor and close two duplicate project tabs, but could not select `debugBookingReadOnly` from the function picker. A 09:40:23 execution completed with `doPost` still selected and no diagnostic result, so E-Tempahan's exception is still unknown. Do not infer that the booking read passed. Do not deploy this draft until its full source and save state are verified.
