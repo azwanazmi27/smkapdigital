@@ -1615,12 +1615,12 @@ function OprGenerator({ notify, close, user, initialCategoryGroup="", initialCat
   const optimisePhoto = (file: File) => new Promise<File>((resolve, reject) => {
     const image = new Image(); const source = URL.createObjectURL(file);
     image.onload = () => {
-      const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+      const scale = Math.min(1, 1200 / Math.max(image.naturalWidth, image.naturalHeight));
       const canvas = document.createElement("canvas"); canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
       const context = canvas.getContext("2d");
       if (!context) { URL.revokeObjectURL(source); reject(new Error("Gambar tidak dapat diproses")); return; }
       context.fillStyle = "#ffffff"; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => { URL.revokeObjectURL(source); if (!blob) return reject(new Error("Gambar tidak dapat dimampatkan")); resolve(new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg", lastModified: Date.now() })); }, "image/jpeg", .78);
+      canvas.toBlob((blob) => { URL.revokeObjectURL(source); if (!blob) return reject(new Error("Gambar tidak dapat dimampatkan")); resolve(new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg", lastModified: Date.now() })); }, "image/jpeg", .7);
     };
     image.onerror = () => { URL.revokeObjectURL(source); reject(new Error("Gambar tidak dapat dibaca")); };
     image.src = source;
@@ -1629,15 +1629,17 @@ function OprGenerator({ notify, close, user, initialCategoryGroup="", initialCat
     const selected=files.slice(0,6);
     if(files.length>6)notify("Maksimum 6 fail dipilih");
     if(selected.some((file)=>!(["application/pdf","image/jpeg","image/png"].includes(file.type))))return notify("Hanya fail PDF, JPG dan PNG dibenarkan");
-    if(selected.some((file)=>file.size>6_000_000))return notify("Setiap fail mestilah 6 MB atau kurang");
+    if(selected.some((file)=>file.type==="application/pdf"&&file.size>6_000_000))return notify("Setiap PDF mestilah 6 MB atau kurang");
     try{
-      const processed=await Promise.all(selected.map(async(file)=>{
+      const processed:Array<{id:string;file:File;previewUrl:string;kind:string}>=[];
+      for(const file of selected){
         const prepared=file.type==="application/pdf"?file:await optimisePhoto(file);
-        return{id:crypto.randomUUID(),file:prepared,previewUrl:prepared.type.startsWith("image/")?URL.createObjectURL(prepared):"",kind:prepared.type==="application/pdf"?"Sijil / dokumen PDF":"Gambar aktiviti"};
-      }));
+        if(prepared.size>6_000_000)throw new Error(`Fail ${file.name} masih melebihi 6 MB selepas dimampatkan`);
+        processed.push({id:crypto.randomUUID(),file:prepared,previewUrl:prepared.type.startsWith("image/")?URL.createObjectURL(prepared):"",kind:prepared.type==="application/pdf"?"Sijil / dokumen PDF":"Gambar aktiviti"});
+      }
       setMediaFiles((current)=>{current.forEach((item)=>item.previewUrl&&URL.revokeObjectURL(item.previewUrl));return processed;});
       notify(`${processed.length} fail telah disediakan untuk laporan`);
-    }catch{notify("Satu atau lebih fail tidak dapat diproses");}
+    }catch(error){notify(error instanceof Error?error.message:"Satu atau lebih fail tidak dapat diproses");}
   };
   const makePdf = async () => {
     const jsPDF = await loadJsPdf();
@@ -1741,7 +1743,7 @@ function OprGenerator({ notify, close, user, initialCategoryGroup="", initialCat
       const generated = await makePdf();
       if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
       setPdfBase64(generated.base64); setPdfPreviewUrl(generated.url); setPreview(true); setDriveUrl("");
-    } catch { notify("Pratonton PDF tidak dapat dijana"); }
+    } catch(error) { notify(`Pratonton PDF tidak dapat dijana: ${error instanceof Error?error.message:"Ralat tidak diketahui"}`); }
     finally { setRendering(false); }
   };
   const sendToDrive = async () => {

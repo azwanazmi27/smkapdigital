@@ -343,6 +343,18 @@ export async function POST(request: Request) {
         title:metadata.title||saved[0].name.replace(/\.pdf$/i,""),documentType:"Laporan OPR",sourceModule:"Pusat OPR",schoolYear:Number(metadata.programDate.slice(0,4))||new Date().getFullYear(),
         panelId:category,status:"draft",file:{id:saved[0].id,name:saved[0].name,viewUrl:saved[0].viewUrl,mimeType:"application/pdf"},metadata:{suggestedSkas:suggestions},
       });
+      if(category==="Lain-lain · Arkib Kejayaan"){
+        try{
+          const mapping=suggestSkasMappings({category,title:metadata.title,metadata})[0],year=Number(metadata.programDate.slice(0,4))||new Date().getFullYear();
+          if(!mapping)throw new Error("Cadangan arkib tidak ditemui");
+          await env.DB.batch([
+            env.DB.prepare("INSERT OR IGNORE INTO skas_evidence(id,school_year,domain,unit_name,evidence_type,title,standard_code,source_type,source_url,notes,status,submitted_by_email,submitted_by_name,source_module,source_record_id,created_at,updated_at) SELECT ?,?,?,?,?,?,?,'portal',?,?,'pending',?,?,'Arkib Kejayaan',?,?,? WHERE EXISTS(SELECT 1 FROM skas_years WHERE school_year=? AND status!='closed')")
+              .bind(crypto.randomUUID(),year,mapping.domain,mapping.unitName,mapping.evidenceType,metadata.title||saved[0].name,mapping.standardCode,saved[0].viewUrl,`Pemetaan automatik: ${mapping.reason}`,actor.email,actor.name,saved[0].id,now,now,year),
+            env.DB.prepare("UPDATE opr_intake_metadata SET review_status='imported',updated_at=? WHERE report_id=? AND EXISTS(SELECT 1 FROM skas_evidence WHERE source_module='Arkib Kejayaan' AND source_record_id=?)")
+              .bind(now,saved[0].id,saved[0].id),
+          ]);
+        }catch(error){console.error("Arkib SKAS sync",error instanceof Error?error.message:error);}
+      }
     }
     return Response.json({ success: true, files: saved });
   } catch (error) {
@@ -356,7 +368,7 @@ export async function DELETE(request:Request){
     const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memadam laporan."},{status:403});
     const id=new URL(request.url).searchParams.get("id")||"";
     if(!/^[\w-]{10,120}$/.test(id))return Response.json({error:"ID fail tidak sah."},{status:400});
-    await scriptAction({action:"delete",id});
+    await scriptAction({action:"delete",id},60_000);
     await prepareOprMetadata();
     await env.DB.batch([
       env.DB.prepare("DELETE FROM opr_reports WHERE id=?").bind(id),
