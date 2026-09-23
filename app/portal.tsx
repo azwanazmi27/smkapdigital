@@ -70,7 +70,7 @@ export function Portal() {
     window.setTimeout(() => {
       setAiText("Program ini telah dilaksanakan dengan lancar dan mencapai objektif yang ditetapkan. Penglibatan aktif peserta serta kerjasama semua pihak telah menyumbang kepada keberhasilan program. Susulan akan memberi fokus kepada pemantauan impak dan penambahbaikan berterusan.");
       setAiBusy(false);
-      notify("Ayat OPR telah diperkemas oleh AI");
+      notify("Ayat OPR telah diperkemas dengan Bantuan Bang Wan");
     }, 900);
   };
 
@@ -192,11 +192,11 @@ function Modal({ kind, close, saveOpr, aiBusy, aiText, setAiText, enhance, notif
     <section className={`modal ${kind === "allOpr" ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <button className="modal-close" onClick={close} aria-label="Tutup">×</button>
       {kind === "opr" && <form onSubmit={saveOpr}>
-        <span className="modal-kicker">OPR BAHARU</span><h2 id="modal-title">Cipta laporan program</h2><p className="modal-lead">Isi maklumat asas. AI membantu mengemas ayat sebelum laporan disimpan.</p>
+        <span className="modal-kicker">OPR BAHARU</span><h2 id="modal-title">Cipta laporan program</h2><p className="modal-lead">Isi maklumat asas. Bang Wan membantu mengemas ayat sebelum laporan disimpan.</p>
         <label>Nama program<input name="title" required placeholder="Contoh: Program Ihya’ Ramadan" /></label>
         <div className="form-row"><label>Bidang<select name="category"><option>Pengurusan</option><option>Kurikulum</option><option>HEM</option><option>Kokurikulum</option><option>Tingkatan Enam — Kurikulum</option><option>Tingkatan Enam — HEM</option><option>Tingkatan Enam — Kokurikulum</option></select></label><label>Tarikh program<input type="date" defaultValue="2026-08-18" /></label></div>
         <label>Rumusan pelaksanaan<textarea value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder="Tulis isi ringkas atau poin penting di sini..." rows={6}></textarea></label>
-        <button type="button" className="ai-button" onClick={enhance} disabled={aiBusy}><span>✦</span>{aiBusy ? "AI sedang mengemas ayat..." : "Perkemas dengan AI"}</button>
+        <button type="button" className="ai-button" onClick={enhance} disabled={aiBusy}><span>✦</span>{aiBusy ? "Bang Wan sedang mengemas ayat..." : "Perkemas dengan Bantuan Bang Wan"}</button>
         <div className="drive-note"><span>◆</span><p><strong>Sedia disimpan ke Google Drive sekolah</strong><br/>PDF akhir akan difailkan mengikut bidang dan tahun.</p></div>
         <div className="modal-actions"><button type="button" className="secondary" onClick={close}>Batal</button><button className="primary">Simpan OPR</button></div>
       </form>}

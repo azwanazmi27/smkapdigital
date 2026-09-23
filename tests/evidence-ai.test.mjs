@@ -86,3 +86,15 @@ test('OPR remains unlimited and does not consume the shared daily allowance; mon
  assert.equal((await opr.POST(req({text:'OPR selepas had AI lain habis'}))).status,200);
  assert.equal((await usage.getAIUsage(globalThis.migrationActor)).used,3);
 });
+
+test('archive certificate reading shares the three daily uses; admins have no daily limit',async()=>{
+ const archive=await import(mod('api/achievement-ocr/route'));
+ globalThis.mockGenerate=async()=>({text:JSON.stringify({recipient:'Murid Ujian',title:'Anugerah Ujian',confidence:90})});
+ globalThis.migrationActor={...actor,id:'archive-quota'};
+ for(let i=0;i<3;i++)assert.equal((await archive.POST(req({base64:'JVBERi0xLjQ='}))).status,200);
+ assert.equal((await archive.POST(req({base64:'JVBERi0xLjQ='}))).status,429);
+ assert.equal((await draftRoute.POST(req({template:'appointment',notes:'Bidang tugas setiausaha panitia'}))).status,429);
+ globalThis.migrationActor={...actor,id:'archive-admin',role:'admin'};
+ for(let i=0;i<6;i++)assert.equal((await archive.POST(req({base64:'JVBERi0xLjQ='}))).status,200);
+ assert.equal((await usage.getAIUsage(globalThis.migrationActor)).limit,null);
+});
