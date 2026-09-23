@@ -16,10 +16,19 @@ function connection() {
 
 async function callGoogle(payload: Record<string, unknown>) {
   const { url, token } = connection();
-  const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, token }), redirect: "follow", cache: "no-store" });
-  const result = await response.json() as Record<string, unknown>;
-  if (!response.ok || result.ok !== true) throw new Error(typeof result.error === "string" ? result.error : "Sambungan E-Tempahan gagal");
-  return result;
+  const readOnly = payload.action === "etempahan_list" || payload.action === "etempahan_list_range";
+  for (let attempt = 0; attempt < (readOnly ? 3 : 1); attempt++) {
+    try {
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, token }), redirect: "follow", cache: "no-store" });
+      const result = await response.json() as Record<string, unknown>;
+      if (!response.ok || result.ok !== true) throw new Error(typeof result.error === "string" ? result.error : "Sambungan E-Tempahan gagal");
+      return result;
+    } catch (error) {
+      if (!readOnly || attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+  throw new Error("Sambungan E-Tempahan gagal");
 }
 
 function normalizeBookings(value: unknown) {
@@ -41,7 +50,7 @@ const samePerson = (booking: NormalizedBooking, actor: PortalActor | null) => Bo
 ));
 const presentBooking = (booking: NormalizedBooking, actor: PortalActor | null) => {
   const { ownerEmail: _ownerEmail, ...safe } = booking;
-  return { ...safe, canDelete: isAdmin(actor) || samePerson(booking, actor) };
+  return { ...safe, canDelete: booking.status !== "Dibatalkan" && (isAdmin(actor) || samePerson(booking, actor)) };
 };
 
 function datesBetween(from: string, to: string, maximum = 62) {
@@ -62,7 +71,15 @@ export async function GET(request: Request) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
       const dates = datesBetween(from, to);
       if (!dates.length || dates.length > 61) return Response.json({ error: "Julat senarai mestilah tidak melebihi 61 hari." }, { status: 400 });
-      const results = await Promise.all(dates.map((item) => callGoogle({ action: "etempahan_list", date: item })));
+      // The bridge reads the Sheet once for the whole range. Retain the
+      // sequential path for older deployed bridge versions during rollout.
+      let results: Record<string, unknown>[];
+      try { results = [await callGoogle({ action: "etempahan_list_range", from, to })]; }
+      catch (error) {
+        if (!/tindakan tidak sah|unknown action/i.test(error instanceof Error ? error.message : "")) throw error;
+        results = [];
+        for (const item of dates) results.push(await callGoogle({ action: "etempahan_list", date: item }));
+      }
       const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
       results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
       return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)).map((booking) => presentBooking(booking, actor)) }, { headers: { "Cache-Control": "private, no-store" } });

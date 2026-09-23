@@ -17,6 +17,7 @@ function doPost(e) {
  if(body.action==='ekunjung_create') return createEkunjung_(body);
  if(body.action==='ekunjung_checkout') return checkoutEkunjung_(body);
  if(body.action==='etempahan_list') return listEtempahan_(body);
+ if(body.action==='etempahan_list_range') return listEtempahanRange_(body);
  if(body.action==='etempahan_create') return createEtempahan_(body);
  if(body.action==='etempahan_delete'||body.action==='etempahan_cancel') return deleteEtempahan_(body);
  return json_({ok:false,error:'Tindakan tidak sah'});
@@ -158,6 +159,22 @@ function listEtempahan_(body) {
   for (let i = 1; i < values.length; i++) {
     const row = values[i];
     if (!row[0] || date < normalizeDate_(row[4]) || date > normalizeDate_(row[6])) continue;
+    bookings.push(rowToBooking_(row));
+  }
+  return json_({ ok: true, bookings: bookings });
+}
+
+function listEtempahanRange_(body) {
+  const from = String(body.from || '').trim();
+  const to = String(body.to || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to < from) {
+    return json_({ ok: false, error: 'Julat tarikh tidak sah' });
+  }
+  const values = getEtempahanSheet_().getDataRange().getDisplayValues();
+  const bookings = [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (!row[0] || normalizeDate_(row[6]) < from || normalizeDate_(row[4]) > to) continue;
     bookings.push(rowToBooking_(row));
   }
   return json_({ ok: true, bookings: bookings });

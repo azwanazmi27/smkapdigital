@@ -991,8 +991,9 @@ const formatBookingTime = (value: string) => {
 };
 
 function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null; initialTab?:"dashboard"|"form" }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const nextWeek = new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10);
+  const malaysiaDate = (date: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Kuala_Lumpur", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  const today = malaysiaDate(new Date());
+  const nextWeek = malaysiaDate(new Date(Date.now() + 6 * 86400000));
   const [tab, setTab] = useState<"dashboard" | "list" | "form">(initialTab);
   const [date, setDate] = useState(today);
   const [bookings, setBookings] = useState<Booking[]>([]);
