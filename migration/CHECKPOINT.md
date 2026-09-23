@@ -3,6 +3,7 @@
 ## 23 September 2026, 08:45 MYT — continuation
 - Verified backup/restoration evidence and dated cost assumptions in local commit `ccd1d14`. GitHub still requires authenticated, non-force branch reconciliation and push.
 - Added a read-only `authorizeServices` helper to the production Apps Script editor draft and saved it. This draft is **not deployed**; the live web app remains version 6. Running it confirmed the missing Spreadsheet scope. The authorization dialog is open for the school owner, but consent has not completed. E-Kunjung and e-Tempahan remain blocked.
+- Started official GitHub CLI device OAuth with owner approval; GitHub requires an e-mail verification code that only the owner should enter on its open page. No CLI credential has been issued yet. Scanned 1,759 reachable Git blobs for embedded PEM blocks, GitHub tokens, Google API keys and common literal secret assignments before push. No credential values matched. Two historical PEM-marker hits contained only a one-character interpolation between markers; no embedded key body was found. Current `.env.example` is the sole tracked env-like file. This heuristic scan does not prove absence of every secret or private record.
 
 ## Current production checkpoint — 23 September 2026, 08:15 MYT
 
