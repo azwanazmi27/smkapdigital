@@ -1,5 +1,6 @@
 "use client";
 import {StaffWorkList,StaffWorkUpload,StaffWorkUploadHub} from "./staff-work";
+import {requestBookingStatus} from "./booking-status";
 import {ProfileCard,StaffExpertiseList,StaffExpertiseMarks} from "./profile-card";
 
 import { useEffect, useRef, useState } from "react";
@@ -1005,6 +1006,11 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [verifiedDate, setVerifiedDate] = useState("");
+  const [statusCheckedAt, setStatusCheckedAt] = useState("");
+  const [statusSource, setStatusSource] = useState<"cache" | "sheet">("sheet");
+  const statusRequestSequence = useRef(0);
+  const statusPending = useRef(false);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -1014,22 +1020,28 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "" });
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const loadBookings = async (silent = false) => {
-    if (!silent) { setLoading(true); setError(""); }
+    if (silent && statusPending.current) return;
+    const sequence = ++statusRequestSequence.current;
+    statusPending.current = true;
+    if (!silent) { setLoading(true); setError(""); setVerifiedDate(""); }
     try {
-      const response = await fetch(`/api/etempahan?date=${encodeURIComponent(date)}`, { cache: "no-store" });
-      const data = await response.json() as { bookings?: Booking[]; error?: string };
-      if (!response.ok) throw new Error(data.error || "Status bilik tidak dapat dibaca");
-      setBookings(data.bookings || []); setError("");
-    } catch (reason) { if (!silent) setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
-    finally { if (!silent) setLoading(false); }
+      const applyStatus = (status: { bookings: Booking[]; checkedAt: string; source: "cache" | "sheet" }) => {
+        if (sequence === statusRequestSequence.current) { setBookings(status.bookings); setVerifiedDate(date); setStatusCheckedAt(status.checkedAt); setStatusSource(status.source); setError(""); setLoading(false); }
+      };
+      const status = await requestBookingStatus<Booking>(date, 4500, fetch, applyStatus);
+      applyStatus(status);
+    } catch (reason) {
+      if (sequence === statusRequestSequence.current) { setVerifiedDate(""); setError(reason instanceof Error ? reason.message : "Status bilik tidak dapat dibaca"); }
+    } finally { if (sequence === statusRequestSequence.current) { statusPending.current = false; setLoading(false); } }
   };
   useEffect(() => {
+    if (tab !== "dashboard" && !roomPickerOpen) return;
     void loadBookings();
     const timer = window.setInterval(() => void loadBookings(true), 15000);
     const refreshWhenVisible = () => { if (document.visibilityState === "visible") void loadBookings(true); };
     document.addEventListener("visibilitychange", refreshWhenVisible);
-    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshWhenVisible); };
-  }, [date]);
+    return () => { statusRequestSequence.current++; window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshWhenVisible); };
+  }, [date, tab, roomPickerOpen]);
   const loadBookingList = async () => {
     setListLoading(true); setListError("");
     try {
@@ -1043,6 +1055,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan" && new Date(`${item.endDate}T${item.endTime}`) > new Date());
   const visibleListBookings = listRoom === "Semua bilik" ? listBookings : listBookings.filter((item) => item.room === listRoom);
   const roomState = (room: string) => {
+    if (verifiedDate !== date || error) return { label: "Belum disahkan", tone: "unknown" };
     const active = roomBookings(room);
     if (!active.length) return { label: "Kosong", tone: "available" };
     const now = new Date();
@@ -1050,7 +1063,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     return inUse ? { label: "Sedang digunakan", tone: "inuse" } : { label: "Ditempah", tone: "booked" };
   };
   const nextRoomBooking = (room: string) => [...roomBookings(room)].sort((a, b) => `${a.startDate}T${a.startTime}`.localeCompare(`${b.startDate}T${b.startTime}`))[0];
-  const showRoomPicker = () => { setRoomPickerOpen(true); void loadBookings(true); };
+  const showRoomPicker = () => setRoomPickerOpen(true);
   const beginBooking = (room: string) => {
     setField("room", room);
     setField("startDate", date);
@@ -1122,7 +1135,8 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     <div className="booking-tabs booking-tabs-three"><button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}>Status bilik</button><button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}>Senarai tempahan</button><button className={tab === "form" ? "active" : ""} onClick={openBookingForm}>Buat tempahan</button></div>
     {tab === "dashboard" ? <>
       <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
-      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <p className="visitor-error">{error}</p> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => beginBooking(room)}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
+      {!loading && !error && verifiedDate === date && statusCheckedAt && <p className="booking-status-time">Disemak pada {new Date(statusCheckedAt).toLocaleTimeString("ms-MY", { timeZone: "Asia/Kuala_Lumpur", hour: "2-digit", minute: "2-digit", second: "2-digit" })}{statusSource === "cache" ? " · Cache" : " · Google Sheet"} · Cache maksimum 20 saat. Kekosongan disemak semula sebelum tempahan disimpan.</p>}
+      {loading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca status bilik...</div> : error ? <div className="booking-status-error" role="alert"><p>{error}</p><button type="button" onClick={() => void loadBookings()}>Cuba semula</button></div> : <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">Tiada tempahan pada tarikh ini.</p>}<button onClick={() => beginBooking(room)}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>}
     </> : tab === "list" ? <>
       <div className="booking-list-filter"><label>Dari<input type="date" value={listFrom} onChange={(event) => setListFrom(event.target.value)} /></label><label>Hingga<input type="date" min={listFrom} value={listTo} onChange={(event) => setListTo(event.target.value)} /></label><label>Bilik<select value={listRoom} onChange={(event) => setListRoom(event.target.value)}><option>Semua bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><button onClick={() => void loadBookingList()} disabled={listLoading}>{listLoading ? "Membaca..." : "Paparkan"}</button><button className="booking-print" onClick={() => void printBookingList()} disabled={printingList || listLoading || !visibleListBookings.length}>{printingList ? "Menjana PDF..." : "Muat turun PDF"}</button></div>
       {listLoading ? <div className="booking-loading"><i className="button-spinner"></i> Membaca senarai tempahan...</div> : listError ? <p className="visitor-error">{listError}</p> : !visibleListBookings.length ? <div className="booking-empty"><strong>Tiada tempahan</strong><span>Tiada rekod dalam julat dan bilik yang dipilih.</span></div> : <div className="booking-list">{visibleListBookings.map((item) => <article key={`${item.id}-${item.startDate}`}><div className="booking-list-date" aria-hidden="true">{roomIcon(item.room)}</div><div className="booking-list-details"><h3>{item.room}</h3><strong className="booking-list-range">{formatBookingDateRange(item.startDate, item.endDate)}</strong><p>{formatBookingTime(item.startTime)}–{formatBookingTime(item.endTime)}</p><span>{item.applicantName}</span><small>{item.purpose}</small></div><div className="booking-list-actions"><b>{item.status}</b>{item.canDelete && <button type="button" onClick={() => setDeleteTarget(item)}>Padam tempahan</button>}</div></article>)}</div>}

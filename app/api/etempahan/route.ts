@@ -1,4 +1,5 @@
 import { portalActor, type PortalActor } from "../../server-auth";
+import { clearBookingStatus, readBookingStatus } from "../../etempahan-cache";
 
 type BookingBody = Record<string, unknown>;
 
@@ -85,9 +86,11 @@ export async function GET(request: Request) {
       return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)).map((booking) => presentBooking(booking, actor)) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
-    const result = await callGoogle({ action: "etempahan_list", date });
-    const bookings = normalizeBookings(result.bookings);
-    return Response.json({ success: true, bookings: bookings.map((booking) => presentBooking(booking, actor)) }, { headers: { "Cache-Control": "private, no-store" } });
+    const { value: bookings, checkedAt, source } = await readBookingStatus(new URL(request.url).origin, date, async () => {
+      const result = await callGoogle({ action: "etempahan_list", date });
+      return normalizeBookings(result.bookings);
+    });
+    return Response.json({ success: true, bookings: bookings.map((booking) => presentBooking(booking, actor)), checkedAt, source }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("E-Tempahan list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Status bilik tidak dapat dibaca sekarang." }, { status: 502 });
@@ -116,6 +119,7 @@ export async function POST(request: Request) {
     // Keep the original fields and send the legacy date/time aliases too. This
     // avoids a false overlap when the connected Sheet script still reads `date`.
     const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
+    await clearBookingStatus(new URL(request.url).origin, datesBetween(startDate, endDate).slice(0, 61));
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
     return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false });
   } catch (error) {
@@ -152,6 +156,7 @@ export async function DELETE(request: Request) {
       }
     }
     if (lastError) throw lastError;
+    await clearBookingStatus(new URL(request.url).origin, datesBetween(booking.startDate, booking.endDate).slice(0, 61));
     return Response.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat dipadam.";
