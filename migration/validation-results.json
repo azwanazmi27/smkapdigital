@@ -17,7 +17,7 @@
   {
     "check": "Application tests",
     "status": "PASS",
-    "evidence": "104 application tests PASS; starter rendered-html test excluded; includes 9 Drive preparation and 2 submission-lock tests."
+    "evidence": "105 application tests PASS; build PASS on 23 September 2026; starter rendered-html test excluded."
   },
   {
     "check": "GitHub clean install/build/test",
@@ -123,5 +123,30 @@
     "check": "Staging DB isolated restoration after file upload",
     "status": "PASS",
     "evidence": "Private SQL export restored to separate SQLite; integrity_check=ok, 41 tables, 61 users, 3 SKAS records before subsequent double-click test. Both referenced test PNGs downloaded, 68 bytes each, SHA-256 equal source. Not source-production backup or full bucket inventory."
+  },
+  {
+    "check": "Production OPR Google Drive list and preview",
+    "status": "PASS",
+    "evidence": "Apps Script v6; eight root scans returned 54 reports; representative existing PDF rendered in authenticated browser. No record changed."
+  },
+  {
+    "check": "Production E-Tempahan Google Sheet read",
+    "status": "FAIL",
+    "evidence": "Apps Script v6 lacks Sheets OAuth scope; live status/list unavailable. No booking submitted."
+  },
+  {
+    "check": "Production E-Kunjung Google Sheet read",
+    "status": "FAIL",
+    "evidence": "Apps Script v6 lacks Sheets OAuth scope; live active visitor list unavailable. No visitor submitted."
+  },
+  {
+    "check": "E-Tempahan unauthenticated GET and POST",
+    "status": "PASS",
+    "evidence": "Production direct HTTP tests returned 401 for both methods on Worker 27afca61-862c-4018-82c8-2c7e94623be8."
+  },
+  {
+    "check": "Production Cloudflare AI synthetic text generation",
+    "status": "PASS",
+    "evidence": "Authenticated school account received a synthetic e-Panitia draft; no document saved or real data sent."
   }
 ]

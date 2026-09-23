@@ -55,6 +55,7 @@ function datesBetween(from: string, to: string, maximum = 62) {
 export async function GET(request: Request) {
   try {
     const actor = await portalActor(request);
+    if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah untuk menyemak tempahan." }, { status: 401 });
     const params = new URL(request.url).searchParams;
     const date = params.get("date") || "", from = params.get("from") || "", to = params.get("to") || "";
     if (from || to) {
@@ -79,6 +80,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const actor = await portalActor(request);
+    if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah untuk membuat tempahan." }, { status: 401 });
     const body = await request.json() as BookingBody;
     const room = clean(body.room, 100), applicantName = clean(body.applicantName, 120), email = clean(body.email, 160).toLowerCase();
     const startDate = clean(body.startDate, 10), startTime = clean(body.startTime, 5), endDate = clean(body.endDate, 10), endTime = clean(body.endTime, 5), purpose = clean(body.purpose, 100);

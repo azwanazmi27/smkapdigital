@@ -1,5 +1,25 @@
 # Component migration checklist
 
+## Current status — 23 September 2026
+
+The user chose to operate a new Cloudflare portal while retaining the old Sites deployment and its inaccessible historical database. The older table below records the original full-data migration plan and contains superseded status statements. No full historical data transfer or reconciliation has occurred.
+
+| Component | Current location | Target / treatment | Method | Verification |
+|---|---|---|---|---|
+| Portal frontend, server routes, D1 and R2 | New Cloudflare `portal` Worker, production D1/R2 | Migrated as a new writable portal | Deploy Worker with separate production bindings | Production URL serves; build/105 local tests PASS; full API/role matrix open |
+| Historical Sites D1 and R2 | Original Sites portal | Retained, historical import blocked | Supported full export and reconciliation still needed if history is required | No complete source export; no zero-loss claim |
+| Google SSO and identities | Google OAuth + production D1 user records | Retained and reconnected | Existing provider and authorized origin | School-account production login PASS; every role NOT TESTED |
+| School Drive/management files | Original school Drive root | Retained and reconnected | Production Apps Script bridge with token | Synthetic PDF upload/read PASS; original Drive unchanged |
+| OPR folders and reports | Eight existing Drive roots | Retained and reconnected | Apps Script v6 root scans through Worker | 54 reports listed and representative existing PDF preview PASS; OPR writes/ZIP/delete NOT TESTED |
+| E-Kunjung Sheet and photos | Existing school Sheet/Drive | Retained, connection blocked | Apps Script v6, original Sheet ID | Live read FAIL because Apps Script lacks Sheets scope; XLSX local backup readable |
+| e-Tempahan Sheet and e-mail | Existing school Sheet, MailApp | Retained, connection blocked | Apps Script v6, original Sheet ID | Live read FAIL for missing Sheets scope; Mail scope and safe write test pending; unauthenticated GET/POST return 401 |
+| AI text generation | Cloudflare Workers AI binding | Migrated for text fallback | Free Workers AI allocation | Live synthetic production generation PASS; other providers/features incomplete |
+| Scheduled jobs and push | Original Google scripts and browser subscriptions | Retained pending audit | Keep original triggers; no duplicate Cloudflare jobs | Full production trigger/notification matrix NOT TESTED |
+| Git and deployment automation | Private GitHub repository, local migration branch | Partially migrated | Preserve original remote/history, sync branch after OAuth | Browser commit exists; latest local commits unpushed; no automatic production deploy |
+| Domain/TLS | `portal.smkapdigital.workers.dev` | Active workers.dev URL | Cloudflare route, no DNS purchase | HTTPS production page PASS; no custom DNS requested |
+
+## Original full-data plan (historical)
+
 Git history and isolated staging hosting have migrated. Production data migration and cutover remain BLOCKED. “Retain” describes the intended treatment, not a verified reconnection. The current portal remains operational and unchanged.
 
 | Component | Current location | Target / treatment | Migration method | Verification / blocker |
