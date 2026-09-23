@@ -1,5 +1,9 @@
 # Cloudflare migration checkpoint — 22 September 2026, Malaysia
 
+## 23 September 2026, 08:45 MYT — continuation
+- Verified backup/restoration evidence and dated cost assumptions in local commit `ccd1d14`. GitHub still requires authenticated, non-force branch reconciliation and push.
+- Added a read-only `authorizeServices` helper to the production Apps Script editor draft and saved it. This draft is **not deployed**; the live web app remains version 6. Running it confirmed the missing Spreadsheet scope. The authorization dialog is open for the school owner, but consent has not completed. E-Kunjung and e-Tempahan remain blocked.
+
 ## Current production checkpoint — 23 September 2026, 08:15 MYT
 
 The older sections below are historical. The user has authorized a **new** Cloudflare production portal without importing the inaccessible historical Sites database. Do not describe that choice as a complete data migration. The original Sites portal and its data remain intact; the full source export and reconciliation gate has not been met.
