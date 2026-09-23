@@ -236,16 +236,12 @@ export async function GET(request: Request) {
     if (!webAppUrl || !token) {
       return Response.json({ error: "Sambungan Google Drive belum dikonfigurasi." }, { status: 503 });
     }
-    const response = await fetch(webAppUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, action: "list" }),
-      redirect: "follow",
-      cache: "no-store",
-    });
-    const result = await response.json() as { ok?: boolean; files?: unknown; error?: string };
-    if (!response.ok || !result.ok || !Array.isArray(result.files)) throw new Error(result.error || "Senarai Drive tidak tersedia");
-    const files = parseDriveFiles(result.files);
+    // The school Drive has many nested folders. One Apps Script traversal
+    // exceeds the web-app response window; each root is scanned independently.
+    const roots = ["Pengurusan", "Kurikulum", "HEM", "Kokurikulum", "Tingkatan Enam · Kurikulum", "Tingkatan Enam · HEM", "Tingkatan Enam · Kokurikulum", "Lain-lain"];
+    const results = await Promise.all(roots.map((root) => scriptAction({ action: "listRoot", root }, 45_000)));
+    if (results.some((result) => !Array.isArray(result.files))) throw new Error("Senarai Drive tidak lengkap");
+    const files = parseDriveFiles(results.flatMap((result) => result.files || []));
     await replaceReportCache(files);
     return Response.json({ success: true, files, source: "drive" }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

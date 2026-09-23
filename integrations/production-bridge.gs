@@ -6,6 +6,13 @@ function doPost(e) {
  var body=JSON.parse(e.postData.contents);
  if(body.token!==secret) return json_({ok:false,error:'Unauthorized'});
  if(['management_health','management_upload','management_download','management_trash'].indexOf(body.action)>=0) return managementDrive_(body);
+ if(body.action==='list') return listOprFiles_();
+ if(body.action==='listRoot') return listOprRoot_(body);
+ if(body.action==='ensureFolders') return ensureOprFolders_(body);
+ if(body.action==='download') return readOprFile_(body);
+ if(body.action==='delete') return trashOprFile_(body);
+ if(body.action==='bundle') return bundleOprFiles_(body);
+ if(body.category&&body.files) return uploadOprFiles_(body);
  if(body.action==='ekunjung_active') return listActiveEkunjung_();
  if(body.action==='ekunjung_create') return createEkunjung_(body);
  if(body.action==='ekunjung_checkout') return checkoutEkunjung_(body);
@@ -246,3 +253,109 @@ function countDates_(startDate, endDate) {
 }
 function clean_(value) { return String(value == null ? "" : value).trim(); }
 function escapeHtml_(value) { return clean_(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// Existing school Drive folders. OPR operations are confined to these roots.
+const OPR_FOLDERS = {
+  'Pengurusan':'1-pCywDUogbiakrx_kU6mKsgaFCfQh1Uv',
+  'Kurikulum':'1uO25sGR7CT1FaCBDIf1fLat2omyvcYZZ',
+  'HEM':'1UxmjXQQrh4ks6AesymzDHmR9zPVvgpJk',
+  'Kokurikulum':'15XRT0owC3FBG1wYeBqcYPKh9POLtdhNC',
+  'Tingkatan Enam · Kurikulum':'1Xh3fRhcSaKq3oW0rEkAZG7mnGZSZNRJY',
+  'Tingkatan Enam · HEM':'1s1Oab7XVoW-nrCPq97YmkqjCqlYo4Ojq',
+  'Tingkatan Enam · Kokurikulum':'1AYwKHo0TvUHgqYs1QNnnVCgXheWvkYBE',
+  'Lain-lain':'1eWyZqCmj5l3mZc0o7PgmuwP47K0MxKB2'
+};
+
+function oprCategory_(category) {
+  var parts=String(category||'').trim().split(/\s*·\s*/).map(function(x){return x.trim().replace(/[\u0000-\u001f]/g,'');});
+  if(!parts.length||parts.some(function(x){return !x||x.length>120||x==='.'||x==='..';}))throw new Error('Kategori OPR tidak sah');
+  var root=parts[0],relative=parts.slice(1);
+  if(root==='Tingkatan Enam') {
+    if(relative[0]==='Hal Ehwal Murid Tingkatan Enam')root='Tingkatan Enam · HEM';
+    else if(relative[0]==='Kokurikulum Tingkatan Enam')root='Tingkatan Enam · Kokurikulum';
+    else root='Tingkatan Enam · Kurikulum';
+  }
+  if(!OPR_FOLDERS[root])throw new Error('Bidang OPR tidak sah');
+  return {root:root,relative:relative};
+}
+
+function oprFolder_(category,create) {
+  var target=oprCategory_(category),folder=DriveApp.getFolderById(OPR_FOLDERS[target.root]);
+  target.relative.forEach(function(segment){var matches=folder.getFoldersByName(segment);if(matches.hasNext())folder=matches.next();else if(create)folder=folder.createFolder(segment);else throw new Error('Folder OPR tidak ditemui');});
+  return folder;
+}
+
+function oprFile_(id) {
+  if(!/^[A-Za-z0-9_-]{10,120}$/.test(String(id||'')))throw new Error('ID fail OPR tidak sah');
+  var file=DriveApp.getFileById(String(id)),parents=file.getParents(),folder=parents.hasNext()?parents.next():null;
+  for(var depth=0;folder&&depth<30;depth++){
+    if(Object.keys(OPR_FOLDERS).some(function(key){return OPR_FOLDERS[key]===folder.getId();})){
+      if(file.isTrashed())throw new Error('Fail OPR telah dipadam');
+      return file;
+    }
+    var next=folder.getParents();folder=next.hasNext()?next.next():null;
+  }
+  throw new Error('Fail bukan dalam folder OPR sekolah');
+}
+
+function walkOpr_(folder,root,relative,records,depth) {
+  if(depth>20)throw new Error('Struktur folder OPR terlalu dalam');
+  var files=folder.getFilesByType(MimeType.PDF),category=root.indexOf('Tingkatan Enam ·')===0?['Tingkatan Enam'].concat(relative).join(' · '):[root].concat(relative).join(' · ');
+  while(files.hasNext()){
+    var file=files.next();if(file.isTrashed())continue;
+    records.push({id:file.getId(),name:file.getName(),category:category,createdAt:file.getDateCreated().toISOString(),updatedAt:file.getLastUpdated().toISOString(),viewUrl:file.getUrl(),previewUrl:'https://drive.google.com/file/d/'+file.getId()+'/preview',downloadUrl:'https://drive.google.com/uc?export=download&id='+file.getId()});
+  }
+  var folders=folder.getFolders();while(folders.hasNext()){var child=folders.next();walkOpr_(child,root,relative.concat([child.getName()]),records,depth+1);}
+}
+
+function listOprFiles_() {
+  var records=[];Object.keys(OPR_FOLDERS).forEach(function(root){walkOpr_(DriveApp.getFolderById(OPR_FOLDERS[root]),root,[],records,0);});
+  records.sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
+  return json_({ok:true,files:records});
+}
+
+function listOprRoot_(body) {
+  var root=String(body.root||'');if(!Object.prototype.hasOwnProperty.call(OPR_FOLDERS,root))throw new Error('Bidang OPR tidak sah');
+  var records=[];walkOpr_(DriveApp.getFolderById(OPR_FOLDERS[root]),root,[],records,0);
+  records.sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
+  return json_({ok:true,files:records});
+}
+
+function ensureOprFolders_(body) {
+  var categories=Array.isArray(body.categories)?body.categories.slice(0,250):[];
+  if(!categories.length)return json_({ok:false,error:'Senarai kategori diperlukan'});
+  var lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{categories.forEach(function(category){oprFolder_(category,true);});return json_({ok:true,ensured:categories.length});}finally{lock.releaseLock();}
+}
+
+function uploadOprFiles_(body) {
+  var files=Array.isArray(body.files)?body.files:[];
+  if(!files.length||files.length>7)throw new Error('Bilangan fail OPR tidak sah');
+  var category=String(body.category||''),isAchievement=category==='Lain-lain · Arkib Kejayaan';
+  if(!isAchievement&&files[0].mimeType!=='application/pdf')throw new Error('PDF OPR diperlukan');
+  var bytes=[],total=0;
+  files.forEach(function(file){
+    if(!file||['application/pdf','image/jpeg','image/png'].indexOf(file.mimeType)<0||typeof file.base64!=='string'||file.base64.length>8500000)throw new Error('Jenis atau saiz fail OPR tidak sah');
+    var data=Utilities.base64Decode(file.base64);total+=data.length;if(!data.length||total>20000000)throw new Error('Jumlah fail OPR terlalu besar');bytes.push(data);
+  });
+  var lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{
+    var folder=oprFolder_(category,true),created=[];
+    files.forEach(function(file,index){var name=String(file.name||'fail-opr').replace(/[\\/:*?"<>|]/g,'-').slice(0,180),saved=folder.createFile(Utilities.newBlob(bytes[index],file.mimeType,name));created.push({id:saved.getId(),url:saved.getUrl(),name:saved.getName()});});
+    return json_({ok:true,files:created});
+  }finally{lock.releaseLock();}
+}
+
+function readOprFile_(body) {
+  var file=oprFile_(body.id);if(file.getSize()>8000000)throw new Error('Fail OPR terlalu besar');
+  var blob=file.getBlob();return json_({ok:true,name:file.getName(),mimeType:blob.getContentType(),base64:Utilities.base64Encode(blob.getBytes())});
+}
+
+function trashOprFile_(body) {var file=oprFile_(body.id);file.setTrashed(true);return json_({ok:true,id:String(body.id)});}
+
+function bundleOprFiles_(body) {
+  var ids=Array.isArray(body.ids)?body.ids.slice(0,100):[];if(!ids.length)throw new Error('Tiada fail OPR dipilih');
+  var blobs=[],total=0;ids.forEach(function(id){var file=oprFile_(id);total+=file.getSize();if(total>15000000)throw new Error('Jumlah bundle OPR terlalu besar');blobs.push(file.getBlob().setName(file.getName()));});
+  var name=String(body.name||'Bundle-SMKAP.zip').replace(/[\\/:*?"<>|]/g,'-').slice(0,120),zip=Utilities.zip(blobs,name);
+  return json_({ok:true,name:name,mimeType:'application/zip',base64:Utilities.base64Encode(zip.getBytes())});
+}
