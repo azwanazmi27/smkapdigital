@@ -2,6 +2,8 @@
 
 ## Current status — 23 September 2026
 
+GitHub Actions now has a passing validation workflow and a prepared manual production deployment workflow. Production deployment from Actions remains disabled by its release gate; it has not replaced the verified direct Wrangler deployment.
+
 The user chose to operate a new Cloudflare portal while retaining the old Sites deployment and its inaccessible historical database. The older table below records the original full-data migration plan and contains superseded status statements. No full historical data transfer or reconciliation has occurred.
 
 | Component | Current location | Target / treatment | Method | Verification |
