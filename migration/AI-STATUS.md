@@ -28,3 +28,11 @@ Authenticated staging super_admin session submitted synthetic e-Panitia Minit Me
 ## Model pin follow-up
 
 Staging now pins Gemini to `gemini-2.5-flash` and Groq to `llama-3.3-70b-versatile` (commit `19b0dd1`, workflow `35739856177` succeeded). Post-deployment health remains Gemini/Groq/Mistral/OpenRouter online and Cloudflare offline. A fresh authenticated generation test is still required; no claim of live generation success is made.
+
+## 2026-09-23 production provider audit
+
+The deployed production Worker `portal` reports `cloudflare=online` and `gemini`, `groq`, `mistral`, `openrouter=offline` at `/api/ai/health`. Its settings show the `AI` Workers AI binding and `CLOUDFLARE_AI_BINDING=1`, but none of the four external provider API-key secrets. A prior synthetic Cloudflare AI generation passed; this does not validate any external provider. The 20 focused local AI tests pass with mocked providers, not live credentials.
+
+Existing Groq, Mistral and OpenRouter keys are staging-only and expire 2026-10-22. Mistral staging generation returned `RATE_LIMIT`; OpenRouter's staging key has a USD 0 key limit, and the account displayed USD 0 available credits. A new production key must be created per provider, stored as a Worker secret, and verified using synthetic generation before marking PASS. Do not reuse the exposed Gemini staging key. Google AI Studio currently fails to list projects/keys, and the Cloud Console project prompts for school-account reauthentication. No production key has been created or configured.
+
+For a no-purchase OpenRouter path, the official free-model router is `openrouter/free`; free-account limits are low (currently 50 requests/day and 20 requests/minute). A USD 0 key limit may still reject even free models, so that route requires a new limited key and a live test. Do not point a new unbounded key at the current paid default model `openai/gpt-oss-20b`. Sources: https://openrouter.ai/collections/free-models and https://openrouter.ai/blog/tutorials/how-to-get-the-lowest-cost-llm-inference-on-openrouter/ .
