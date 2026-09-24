@@ -2,6 +2,8 @@ export type WorkAssignment={userId:string;name:string;role:string;startDate:stri
 export const normalName=(s:string)=>s.toUpperCase().replace(/\b(CIKGU|ENCIK|PUAN|USTAZAH|USTAZ|DR)\b/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 export const reliefNameKey=(s:string)=>normalName(s)
  .replace(/\bTG\b/g,'TENGKU')
+ .replace(/\bNORFATIMAWATI\b/g,'NOR FATIMAWATI')
+ .replace(/\bIZZUDDIN\b/g,'IZZUDIN')
  .replace(/\b(?:BT|BTE)\b/g,'BINTI')
  .replace(/\bB\b/g,'BIN')
  .replace(/\b(?:MUHAMMAD|MOHAMAD|MOHAMMAD|MOHAMMED)\b/g,'MOHD')

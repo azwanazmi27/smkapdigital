@@ -25,9 +25,9 @@ async function prepare() {
 }
 
 function vapid() {
-  const subject = process.env.VAPID_SUBJECT || "mailto:cra8001@moe.edu.my";
-  const publicKey = process.env.VAPID_SERVER_PUBLIC_KEY || "";
-  const privateKey = process.env.VAPID_SERVER_PRIVATE_KEY || "";
+  const subject = env.VAPID_SUBJECT || "mailto:sekolah-2508@moe-dl.edu.my";
+  const publicKey = env.VAPID_SERVER_PUBLIC_KEY || "";
+  const privateKey = env.VAPID_SERVER_PRIVATE_KEY || "";
   if (!publicKey || !privateKey) throw new Error("Kunci notifikasi belum dikonfigurasi");
   return { subject, publicKey, privateKey };
 }
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
     const where = audience === "Admin" ? "AND u.role IN ('admin','super_admin')" : audience === "Guru" ? "AND u.role='teacher'" : audience === "Pengguna tertentu" ? `AND u.id IN (${userIds.map(() => "?").join(",")})` : "";
     const statement = env.DB.prepare(`SELECT s.id,s.endpoint,s.p256dh,s.auth FROM push_subscriptions s JOIN portal_users u ON u.id=s.user_id WHERE u.status='active' AND u.deleted_at IS NULL ${where}`);
     const rows = audience === "Pengguna tertentu" ? await statement.bind(...userIds).all<{ id: string; endpoint: string; p256dh: string; auth: string }>() : await statement.all<{ id: string; endpoint: string; p256dh: string; auth: string }>();
+    if (!rows.results.length) return Response.json({ error: "Tiada peranti berdaftar untuk sasaran ini. Minta pengguna aktifkan notifikasi dahulu." }, { status: 409 });
     let sent = 0, failed = 0;
     const keys = vapid();
     await Promise.all(rows.results.map(async row => {

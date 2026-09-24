@@ -29,6 +29,8 @@ test('nama ringkas relief dipadankan dengan nama penuh akaun portal',()=>{
  assert.equal(model.sameReliefIdentity('TG MOHD HILMI TG MOHD DAUD','TENGKU MOHD HILMI B. TENGKU MUHAMMAD DAUD'),true);
  assert.equal(model.sameReliefIdentity('WAN MAYZAITU WAHIDAH','WAN MAYZAITU WAHIDAH BINTI MAT RANI'),true);
  assert.equal(model.sameReliefIdentity('WAN HARUN BIN WAN ALI','WAN MAYZAITU WAHIDAH BINTI MAT RANI'),false);
+ assert.equal(model.reliefNameKey('NORFATIMAWATI MAHMOOD'),model.reliefNameKey('NOR FATIMAWATI BINTI MAHMOOD'));
+ assert.equal(model.reliefNameKey('MOHD IZZUDIN BIN ISHAK'),model.reliefNameKey('MUHAMMAD IZZUDDIN BIN ISHAK'));
 });
 
 test('padanan tugasan relief menerima bin dan nama ringkas hanya apabila identiti unik',()=>{
@@ -37,6 +39,8 @@ test('padanan tugasan relief menerima bin dan nama ringkas hanya apabila identit
  assert.equal(model.matchReliefTeacherId(relief,people[0],people),'jadual-azwan');
  assert.equal(model.matchReliefTeacherId([{reliefId:'jadual-azwan',reliefTeacher:'Azwan Azmi'}],people[0],people),'jadual-azwan');
  assert.equal(model.matchReliefTeacherId(relief,people[1],people),'jadual-rahim');
+ assert.equal(model.matchReliefTeacherId([{reliefId:'norfatimawati',reliefTeacher:'NORFATIMAWATI MAHMOOD'}],{id:'nor',name:'NOR FATIMAWATI BINTI MAHMOOD'},[{id:'nor',name:'NOR FATIMAWATI BINTI MAHMOOD'},...people]),'norfatimawati');
+ assert.equal(model.matchReliefTeacherId([{reliefId:'izzudin',reliefTeacher:'MOHD IZZUDIN BIN ISHAK'}],{id:'izzuddin',name:'MUHAMMAD IZZUDDIN BIN ISHAK'},[{id:'izzuddin',name:'MUHAMMAD IZZUDDIN BIN ISHAK'},...people]),'izzudin');
  assert.equal(model.matchReliefTeacherId(relief,{id:'orang-lain',name:'Azwan'},[...people,{id:'orang-lain',name:'Azwan'}]),'');
  assert.equal(model.matchReliefTeacherId([{reliefId:'a',reliefTeacher:'Azwan Azmi'}],people[0],[...people,{id:'azwan-lain',name:'Muhammad Azwan Azmi'}]),'');
  assert.equal(model.matchReliefTeacherId([{reliefId:'a',reliefTeacher:'Azwan Azmi'},{reliefId:'b',reliefTeacher:'Noor Azwan Azmi'}],people[0],people),'b');
