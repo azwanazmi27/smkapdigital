@@ -47,3 +47,4 @@ yarn-error.log*
 /migration/targets.local.json
 /migration/release-evidence.local.json
 .dev.vars*
+*.tsbuildinfo
