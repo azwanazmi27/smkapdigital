@@ -114,7 +114,7 @@ document.head.append(summaryStyle);
 
 const coordinatorStyle = document.createElement("style");
 coordinatorStyle.textContent = `
-  .smk-coordinator-admin,.smk-relief-pin-admin{padding:24px;margin:20px 0;background:#fff;border:1px solid #cadfd6;border-radius:16px;color:#173e36}.smk-coordinator-admin h2,.smk-relief-pin-admin h2{margin:0 0 8px;font-size:22px}.smk-coordinator-admin>p,.smk-relief-pin-admin>p{font-size:16px;line-height:1.5}.smk-coordinator-list{display:grid;gap:9px}.smk-coordinator-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.smk-coordinator-row input,.smk-coordinator-add input,.smk-relief-pin-admin input{min-width:0;min-height:44px;padding:9px 11px;border:1px solid #9bbfbc;border-radius:9px;color:#173b43;background:#fff;font:inherit}.smk-coordinator-row button,.smk-coordinator-add button,.smk-coordinator-save,.smk-relief-pin-admin button{min-height:44px;padding:10px 13px;border:1px solid #31776f;border-radius:9px;color:#fff;background:#176b61;font:800 14px Arial;cursor:pointer}.smk-coordinator-row button{border-color:#ae5660;background:#a6424e}.smk-coordinator-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:13px}.smk-coordinator-save{width:100%;margin-top:16px;background:#0f6070}.smk-coordinator-message,.smk-relief-pin-message{min-height:20px;margin-top:12px!important;color:#a03542;font-weight:700}.smk-coordinator-message.ok,.smk-relief-pin-message.ok{color:#176b61}.smk-relief-pin-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.smk-relief-pin-fields label{display:grid;gap:5px;font-weight:700}.smk-relief-pin-admin button:disabled{opacity:.6;cursor:wait}@media(max-width:640px){.smk-coordinator-admin,.smk-relief-pin-admin{padding:16px}.smk-coordinator-add,.smk-relief-pin-fields{grid-template-columns:1fr}.smk-coordinator-add button{width:100%}}
+  .smk-coordinator-admin,.smk-relief-pin-admin{padding:24px;margin:20px 0;background:#fff;border:1px solid #cadfd6;border-radius:16px;color:#173e36}.smk-coordinator-admin h2,.smk-relief-pin-admin h2{margin:0 0 8px;font-size:22px}.smk-coordinator-admin>p,.smk-relief-pin-admin>p{font-size:16px;line-height:1.5}.smk-coordinator-list{display:grid;gap:9px}.smk-coordinator-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.smk-coordinator-row input,.smk-coordinator-add input,.smk-relief-pin-admin input{min-width:0;min-height:44px;padding:9px 11px;border:1px solid #9bbfbc;border-radius:9px;color:#173b43;background:#fff;font:inherit}.smk-coordinator-row button,.smk-coordinator-add button,.smk-coordinator-save,.smk-relief-pin-admin button{min-height:44px;padding:10px 13px;border:1px solid #31776f;border-radius:9px;color:#fff;background:#176b61;font:800 14px Arial;cursor:pointer}.smk-coordinator-row button{border-color:#ae5660;background:#a6424e}.smk-coordinator-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:13px}.smk-coordinator-save{width:100%;margin-top:16px;background:#0f6070}.smk-coordinator-message,.smk-relief-pin-message{min-height:20px;margin-top:12px!important;color:#a03542;font-weight:700}.smk-coordinator-message.ok,.smk-relief-pin-message.ok{color:#176b61}.smk-relief-pin-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.smk-relief-pin-fields label{display:grid;gap:5px;font-weight:700}.smk-delete-password-admin form{margin-top:18px;padding-top:14px;border-top:1px solid #dbe9e3}.smk-delete-password-admin h3{margin:0 0 4px;font-size:18px}.smk-delete-password-admin form p{margin:0}.smk-delete-password-status{color:#4d6b64;font-size:14px}.smk-delete-password-admin .smk-relief-pin-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.smk-relief-pin-admin button:disabled{opacity:.6;cursor:wait}@media(max-width:640px){.smk-coordinator-admin,.smk-relief-pin-admin{padding:16px}.smk-coordinator-add,.smk-relief-pin-fields{grid-template-columns:1fr}.smk-coordinator-add button{width:100%}}
 `;
 document.head.append(coordinatorStyle);
 
@@ -168,6 +168,44 @@ const addReliefPinAdmin = () => {
     finally { button.disabled = false; }
   };
 };
+const addDeletePasswordAdmin = () => {
+  const pinPanel = root.querySelector(".smk-relief-pin-admin");
+  if (!pinPanel || root.querySelector(".smk-delete-password-admin")) return;
+  const panel = document.createElement("section"); panel.className = "smk-relief-pin-admin smk-delete-password-admin";
+  const block = (kind, title, text) => `<form data-kind="${kind}" autocomplete="off"><h3>${title}</h3><p>${text}</p><p class="smk-delete-password-status"></p><div class="smk-relief-pin-fields"><label>Kata laluan baharu<input name="password" type="password" minlength="4" maxlength="64" required autocomplete="new-password"></label><label>Ulang kata laluan<input name="confirm" type="password" minlength="4" maxlength="64" required autocomplete="new-password"></label></div><button type="submit">Simpan</button><p class="smk-relief-pin-message" role="status" aria-live="polite"></p></form>`;
+  panel.innerHTML = `<h2>Kata Laluan Padam Rekod Tidak Hadir</h2><p>Diperlukan untuk memadam nama dalam senarai tidak hadir. Hanya pentadbir portal yang telah log masuk boleh menukarnya.</p>${block("delete", "Kata laluan padam", "Kata laluan harian yang diberikan kepada penyelaras.")}${block("master", "Kata laluan master", "Sentiasa boleh digunakan untuk memadam, walaupun kata laluan padam ditukar.")}`;
+  pinPanel.after(panel);
+  const showStatus = async () => {
+    try {
+      const response = await fetch("/api/relief-delete-password", {cache:"no-store"}); if (!response.ok) return;
+      const data = await response.json();
+      panel.querySelectorAll("form").forEach((form) => {
+        const row = data[form.dataset.kind];
+        form.querySelector(".smk-delete-password-status").textContent = row ? `Dikemas kini ${new Date(row.updated_at).toLocaleString("ms-MY")} oleh ${row.updated_by}` : "Belum ditetapkan.";
+      });
+    } catch {}
+  };
+  panel.querySelectorAll("form").forEach((form) => {
+    const message = form.querySelector(".smk-relief-pin-message"), button = form.querySelector("button");
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const password = form.elements.password.value;
+      message.className = "smk-relief-pin-message";
+      if (password !== form.elements.confirm.value) { message.textContent = "Ulangan kata laluan tidak sepadan."; return; }
+      button.disabled = true; message.textContent = "Menyimpan…";
+      try {
+        const response = await fetch("/api/relief-delete-password", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({kind:form.dataset.kind,password})});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Kata laluan tidak dapat disimpan.");
+        form.reset(); message.className = "smk-relief-pin-message ok"; message.textContent = "Kata laluan berjaya disimpan."; void showStatus();
+      } catch (error) { message.textContent = error?.message || "Kata laluan tidak dapat disimpan."; }
+      finally { button.disabled = false; }
+    };
+  });
+  void showStatus();
+};
+const deletePasswordAdminObserver = new MutationObserver(addDeletePasswordAdmin);
+deletePasswordAdminObserver.observe(root, {childList:true, subtree:true});
 const reliefPinAdminObserver = new MutationObserver(addReliefPinAdmin);
 reliefPinAdminObserver.observe(root, {childList:true, subtree:true});
 void loadCoordinators();
