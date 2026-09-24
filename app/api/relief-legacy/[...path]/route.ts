@@ -1,10 +1,13 @@
-import { env } from "cloudflare:workers";
+import { env, waitUntil } from "cloudflare:workers";
 import { NextRequest } from "next/server";
 import { markAbsenceDeletedInSheet, upsertAbsenceToSheet } from "../../../lib/google-sheets";
 import { managementDrive } from "../../../management-drive";
 import { managementPath } from "../../../management-catalog";
 import { syncTeacherReview } from "../../../lib/teacher-review";
 import { verifyReliefPin } from "../../../lib/relief-pin";
+import { malaysiaDay, matchReliefTeacherId, reliefTasksForTeacher, reliefVisibleNow, type ReliefAssignment, type ReliefPlan } from "../../../staff-work-model";
+import { sendTaskNotices, type TaskNotice } from "../../../lib/task-push";
+import { portalActor } from "../../../server-auth";
 const json=(data:unknown,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"private, no-store"}}); const text=(v:unknown)=>typeof v==="string"?v.trim():"";
 async function parts(c:{params:Promise<{path:string[]}>}){return (await c.params).path||[]}
 const reliefFolderId="kurikulum-7";
@@ -44,7 +47,31 @@ export async function POST(request:NextRequest,c:{params:Promise<{path:string[]}
  if(root==="teachers"){if(!await verifyReliefPin(request.headers.get("x-admin-pin")))return json({error:"PIN pentadbir diperlukan."},401);if(!text(b.name)||!["mainstream","form6"].includes(b.category))return json({error:"Nama dan kumpulan guru diperlukan."},400);const id=text(b.id)||crypto.randomUUID();await env.DB.prepare("INSERT INTO teachers (id,name,category,created_at) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category").bind(id,text(b.name),b.category,now).run();return json({id})}
  if(root==="schedules"){const id=crypto.randomUUID(),teachers=Array.isArray(b.teachers)?b.teachers:[];if(!teachers.length)return json({error:"Jadual tidak mengandungi nama guru."},400);await env.DB.batch([env.DB.prepare("UPDATE relief_schedules SET is_active='0'"),env.DB.prepare("INSERT INTO relief_schedules (id,file_name,source_label,teacher_count,is_active,teachers_json,created_at) VALUES (?,?,?,?,?,?,?)").bind(id,b.fileName,b.sourceLabel||b.fileName,String(teachers.length),"1",JSON.stringify(teachers),now)]);await syncTeacherReview(env.DB,id,b.sourceLabel||b.fileName,teachers);return json({id,teacherReviewRequired:true})}
  if(root==="settings"){const payload={params:b.params||{},excludedNames:b.excludedNames||[],excludedClasses:b.excludedClasses||[]};await env.DB.prepare("INSERT INTO relief_settings (id,payload_json,updated_at) VALUES ('active',?,?) ON CONFLICT(id) DO UPDATE SET payload_json=excluded.payload_json,updated_at=excluded.updated_at").bind(JSON.stringify(payload),now).run();return json({ok:true})}
-if(root==="relief-plans"){const id=crypto.randomUUID(),pdf=text(b.pdfBase64);if(pdf){await archiveGeneratedReliefPdf({id,date:b.date,day:b.day,createdBy:b.createdBy,fileName:b.fileName,pdfBase64:pdf,now});await env.FILES.put(`relief-pdfs/${id}.pdf`,Uint8Array.from(atob(pdf),x=>x.charCodeAt(0)),{httpMetadata:{contentType:"application/pdf"}})}await env.DB.prepare("INSERT INTO relief_plans (id,date,day,created_by,assignments_json,file_name,created_at) VALUES (?,?,?,?,?,?,?)").bind(id,b.date,b.day,b.createdBy,JSON.stringify(b.assignments||[]),b.fileName||`${id}.pdf`,now).run();return json({plan:{id,date:b.date,day:b.day,createdBy:b.createdBy,assignments:b.assignments||[],fileName:b.fileName,createdAt:now,pdfUrl:`/api/relief-legacy/relief-plans/${id}/pdf`}})}
+if(root==="relief-plans"){
+ const id=crypto.randomUUID(),pdf=text(b.pdfBase64),publishedAt=new Date();
+ const currentDay=b.date===malaysiaDay(publishedAt)&&reliefVisibleNow(publishedAt);
+ const previous=currentDay?await env.DB.prepare("SELECT assignments_json AS assignmentsJson,file_name AS fileName FROM relief_plans WHERE date=? ORDER BY rowid DESC LIMIT 1").bind(b.date).first<{assignmentsJson:string;fileName:string}>():null;
+ if(pdf){await archiveGeneratedReliefPdf({id,date:b.date,day:b.day,createdBy:b.createdBy,fileName:b.fileName,pdfBase64:pdf,now});await env.FILES.put(`relief-pdfs/${id}.pdf`,Uint8Array.from(atob(pdf),x=>x.charCodeAt(0)),{httpMetadata:{contentType:"application/pdf"}})}
+ await env.DB.prepare("INSERT INTO relief_plans (id,date,day,created_by,assignments_json,file_name,created_at) VALUES (?,?,?,?,?,?,?)").bind(id,b.date,b.day,b.createdBy,JSON.stringify(b.assignments||[]),b.fileName||`${id}.pdf`,now).run();
+ // Notification side effects require a signed-in portal account. The existing
+ // relief publication flow remains available to its PIN-protected client.
+ if(currentDay&&Array.isArray(b.assignments))try{
+  if(!await portalActor(request))throw new Error('Relief publisher has no portal session; push skipped');
+  const users:{id:string;name:string}[]=(await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all()).results;
+  const subscribed:{userId:string}[]=(await env.DB.prepare('SELECT DISTINCT user_id AS userId FROM push_subscriptions').all()).results;
+  const next:ReliefPlan={date:b.date,fileName:text(b.fileName),assignments:b.assignments as ReliefAssignment[]};
+  let oldAssignments:ReliefAssignment[]=[];try{const parsed=JSON.parse(previous?.assignmentsJson||'[]');if(Array.isArray(parsed))oldAssignments=parsed;}catch{ /* Bad historical plan cannot block publication. */ }
+  const notices:TaskNotice[]=[];
+  for(const {userId} of subscribed){const user=users.find(item=>item.id===userId);if(!user)continue;
+   const teacherId=matchReliefTeacherId(next.assignments,user,users);if(!teacherId)continue;
+   const oldTeacherId=matchReliefTeacherId(oldAssignments,user,users);
+   const oldTasks=oldTeacherId?await reliefTasksForTeacher([{date:b.date,fileName:previous?.fileName||'',assignments:oldAssignments}],oldTeacherId,b.date,publishedAt):[];
+   const oldIds=new Set(oldTasks.map(task=>task.id));
+   for(const task of await reliefTasksForTeacher([next],teacherId,b.date,publishedAt))if(!oldIds.has(task.id))notices.push({userId,taskId:`relief-publish:${id}:${task.id}`,title:'Relief hari ini',body:`${task.context} · ${task.detail}`.slice(0,500),url:'/?module=warga'});
+  }
+  waitUntil(sendTaskNotices(notices).catch(error=>console.error('Relief task push delivery failed',error)));
+ }catch(error){console.error('Relief task notification failed',error)}
+ return json({plan:{id,date:b.date,day:b.day,createdBy:b.createdBy,assignments:b.assignments||[],fileName:b.fileName,createdAt:now,pdfUrl:`/api/relief-legacy/relief-plans/${id}/pdf`}})}
  return json({error:"Laluan tidak ditemui"},404)}
 export async function PUT(r:NextRequest,c:{params:Promise<{path:string[]}>}){return POST(r,c)}
 export async function DELETE(request:NextRequest,c:{params:Promise<{path:string[]}>}){const p=await parts(c),root=p[0],id=p[1]||request.nextUrl.searchParams.get("id");if(root==="absences"&&(!env.RELIEF_DELETE_PASSWORD||request.headers.get("x-delete-password")!==env.RELIEF_DELETE_PASSWORD))return json({error:"Kata laluan tidak betul"},401);if(root==="teachers"&&!await verifyReliefPin(request.headers.get("x-admin-pin")))return json({error:"PIN tidak betul"},401);if(!id)return json({error:"ID diperlukan"},400);let sheetMirrored=true;if(root==="absences"){await env.DB.prepare("DELETE FROM absences WHERE id=?").bind(id).run();sheetMirrored=await markAbsenceDeletedInSheet(id);}else if(root==="teachers")await env.DB.prepare("DELETE FROM teachers WHERE id=?").bind(id).run();else if(root==="schedules")await env.DB.prepare("DELETE FROM relief_schedules WHERE id=?").bind(id).run();else return json({error:"Laluan tidak ditemui"},404);return json({ok:true,sheetMirrored})}

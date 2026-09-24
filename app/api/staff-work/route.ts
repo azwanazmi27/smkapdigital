@@ -1,8 +1,9 @@
-import {env} from 'cloudflare:workers';
+import {env,waitUntil} from 'cloudflare:workers';
 import {portalActor} from '../../server-auth';
 import {generateAI} from '../../services/ai/router';
 import {reserveAIUsage} from '../../services/ai/usage';
 import {parseDutyScheduleText} from '../../staff-work-pdf';
+import {sendTaskNotices,type TaskNotice} from '../../lib/task-push';
 import {malaysiaDay,matchReliefTeacherId,normalName,reliefTasksForTeacher,reliefVisibleNow,sameReliefIdentity,sortStaffTasks,stableTaskKey,validDate,type ReliefPlan,type StaffTask,type WorkAssignment} from '../../staff-work-model';
 const clean=(v:unknown,n=200)=>typeof v==='string'?v.trim().slice(0,n):'';
 const admin=(role:string)=>['admin','super_admin'].includes(role);
@@ -71,6 +72,8 @@ export async function POST(request:Request){try{
   for(const a of rows)if(!a||!ids.has(a.userId)||!clean(a.role,600)||((a.startDate||a.endDate||doc.kind==='duty')&&(!validDate(a.startDate)||!validDate(a.endDate)||a.endDate<a.startDate)))return reply({error:'Lengkapkan pilihan guru, tugasan dan tarikh yang diperlukan.'},400);
   const keyed=await Promise.all(rows.map(async row=>({row,key:await stableTaskKey([doc.kind,row.userId,row.role,row.startDate||'',row.endDate||''])})));
   const unique=[...new Map(keyed.map(({row,key})=>[key,{id:crypto.randomUUID(),documentId:id,userId:row.userId,taskKey:key,role:clean(row.role,600),startDate:row.startDate||'',endDate:row.endDate||''}])).values()];
+  const previous=(await env.DB.prepare('SELECT task_key AS taskKey FROM staff_work_assignments WHERE document_id=?').bind(id).all<{taskKey:string}>()).results;
+  const previousKeys=new Set(previous.map(row=>row.taskKey));
   const payload=JSON.stringify(unique);
   const statements=[
    env.DB.prepare("DELETE FROM staff_work_assignments WHERE document_id=? AND NOT EXISTS (SELECT 1 FROM json_each(?) WHERE json_extract(value,'$.taskKey')=staff_work_assignments.task_key)").bind(id,payload),
@@ -83,7 +86,15 @@ export async function POST(request:Request){try{
     FROM json_each(?) WHERE NOT EXISTS (SELECT 1 FROM staff_work_assignments WHERE task_key=json_extract(value,'$.taskKey'))`).bind(payload),
    env.DB.prepare('UPDATE staff_work_documents SET published=1,assignments_json=? WHERE id=?').bind(JSON.stringify(rows),id)
   ];
-  await env.DB.batch(statements);return reply({ok:true});
+  await env.DB.batch(statements);
+  try{
+   const subscribers:{userId:string}[]=(await env.DB.prepare('SELECT DISTINCT user_id AS userId FROM push_subscriptions').all()).results;
+   const subscriberIds=new Set(subscribers.map(row=>row.userId));
+   const additions=unique.filter(item=>subscriberIds.has(item.userId)&&!previousKeys.has(item.taskKey)&&(!item.endDate||item.endDate>=malaysiaDay()));
+   const notices:TaskNotice[]=additions.map(item=>({userId:item.userId,taskId:`assignment:${item.id}`,title:doc.kind==='duty'?'Tugasan guru bertugas baharu':'Tugasan baharu',body:`${item.role}${item.startDate?` · ${item.startDate}${item.endDate&&item.endDate!==item.startDate?` hingga ${item.endDate}`:''}`:''}`.slice(0,500),url:'/?module=warga'}));
+   waitUntil(sendTaskNotices(notices).catch(error=>console.error('Staff task push delivery failed',error)));
+  }catch(error){console.error('Staff task notification failed',error)}
+  return reply({ok:true});
  }
  return reply({error:'Tindakan tidak sah.'},400);
  }catch{return reply({error:'Dokumen tidak dapat diproses sekarang. Cuba semula.'},503);}}
