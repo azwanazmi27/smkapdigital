@@ -15,6 +15,50 @@ export function currentWeek(now=new Date()){const day=new Intl.DateTimeFormat('e
 export type WorkAction={module:'oprgenerator'|'oprduty'|'etempahan'|'epemantauan'|'ekeberadaan'|'uploads'|'skas';label:string;tab?:'daily'|'weekly'};
 export type StaffTaskType='relief'|'duty'|'program';
 export type StaffTask={id:string;type:StaffTaskType;title:string;context:string;detail:string;source:string;startDate:string;endDate:string;status:string;documentId?:string;unseen:boolean;actions:WorkAction[]};
+export type ReliefAssignment={absentId?:string;absentTeacher?:string;reliefId?:string;reliefTeacher?:string;cancelled?:boolean;periods?:Array<number|string>;lesson?:{className?:string;subject?:string}};
+export type ReliefPlan={date:string;fileName:string;assignments:ReliefAssignment[]};
+type NamedPerson={id:string;name:string};
+function reliefNameScore(a:string,b:string){
+ const left=reliefNameKey(a).split(' ').filter(Boolean),right=reliefNameKey(b).split(' ').filter(Boolean);
+ if(!left.length||!right.length)return 0;
+ if(left.join(' ')===right.join(' '))return 1000;
+ const shorter=left.length<=right.length?left:right,longer=left.length<=right.length?right:left;
+ if(shorter.length<2)return 0;
+ for(let start=0;start<=longer.length-shorter.length;start++)if(shorter.every((word,index)=>word===longer[start+index]))return 100+shorter.length*10+shorter.length/longer.length;
+ let cursor=0;for(const word of longer)if(word===shorter[cursor])cursor++;
+ if(cursor===shorter.length&&shorter.length>=3&&shorter.length/longer.length>=0.75)return 50+shorter.length*10+shorter.length/longer.length;
+ const shared=shorter.filter(word=>longer.includes(word)).length,dice=2*shared/(shorter.length+longer.length);
+ if(left[0]===right[0]&&shared>=3&&dice>=0.7)return 20+shared*10+dice;
+ return 0;
+}
+export function matchReliefTeacherId(assignments:ReliefAssignment[],actor:NamedPerson,users:NamedPerson[]){
+ const teachers=[...new Map(assignments.filter(item=>!item.cancelled&&item.reliefId&&item.reliefTeacher).map(item=>[item.reliefId!,{id:item.reliefId!,name:item.reliefTeacher!}])).values()];
+ const ranked=teachers.map(teacher=>({...teacher,score:reliefNameScore(actor.name,teacher.name)})).filter(teacher=>teacher.score>0).sort((a,b)=>b.score-a.score);
+ if(!ranked.length||(ranked[1]&&ranked[1].score===ranked[0].score))return '';
+ const candidate=ranked[0],owners=users.map(user=>({...user,score:reliefNameScore(user.name,candidate.name)})).filter(user=>user.score>0).sort((a,b)=>b.score-a.score);
+ return owners[0]?.id===actor.id&&(!owners[1]||owners[1].score<owners[0].score)?candidate.id:'';
+}
+export function reliefVisibleNow(now=new Date()){
+ const hourMinute=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kuala_Lumpur',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
+ return hourMinute<'18:30';
+}
+export async function reliefTasksForTeacher(plans:ReliefPlan[],teacherId:string,today:string,now=new Date()):Promise<StaffTask[]>{
+ if(!teacherId||today!==malaysiaDay(now)||!reliefVisibleNow(now))return [];
+ const tasks:StaffTask[]=[];
+ for(const plan of plans){
+  if(plan.date!==today||!Array.isArray(plan.assignments))continue;
+  for(const item of plan.assignments){
+   if(!item||item.cancelled||item.reliefId!==teacherId)continue;
+   const periods=(Array.isArray(item.periods)?item.periods:[]).map(String).filter(Boolean);
+   const className=typeof item.lesson?.className==='string'?item.lesson.className.trim().slice(0,80):'';
+   const subject=typeof item.lesson?.subject==='string'?item.lesson.subject.trim().slice(0,80):'';
+   const absentTeacher=typeof item.absentTeacher==='string'?item.absentTeacher.trim().slice(0,120):'';
+   const hash=await stableTaskKey(['relief',plan.date,teacherId,item.absentId||'',periods.join(','),className,subject]);
+   tasks.push({id:`relief:${hash}`,type:'relief',title:'Relief',context:className?`Kelas ${className}`:'Kelas relief',detail:[periods.length?`Waktu ${periods.join(', ')}`:'Waktu belum dinyatakan',subject?`Subjek ${subject}`:'',absentTeacher?`Ganti ${absentTeacher}`:''].filter(Boolean).join(' · '),source:plan.fileName||'Jadual E-Relief',startDate:plan.date,endDate:plan.date,status:'Hari Ini',unseen:true,actions:[{module:'ekeberadaan',label:'Buka maklumat relief'}]});
+  }
+ }
+ return tasks;
+}
 export const malaysiaDay=(now=new Date())=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
 export function taskPriority(task:Pick<StaffTask,'type'|'status'|'startDate'>){if(task.type==='relief')return 0;if(task.type==='duty')return 1;if(task.type==='program'&&task.status==='Hari Ini')return 2;return 3;}
 export function sortStaffTasks(tasks:StaffTask[]){return [...tasks].sort((a,b)=>taskPriority(a)-taskPriority(b)||a.startDate.localeCompare(b.startDate)||a.title.localeCompare(b.title,'ms-MY'));}
