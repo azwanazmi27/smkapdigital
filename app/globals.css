@@ -1509,7 +1509,7 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .ai-kpi .bang-wan-status>div{grid-column:2;grid-row:1;align-self:center}
 @media(max-width:760px){
   .ai-kpi .bang-wan-status{grid-template-columns:70px minmax(0,1fr);grid-template-rows:1fr;column-gap:4px}
-  .ai-kpi .bang-wan-robot{grid-row:1;width:70px;height:110px;margin-bottom:-12px}
+  .ai-kpi .bang-wan-robot{grid-row:1;width:70px;height:110px;margin-bottom:-12px;object-position:center top}
 }
 @media(max-width:390px){
   .ai-kpi .bang-wan-status{grid-template-columns:66px minmax(0,1fr);column-gap:3px}
