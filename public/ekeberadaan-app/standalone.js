@@ -170,48 +170,11 @@ const addReliefPinAdmin = () => {
 };
 const reliefPinAdminObserver = new MutationObserver(addReliefPinAdmin);
 reliefPinAdminObserver.observe(root, {childList:true, subtree:true});
-const addDeletePasswordAdmin = () => {
-  const target = root.querySelector(".summary-page.view-enter .admin-layout");
-  if (!target || root.querySelector(".smk-delete-password-admin")) return;
-  const panel = document.createElement("section");
-  panel.className = "smk-relief-pin-admin smk-delete-password-admin";
-  panel.innerHTML = `<h2>Kata laluan utama E-Keberadaan</h2><p>Digunakan untuk memadam nama guru dan rekod ketidakhadiran. Hanya pentadbir portal boleh menukarnya. PIN E-Relief diurus secara berasingan.</p><form autocomplete="off"><div class="smk-relief-pin-fields"><label>Kata laluan semasa<input name="currentPassword" type="password" required autocomplete="current-password"></label><label>Kata laluan baharu<input name="newPassword" type="password" minlength="12" maxlength="128" required autocomplete="new-password"></label><label>Ulang kata laluan baharu<input name="confirmPassword" type="password" minlength="12" maxlength="128" required autocomplete="new-password"></label></div><button type="submit">Tukar kata laluan utama</button><p class="smk-relief-pin-message" role="status" aria-live="polite"></p></form>`;
-  target.before(panel);
-  const form = panel.querySelector("form"), message = panel.querySelector(".smk-relief-pin-message"), button = panel.querySelector("button");
-  let configured = true;
-  fetch("/api/relief-delete-password", {cache:"no-store"}).then(async (response) => {
-    const state = await response.json();
-    if (!response.ok) throw new Error(state.error || "Status kata laluan tidak dapat dibaca.");
-    configured = state.configured;
-    form.elements.currentPassword.required = configured;
-    form.elements.currentPassword.closest("label").hidden = !configured;
-    button.textContent = configured ? "Tukar kata laluan utama" : "Tetapkan kata laluan utama";
-    if (!configured && !state.canInitialize) { button.disabled = true; message.textContent = "Pentadbir utama perlu menetapkan kata laluan dahulu."; }
-  }).catch((error) => { button.disabled = true; message.textContent = error?.message || "Status kata laluan tidak dapat dibaca."; });
-  form.onsubmit = async (event) => {
-    event.preventDefault();
-    const currentPassword = form.elements.currentPassword.value, newPassword = form.elements.newPassword.value;
-    message.className = "smk-relief-pin-message";
-    if (newPassword !== form.elements.confirmPassword.value) { message.textContent = "Ulangan kata laluan baharu tidak sepadan."; return; }
-    button.disabled = true; message.textContent = "Menukar kata laluan…";
-    try {
-      const response = await fetch("/api/relief-delete-password", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({currentPassword,newPassword})});
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Kata laluan tidak dapat ditukar.");
-      form.reset(); message.className = "smk-relief-pin-message ok";
-      message.textContent = configured ? "Kata laluan utama berjaya ditukar. Gunakan kata laluan baharu untuk memadam rekod E-Keberadaan." : "Kata laluan utama berjaya ditetapkan. Kini rekod E-Keberadaan boleh dipadam dengan kata laluan ini.";
-      configured = true; form.elements.currentPassword.required = true; form.elements.currentPassword.closest("label").hidden = false; button.textContent = "Tukar kata laluan utama";
-    } catch (error) { message.textContent = error?.message || "Kata laluan tidak dapat ditukar."; }
-    finally { button.disabled = false; }
-  };
-};
-const deletePasswordAdminObserver = new MutationObserver(addDeletePasswordAdmin);
-deletePasswordAdminObserver.observe(root, {childList:true, subtree:true});
 void loadCoordinators();
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=master-password-2"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=padam-confirm-1"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();
