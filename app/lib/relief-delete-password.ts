@@ -1,52 +1,59 @@
 import { env } from "cloudflare:workers";
-import { verifyReliefPin } from "./relief-pin";
 
 const encoder = new TextEncoder();
-type Kind = "delete" | "master";
-const valid = (password: unknown): password is string => typeof password === "string" && password.length >= 4 && password.length <= 64;
 
-async function digest(salt: string, password: string) {
+async function hash(password: string, salt: string) {
   const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bytes = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: encoder.encode(salt), iterations: 100_000, hash: "SHA-256" }, key, 256);
-  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: encoder.encode(salt), iterations: 210_000, hash: "SHA-256" }, key, 256);
+  return new Uint8Array(bits);
 }
 
-async function prepare() {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS relief_delete_passwords (id TEXT PRIMARY KEY, salt TEXT NOT NULL, password_hash TEXT NOT NULL, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL)").run();
+function equal(a: Uint8Array, b: Uint8Array) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index++) diff |= a[index] ^ b[index];
+  return diff === 0;
 }
 
-async function matches(kind: Kind, password: string) {
-  const row = await env.DB.prepare("SELECT salt,password_hash FROM relief_delete_passwords WHERE id=?").bind(kind).first<{ salt: string; password_hash: string }>();
-  return { configured: Boolean(row), ok: row ? await digest(row.salt, password) === row.password_hash : false };
+async function currentRow() {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS relief_delete_password (id TEXT PRIMARY KEY, salt TEXT NOT NULL, password_hash TEXT NOT NULL, updated_at TEXT NOT NULL, updated_by TEXT NOT NULL)").run();
+  return env.DB.prepare("SELECT salt,password_hash FROM relief_delete_password WHERE id='master'").first<{salt: string; password_hash: string}>();
 }
 
-// Kata laluan padam atau kata laluan master diterima. Selagi pentadbir belum menetapkan
-// kata laluan padam, PIN E-Keberadaan dikongsi diterima supaya fungsi padam tidak terkunci.
-export async function verifyDeletePassword(password: string | null) {
-  if (!valid(password)) return false;
-  await prepare();
-  const master = await matches("master", password);
-  if (master.ok) return true;
-  const current = await matches("delete", password);
-  if (current.ok) return true;
-  if (env.RELIEF_DELETE_PASSWORD && password === String(env.RELIEF_DELETE_PASSWORD)) return true;
-  if (env.RELIEF_MASTER_PASSWORD && password === String(env.RELIEF_MASTER_PASSWORD)) return true;
-  return !current.configured && await verifyReliefPin(password);
+export async function reliefDeletePasswordConfigured() {
+  return Boolean(await currentRow() || env.RELIEF_DELETE_PASSWORD);
 }
 
-export async function deletePasswordStatus() {
-  await prepare();
-  const rows = await env.DB.prepare("SELECT id,updated_at,updated_by FROM relief_delete_passwords").all<{ id: Kind; updated_at: string; updated_by: string }>();
-  const find = (kind: Kind) => rows.results.find((row: { id: Kind; updated_at: string; updated_by: string }) => row.id === kind) || null;
-  return { delete: find("delete"), master: find("master") };
+export async function verifyReliefDeletePassword(password: string | null) {
+  if (!password) return false;
+  const row = await currentRow();
+  if (row) {
+    const actual = await hash(password, row.salt);
+    const expected = Uint8Array.from(row.password_hash.match(/../g) || [], (part) => Number.parseInt(part, 16));
+    return equal(actual, expected);
+  }
+  const original = String(env.RELIEF_DELETE_PASSWORD || "");
+  if (!original) return false;
+  return equal(encoder.encode(password), encoder.encode(original));
 }
 
-export async function setDeletePassword(kind: unknown, next: unknown, actorEmail: string) {
-  if (kind !== "delete" && kind !== "master") return { ok: false, error: "Jenis kata laluan tidak sah." };
-  if (!valid(next)) return { ok: false, error: "Kata laluan mestilah 4 hingga 64 aksara." };
-  await prepare();
+export async function changeReliefDeletePassword(current: unknown, next: unknown, actorEmail: string) {
+  if (typeof current !== "string" || !await verifyReliefDeletePassword(current)) return { ok: false, error: "Kata laluan semasa tidak betul." };
+  if (typeof next !== "string" || next.length < 12 || next.length > 128) return { ok: false, error: "Kata laluan baharu mestilah 12 hingga 128 aksara." };
+  if (current === next) return { ok: false, error: "Pilih kata laluan baharu yang berbeza." };
   const salt = crypto.randomUUID();
-  await env.DB.prepare("INSERT INTO relief_delete_passwords(id,salt,password_hash,updated_at,updated_by) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET salt=excluded.salt,password_hash=excluded.password_hash,updated_at=excluded.updated_at,updated_by=excluded.updated_by")
-    .bind(kind, salt, await digest(salt, next), new Date().toISOString(), actorEmail).run();
+  const passwordHash = Array.from(await hash(next, salt), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  await env.DB.prepare("INSERT INTO relief_delete_password(id,salt,password_hash,updated_at,updated_by) VALUES('master',?,?,?,?) ON CONFLICT(id) DO UPDATE SET salt=excluded.salt,password_hash=excluded.password_hash,updated_at=excluded.updated_at,updated_by=excluded.updated_by")
+    .bind(salt, passwordHash, new Date().toISOString(), actorEmail).run();
   return { ok: true };
+}
+
+export async function initializeReliefDeletePassword(next: unknown, actorEmail: string) {
+  if (await reliefDeletePasswordConfigured()) return { ok: false, error: "Kata laluan utama telah ditetapkan." };
+  if (typeof next !== "string" || next.length < 12 || next.length > 128) return { ok: false, error: "Kata laluan baharu mestilah 12 hingga 128 aksara." };
+  const salt = crypto.randomUUID();
+  const passwordHash = Array.from(await hash(next, salt), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const result = await env.DB.prepare("INSERT OR IGNORE INTO relief_delete_password(id,salt,password_hash,updated_at,updated_by) VALUES('master',?,?,?,?)")
+    .bind(salt, passwordHash, new Date().toISOString(), actorEmail).run();
+  return result.meta.changes === 1 ? { ok: true } : { ok: false, error: "Kata laluan utama telah ditetapkan oleh pentadbir lain." };
 }
