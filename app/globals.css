@@ -1002,12 +1002,23 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
   position:fixed;
   inset:0;
   z-index:210;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:rgba(2,13,20,.72);
+  -webkit-backdrop-filter:blur(9px);
+  backdrop-filter:blur(9px);
   border-radius:0;
 }
 
 /* Admin on phones: the sheet is the only vertical scroller. A touch-action:none
    ancestor prevents iOS from starting a pan even when the child says pan-y. */
 @media (max-width:700px){
+  .opr-folder-float-backdrop{align-items:center;padding:calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom))}
+  .opr-folder-float{width:min(100%,680px);height:min(78dvh,760px);max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);min-height:0;margin:auto;padding:24px 15px 14px;border-radius:25px}
+  .opr-folder-float>h3{font-size:24px}
+  .opr-folder-float>p{line-height:1.45}
+  .folder-scroll-list{flex:1 1 auto;min-height:0;max-height:none}
   .folder-backdrop:has(.admin-console),.admin-editor-backdrop{touch-action:pan-y}
   .folder-modal:has(.admin-console){max-height:calc(100dvh - env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   .admin-console .admin-user-list{max-height:none;overflow:visible;padding-right:0}
