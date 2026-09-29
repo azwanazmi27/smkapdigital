@@ -1569,3 +1569,10 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
  .booking-floating-nav.picker-open{z-index:181}
 }
 .notification-picture{display:block;width:100%;max-width:100%;height:auto;max-height:65dvh;object-fit:contain;margin:14px auto;border-radius:12px}.push-notice-card{max-height:calc(100dvh - 32px);overflow-y:auto}
+
+/* Keep booking feedback local while the rest of the centre remains interactive. */
+.booking-feedback { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:12px 0; padding:14px 16px; border:1px solid rgba(97,211,178,.35); border-radius:14px; background:rgba(13,111,87,.2); color:#c8f4e8; font-size:14px; line-height:1.5; }
+.booking-feedback.failed { border-color:rgba(248,167,119,.4); background:rgba(130,63,33,.2); color:#ffe0ca; }
+.booking-feedback button { padding:8px 12px; border:1px solid currentColor; border-radius:10px; background:transparent; color:inherit; font:inherit; }
+.booking-list article.booking-pending { border-left:3px solid #f4ce7a; }
+.booking-pending .booking-list-actions>b { color:#ffe2a3; background:rgba(192,139,43,.15); white-space:normal; }

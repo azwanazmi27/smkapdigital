@@ -36,10 +36,10 @@ function normalizeBookings(value: unknown) {
   return Array.isArray(value) ? value.flatMap((entry) => {
     if (!entry || typeof entry !== "object") return [];
     const row = entry as Record<string, unknown>;
-    const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"];
+    const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"] as const;
     if (!required.every((key) => typeof row[key] === "string") || !rooms.has(String(row.room))) return [];
     const ownerEmail = clean(row.ownerEmail || row.createdByEmail || row.email || row.applicantEmail, 160).toLowerCase();
-    return [{ ...Object.fromEntries(required.map((key) => [key, row[key]])), participants: Number(row.participants) || 0, ownerEmail }];
+    return [{ ...(Object.fromEntries(required.map((key) => [key, row[key]])) as Record<typeof required[number], string>), participants: Number(row.participants) || 0, ownerEmail }];
   }) : [];
 }
 
@@ -121,7 +121,9 @@ export async function POST(request: Request) {
     const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
     await clearBookingStatus(new URL(request.url).origin, datesBetween(startDate, endDate).slice(0, 61));
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
-    return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false });
+    // Send the confirmed row so the client does not wait for another Sheet read.
+    const booking = normalizeBookings([result.booking || {id:result.id,room,applicantName,purpose,startDate,startTime,endDate,endTime,participants,status:result.status || "Diluluskan",ownerEmail:email}])[0];
+    return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false, ...(booking ? {booking:presentBooking(booking,actor)} : {}) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat diproses.";
     const conflict = /bertindih|ditempah|conflict/i.test(message);
