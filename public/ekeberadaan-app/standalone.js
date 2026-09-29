@@ -65,21 +65,22 @@ const enhanceSummary = () => {
 
   const modes = document.createElement("div");
   modes.className = "smk-summary-modes";
-  modes.innerHTML = '<button type="button" data-mode="date">Ikut tarikh</button><button type="button" data-mode="all">Semua rekod</button>';
+  modes.innerHTML = '<button type="button" data-mode="date">Pilih tarikh</button><button type="button" data-mode="all">Hari ini</button>';
   tools.prepend(modes);
   const dateLabel = dateInput.closest("label");
   const dateSmall = dateLabel?.querySelector("small");
   if (dateSmall) dateSmall.textContent = "Pilih tarikh";
   const updateMode = () => {
-    const selected = Boolean(dateInput.value);
+    const today = new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Kuala_Lumpur",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+    const selected = dateInput.value !== today;
     modes.querySelector('[data-mode="date"]').classList.toggle("active", selected);
     modes.querySelector('[data-mode="all"]').classList.toggle("active", !selected);
   };
   modes.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-mode]");
     if (!button) return;
-    if (button.dataset.mode === "all") setInputValue(dateInput, "");
-    else if (!dateInput.value) dateInput.showPicker?.() || dateInput.focus();
+    if (button.dataset.mode === "all") setInputValue(dateInput, new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Kuala_Lumpur",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()));
+    else { if (dateInput.showPicker) dateInput.showPicker(); else dateInput.focus(); }
     updateMode();
   });
   dateInput.addEventListener("change", updateMode);
@@ -174,7 +175,7 @@ void loadCoordinators();
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=attendance-summary-day-1"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=attendance-summary-day-2"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();
