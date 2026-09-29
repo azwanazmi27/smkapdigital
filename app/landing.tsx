@@ -1201,10 +1201,10 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
       <div className="visitor-actions"><button type="button" onClick={() => setTab("dashboard")}>Semak status bilik</button><button className="visitor-primary" disabled={saving}>{saving ? <><i className="button-spinner"></i> Menyemak...</> : "Sahkan tempahan →"}</button></div>
     </form>}
     {typeof document !== "undefined" && createPortal(<>
-      <nav className="booking-floating-nav" aria-label="Menu e-Tempahan">
-        <button className={tab === "dashboard" ? "active" : ""} onClick={() => setTab("dashboard")}><CalendarRange aria-hidden="true"/><span>Status</span></button>
+      <nav className={`booking-floating-nav ${roomPickerOpen?"picker-open":""}`} aria-label="Menu e-Tempahan">
+        <button className={tab === "dashboard" ? "active" : ""} onClick={() => {setRoomPickerOpen(false);setTab("dashboard");}}><CalendarRange aria-hidden="true"/><span>Status</span></button>
         <button className={tab === "form" || roomPickerOpen ? "active add" : "add"} onClick={showRoomPicker}><CalendarPlus aria-hidden="true"/><span>Tempah</span></button>
-        <button className={tab === "list" ? "active" : ""} onClick={() => { setTab("list"); void loadBookingList(); }}><ClipboardList aria-hidden="true"/><span>Senarai</span></button>
+        <button className={tab === "list" ? "active" : ""} onClick={() => { setRoomPickerOpen(false);setTab("list"); void loadBookingList(); }}><ClipboardList aria-hidden="true"/><span>Senarai</span></button>
       </nav>
       {roomPickerOpen && <div className="booking-room-picker" role="dialog" aria-modal="true" aria-labelledby="room-picker-title" onMouseDown={(event) => event.target === event.currentTarget && setRoomPickerOpen(false)}>
         <section>
