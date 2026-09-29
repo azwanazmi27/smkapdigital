@@ -1580,3 +1580,8 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 /* Body portal: confirmation must follow the viewport, not the scrolled booking sheet. */
 .booking-delete-confirm { z-index:260; box-sizing:border-box; padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
 .booking-delete-confirm>section { box-sizing:border-box; max-height:calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y:auto; }
+
+.booking-delete-confirm>section { color:#edf9f8; }
+.booking-delete-confirm h3 { color:#f4ffff; }
+.booking-delete-confirm p,.booking-delete-confirm small { color:#cce1e3; }
+.booking-delete-confirm p strong { color:#f4ffff; }

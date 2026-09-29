@@ -1,3 +1,4 @@
+import { bookingStartIsPast } from "../../booking-time";
 import { portalActor, type PortalActor } from "../../server-auth";
 import { clearBookingStatus, readBookingStatus } from "../../etempahan-cache";
 
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
     if (!Number.isInteger(participants) || participants < 1 || participants > 1000) return Response.json({ error: "Maklumat tempahan tidak sah." }, { status: 400 });
     const start = new Date(`${startDate}T${startTime}:00+08:00`), end = new Date(`${endDate}T${endTime}:00+08:00`);
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Tarikh dan waktu akhir mestilah selepas tarikh dan waktu mula." }, { status: 400 });
+    if (bookingStartIsPast(startDate,startTime)) return Response.json({error:"Waktu mula telah berlalu. Sila pilih waktu selepas sekarang (waktu Malaysia)."},{status:400});
     // Keep the original fields and send the legacy date/time aliases too. This
     // avoids a false overlap when the connected Sheet script still reads `date`.
     const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });

@@ -1,4 +1,5 @@
 "use client";
+import {bookingStartIsPast, nextBookingSlot, malaysiaTime} from "./booking-time";
 import {notificationImage} from "./services/notification-image";
 import type {WorkAction} from "./staff-work-model";
 import {StaffWorkList,StaffWorkUpload,StaffWorkUploadHub} from "./staff-work";
@@ -1089,7 +1090,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const saving=snapshot.changes.some(change=>!change.deleting);
   const [roomPickerOpen, setRoomPickerOpen] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ room: "", applicantName: user?.name||"", email: user?.email||"", startDate: today, startTime: "08:00", endDate: today, endTime: "09:00", purpose: "" });
+  const [form, setForm] = useState(() => {const slot=nextBookingSlot();return {room:"",applicantName:user?.name||"",email:user?.email||"",startDate:slot.start.date,startTime:slot.start.time,endDate:slot.end.date,endTime:slot.end.time,purpose:""};});
   const setField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const loadBookings = () => bookingClient.refresh(date,date,true);
   const loadBookingList = () => bookingClient.refresh(listFrom,listTo);
@@ -1114,15 +1115,16 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const nextRoomBooking = (room: string) => [...roomBookings(room)].sort((a, b) => `${a.startDate}T${a.startTime}`.localeCompare(`${b.startDate}T${b.startTime}`))[0];
   const showRoomPicker = () => setRoomPickerOpen(true);
   const beginBooking = (room: string) => {
-    setField("room", room);
-    setField("startDate", date);
-    setField("endDate", date);
+    const slot=nextBookingSlot();
+    const selected=date>today?date:slot.start.date;
+    setForm(current=>({...current,room,startDate:selected,endDate:date>today?date:slot.end.date,startTime:date>today?"08:00":slot.start.time,endTime:date>today?"09:00":slot.end.time}));
     setRoomPickerOpen(false);
     setTab("form");
   };
   const openBookingForm = showRoomPicker;
   const submit = async () => {
     if (saving) return;
+    if (bookingStartIsPast(form.startDate,form.startTime)) {setError("Waktu mula telah berlalu. Sila pilih waktu selepas sekarang (waktu Malaysia).");return;}
     if (`${form.endDate}T${form.endTime}`<=`${form.startDate}T${form.startTime}`) {setError("Waktu tamat mesti selepas waktu mula.");return;}
     setError("");
     const draft={...form};
@@ -1189,7 +1191,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
       <div className="booking-form-grid"><label>Bilik yang ingin ditempah *<select value={form.room} onChange={(event) => setField("room", event.target.value)} required><option value="">Pilih bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><label>Tujuan penggunaan *<select value={form.purpose} onChange={(event) => setField("purpose", event.target.value)} required><option value="">Pilih tujuan</option><option>PdPC</option><option>Mesyuarat</option><option>Taklimat</option><option>Perjumpaan</option><option>Latihan SPTS</option><option>Program Sekolah</option><option>Lain-lain</option></select></label></div>
       <div className="booking-form-grid"><label>Nama pemohon *<input value={form.applicantName} onChange={(event) => setField("applicantName", event.target.value)} onBlur={() => setField("applicantName", tidyTitleCase(form.applicantName))} placeholder="Akan diisi automatik selepas log masuk Google" required /></label><label>E-mel pengesahan *<input type="email" value={form.email} onChange={(event) => setField("email", event.target.value.trim())} placeholder="nama@moe-dl.edu.my" required /></label></div>
       <div className="booking-repeat-note"><strong>Tempahan sehari atau beberapa hari</strong><span>Bilik akan diblok secara berterusan daripada waktu mula pada hari pertama hingga waktu tamat pada hari terakhir.</span></div>
-      <div className="booking-form-grid four"><label>Tarikh mula<input type="date" value={form.startDate} min={today} onChange={(event) => { setField("startDate", event.target.value); if (form.endDate < event.target.value) setField("endDate", event.target.value); }} required /></label><label>Waktu mula<input type="time" value={form.startTime} onChange={(event) => setField("startTime", event.target.value)} required /></label><label>Tarikh akhir<input type="date" value={form.endDate} min={form.startDate} onChange={(event) => setField("endDate", event.target.value)} required /></label><label>Waktu akhir<input type="time" value={form.endTime} onChange={(event) => setField("endTime", event.target.value)} required /></label></div>
+      <div className="booking-form-grid four"><label>Tarikh mula<input type="date" value={form.startDate} min={today} onChange={(event) => { setField("startDate", event.target.value); if (form.endDate < event.target.value) setField("endDate", event.target.value); }} required /></label><label>Waktu mula<input type="time" min={form.startDate===today?malaysiaTime():undefined} value={form.startTime} onChange={(event) => setField("startTime", event.target.value)} required /></label><label>Tarikh akhir<input type="date" value={form.endDate} min={form.startDate} onChange={(event) => setField("endDate", event.target.value)} required /></label><label>Waktu akhir<input type="time" value={form.endTime} onChange={(event) => setField("endTime", event.target.value)} required /></label></div>
       {error && <p className="visitor-error">{error}</p>}
       <p className="visitor-disclaimer"><span>ⓘ</span> Nama boleh diubah jika tempahan dibuat bagi pihak orang lain. Akaun dan e-mel sebenar akan disimpan untuk tujuan rekod apabila log masuk Google diaktifkan.</p>
       <div className="visitor-actions"><button type="button" onClick={() => setTab("dashboard")}>Semak status bilik</button><button className="visitor-primary" disabled={saving}>{saving ? "Tempahan sedang disahkan" : "Sahkan tempahan →"}</button></div>
