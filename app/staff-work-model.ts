@@ -16,9 +16,9 @@ export function currentWeek(now=new Date()){const day=new Intl.DateTimeFormat('e
 
 export type WorkAction={module:'oprgenerator'|'oprduty'|'etempahan'|'epemantauan'|'ekeberadaan'|'uploads'|'skas';label:string;tab?:'daily'|'weekly'};
 export type StaffTaskType='relief'|'duty'|'program';
-export type StaffTask={id:string;type:StaffTaskType;title:string;context:string;detail:string;source:string;startDate:string;endDate:string;status:string;documentId?:string;unseen:boolean;actions:WorkAction[]};
+export type StaffTask={id:string;type:StaffTaskType;title:string;context:string;detail:string;source:string;startDate:string;endDate:string;status:string;documentId?:string;pdfUrl?:string;unseen:boolean;actions:WorkAction[]};
 export type ReliefAssignment={absentId?:string;absentTeacher?:string;reliefId?:string;reliefTeacher?:string;cancelled?:boolean;periods?:Array<number|string>;lesson?:{className?:string;subject?:string}};
-export type ReliefPlan={date:string;fileName:string;assignments:ReliefAssignment[]};
+export type ReliefPlan={id?:string;date:string;fileName:string;assignments:ReliefAssignment[]};
 type NamedPerson={id:string;name:string};
 function reliefNameScore(a:string,b:string){
  const left=reliefNameKey(a).split(' ').filter(Boolean),right=reliefNameKey(b).split(' ').filter(Boolean);
@@ -56,7 +56,7 @@ export async function reliefTasksForTeacher(plans:ReliefPlan[],teacherId:string,
    const subject=typeof item.lesson?.subject==='string'?item.lesson.subject.trim().slice(0,80):'';
    const absentTeacher=typeof item.absentTeacher==='string'?item.absentTeacher.trim().slice(0,120):'';
    const hash=await stableTaskKey(['relief',plan.date,teacherId,item.absentId||'',periods.join(','),className,subject]);
-   tasks.push({id:`relief:${hash}`,type:'relief',title:'Relief',context:className?`Kelas ${className}`:'Kelas relief',detail:[periods.length?`Waktu ${periods.join(', ')}`:'Waktu belum dinyatakan',subject?`Subjek ${subject}`:'',absentTeacher?`Ganti ${absentTeacher}`:''].filter(Boolean).join(' · '),source:plan.fileName||'Jadual E-Relief',startDate:plan.date,endDate:plan.date,status:'Hari Ini',unseen:true,actions:[{module:'ekeberadaan',label:'Buka maklumat relief'}]});
+   tasks.push({id:`relief:${hash}`,type:'relief',title:'Relief',context:className?`Kelas ${className}`:'Kelas relief',detail:[periods.length?`Waktu ${periods.join(', ')}`:'Waktu belum dinyatakan',subject?`Subjek ${subject}`:'',absentTeacher?`Ganti ${absentTeacher}`:''].filter(Boolean).join(' · '),source:plan.fileName||'Jadual E-Relief',startDate:plan.date,endDate:plan.date,status:'Hari Ini',pdfUrl:plan.id?`/api/relief-legacy/relief-plans/${encodeURIComponent(plan.id)}/pdf`:undefined,unseen:true,actions:[{module:'ekeberadaan',label:'Buka PDF relief'}]});
   }
  }
  return tasks;

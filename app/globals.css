@@ -1535,3 +1535,6 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
   .ai-kpi .bang-wan-status{grid-template-columns:66px minmax(0,1fr);column-gap:3px}
   .ai-kpi .bang-wan-robot{width:66px;height:104px;margin-bottom:-10px}
 }
+
+/* Relief details must remain readable, including subject and replaced teacher. */
+.my-task-row.type-relief .my-task-copy small{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;display:block;-webkit-line-clamp:unset}

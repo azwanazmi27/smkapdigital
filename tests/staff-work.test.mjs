@@ -73,3 +73,15 @@ test('tarikh dokumen dan tindakan portal disahkan',()=>{
  assert.equal(model.workActions({kind:'paper',role:'Sediakan OPR program'})[0].module,'oprgenerator');
  assert.equal(model.workActions({kind:'duty',role:'Guru bertugas'})[0].module,'oprduty');
 });
+
+test('relief links to the PDF of its exact published plan',async()=>{
+ const tasks=await model.reliefTasksForTeacher([{id:'published-plan',date:'2026-09-28',fileName:'Relief.pdf',assignments:[{reliefId:'teacher',absentTeacher:'Guru Asal',periods:[8],lesson:{className:'4 AK',subject:'MT'}}]}],'teacher','2026-09-28',new Date('2026-09-28T00:00:00Z'));
+ assert.equal(tasks[0].pdfUrl,'/api/relief-legacy/relief-plans/published-plan/pdf');
+ assert.match(tasks[0].detail,/Waktu 8 · Subjek MT · Ganti Guru Asal/);
+});
+
+test('printing publishes current assignments and PDF before invoking print',()=>{
+ const source=readFileSync('public/ekeberadaan-app/assets/page-MSybSbxR.js','utf8');
+ assert.ok(source.includes('if(Ge&&await rt())window.print()'));
+ assert.ok(source.includes('assignments:q.assignments,pdfBase64:t'));
+});
