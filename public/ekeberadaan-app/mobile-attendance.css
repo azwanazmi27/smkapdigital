@@ -202,3 +202,10 @@ html,body,#relief-root,.attendance-portal{max-width:100%;overflow-x:clip}
  .attendance-portal .history-selection strong{display:block;font-size:14px;line-height:1.35}
  .attendance-portal .clear-history{min-height:42px;border:1px solid #cbded8;border-radius:10px;background:#fff;color:#126f64;font-size:14px;font-weight:650}
 }
+
+/* Reset inherited 54px calendar-badge sizing on the full date field. */
+.attendance-portal .history-tools .history-date{box-sizing:border-box;height:auto;min-height:0;max-height:none;display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;justify-items:stretch;text-align:left;gap:12px;padding:12px;overflow:visible}
+.attendance-portal .history-tools .history-date>span{align-self:center;justify-self:start;margin:0}
+.attendance-portal .history-tools .history-date>div{width:100%;min-width:0;display:grid;justify-items:stretch;gap:6px;text-align:left}
+.attendance-portal .history-tools .history-date input{box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;height:44px;margin:0;padding:8px 10px;line-height:26px;text-align:left;border:1px solid #bdd5ce;border-radius:10px;background:#fff;font-size:16px}
+.attendance-portal .history-tools .history-date input::-webkit-date-and-time-value{text-align:left;min-height:26px}
