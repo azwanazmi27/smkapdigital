@@ -381,6 +381,7 @@ export function LandingPortal() {
       <div className="official-logo portal-brand"><span className="school-crest"><img src="/logo-smkap.png" alt="Logo rasmi SMK Agama Pahang" /></span><i className="brand-divider" aria-hidden="true"/><img className="digital-mark" src="/smkap-digital.png" alt="Ikon SMKAP Digital"/><div className="digital-copy"><strong><span>SMKAP</span> <em>Digital</em></strong><small>SMK Agama Pahang</small><b>Berilmu • Bertakwa</b></div></div>
       <div className="portal-label"><i></i><span>PORTAL RASMI</span><b>2026</b></div>
       {identity&&<button className="signed-user-chip" onClick={()=>setProfileOpen(true)} aria-label={`Buka profil ${identity.name}`}><IdentityAvatar user={identity}/><span><small>PROFIL SAYA</small><strong>{identity.name}</strong></span></button>}
+      <NotificationBell signedIn={!!identity} state={pushState} enable={enableNotifications} login={()=>setAuthOpen(true)} tasks={()=>setOpen("warga")}/>
       <button className="admin-entry admin-gear-entry" onClick={() => setOpen("admin")} aria-label="Buka pusat pentadbir" title="Pusat pentadbir"><span><Settings aria-hidden="true" /></span></button>
     </header>
 
@@ -438,6 +439,11 @@ export function LandingPortal() {
 
 type PortalIdentity={id:string;email:string;name:string;position:string;grade:string;role:string;avatarDataUrl?:string};
 function IdentityAvatar({user}:{user:PortalIdentity}){return <span className="identity-avatar">{user.avatarDataUrl?<img src={user.avatarDataUrl} alt=""/>:<b>{user.name.split(/\s+/).filter(Boolean).slice(0,2).map(word=>word[0]).join("")}</b>}</span>}
+
+function NotificationBell({signedIn,state,enable,login,tasks}:{signedIn:boolean;state:string;enable:()=>Promise<void>;login:()=>void;tasks:()=>void}){
+ const dialog=useRef<HTMLDialogElement>(null);
+ return <><button type="button" className="portal-notification-bell" aria-label="Notifikasi tugasan" title="Notifikasi tugasan" onClick={()=>dialog.current?.showModal()}><Bell aria-hidden="true"/>{state==="enabled"&&<i/>}</button><dialog ref={dialog} className="portal-notification-dialog" aria-labelledby="notification-heading"><button type="button" className="notification-close" aria-label="Tutup notifikasi" onClick={()=>dialog.current?.close()}><X/></button><Bell aria-hidden="true"/><h2 id="notification-heading">Notifikasi tugasan</h2><p>Terima notifikasi apabila anda diberikan relief, guru bertugas atau tugasan baharu. Notifikasi tugasan dihantar kepada penerima tugasan sahaja.</p>{!signedIn?<button type="button" onClick={()=>{dialog.current?.close();login();}}>Log masuk untuk aktifkan</button>:<><button type="button" disabled={state==="loading"||state==="enabled"} onClick={()=>void enable()}>{state==="enabled"?"Notifikasi telah aktif":state==="loading"?"Mengaktifkan…":"Aktifkan notifikasi peranti ini"}</button><button type="button" onClick={()=>{dialog.current?.close();tasks();}}>Buka Tugasan Saya</button></>}<small>Pada iPhone/iPad, tambah portal ke Skrin Utama dan buka dari ikon portal untuk mengaktifkan notifikasi.</small></dialog></>;
+}
 
 function LoginWelcome({user,close,pushState,enableNotifications}:{user:PortalIdentity;close:()=>void;pushState:string;enableNotifications:()=>Promise<void>}){
   const [closing,setClosing]=useState(false);
