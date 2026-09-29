@@ -1568,3 +1568,4 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
  .booking-room-picker>section{box-sizing:border-box;width:min(580px,100%);max-height:calc(100dvh - 136px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding-bottom:18px;border-radius:24px;overflow-y:auto}
  .booking-floating-nav.picker-open{z-index:181}
 }
+.notification-picture{display:block;width:100%;max-width:100%;height:auto;max-height:65dvh;object-fit:contain;margin:14px auto;border-radius:12px}.push-notice-card{max-height:calc(100dvh - 32px);overflow-y:auto}

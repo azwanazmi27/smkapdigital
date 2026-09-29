@@ -7,6 +7,7 @@ type PushBody = {
   endpoint?: string;
   expirationTime?: unknown;
   keys?: { p256dh?: string; auth?: string };
+  imageData?: string;
   title?: string;
   body?: string;
   url?: string;
@@ -18,6 +19,7 @@ const clean = (value: unknown, max: number) => typeof value === "string" ? value
 
 async function prepare() {
   await env.DB.batch([
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS push_notification_images (notification_id TEXT PRIMARY KEY,data TEXT NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY,user_id TEXT NOT NULL,endpoint TEXT NOT NULL UNIQUE,p256dh TEXT NOT NULL,auth TEXT NOT NULL,user_agent TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS push_notifications (id TEXT PRIMARY KEY,title TEXT NOT NULL,body TEXT NOT NULL,url TEXT NOT NULL,audience TEXT NOT NULL,status TEXT NOT NULL,sent_count INTEGER NOT NULL DEFAULT 0,failed_count INTEGER NOT NULL DEFAULT 0,created_by TEXT NOT NULL,created_at TEXT NOT NULL)"),
@@ -44,7 +46,8 @@ export async function GET(request: Request) {
       const id = clean(params.get("id"), 80);
       const notification = id ? await env.DB.prepare("SELECT id,title,body,created_at AS createdAt FROM push_notifications WHERE id=?").bind(id).first() : null;
       if (!notification) return Response.json({ error: "Notifikasi tidak ditemui." }, { status: 404 });
-      return Response.json({ notification });
+      const image=await env.DB.prepare("SELECT data FROM push_notification_images WHERE notification_id=?").bind(id).first<{data:string}>();
+      return Response.json({ notification:{...notification,imageData:image?.data||""} },{headers:{"Cache-Control":"private, no-store"}});
     }
     if (!['admin','super_admin'].includes(me.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
     const [summary, history] = await Promise.all([
@@ -79,9 +82,11 @@ export async function POST(request: Request) {
     if (input.action !== "send" || !['admin','super_admin'].includes(me.role)) return Response.json({ error: "Akses pentadbir diperlukan." }, { status: 403 });
     const title = clean(input.title, 100), message = clean(input.body, 500), audience = input.audience || "Semua warga";
     if (!title || !message) return Response.json({ error: "Tajuk dan mesej notifikasi perlu diisi." }, { status: 400 });
+    const imageData=typeof input.imageData==='string'?input.imageData:'';
+    if(imageData&&(imageData.length>270000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/=]+$/.test(imageData)))return Response.json({error:"Gambar tidak sah atau terlalu besar."},{status:400});
     const id = crypto.randomUUID();
     const requestedUrl = clean(input.url, 500) || "/";
-    const url = requestedUrl === "__notification__" ? `/?notification=${encodeURIComponent(id)}` : requestedUrl;
+    const url = (imageData || requestedUrl === "__notification__") ? `/?notification=${encodeURIComponent(id)}` : requestedUrl;
     const userIds = Array.isArray(input.userIds) ? [...new Set(input.userIds.map(id => clean(id, 80)).filter(Boolean))].slice(0, 200) : [];
     if (audience === "Pengguna tertentu" && !userIds.length) return Response.json({ error: "Pilih sekurang-kurangnya seorang pengguna." }, { status: 400 });
     const where = audience === "Admin" ? "AND u.role IN ('admin','super_admin')" : audience === "Guru" ? "AND u.role='teacher'" : audience === "Pengguna tertentu" ? `AND u.id IN (${userIds.map(() => "?").join(",")})` : "";
@@ -90,6 +95,7 @@ export async function POST(request: Request) {
     if (!rows.results.length) return Response.json({ error: "Tiada peranti berdaftar untuk sasaran ini. Minta pengguna aktifkan notifikasi dahulu." }, { status: 409 });
     let sent = 0, failed = 0;
     const keys = vapid();
+    if(imageData)await env.DB.prepare("INSERT INTO push_notification_images(notification_id,data) VALUES(?,?)").bind(id,imageData).run();
     await Promise.all(rows.results.map(async row => {
       try {
         const subscription: PushSubscription = { endpoint: row.endpoint, expirationTime: null, keys: { p256dh: row.p256dh, auth: row.auth } };
