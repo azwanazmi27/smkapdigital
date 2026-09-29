@@ -174,7 +174,7 @@ void loadCoordinators();
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=relief-table-2"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=attendance-summary-day-1"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();

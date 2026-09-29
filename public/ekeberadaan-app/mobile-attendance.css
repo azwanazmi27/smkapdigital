@@ -188,3 +188,17 @@ html,body,#relief-root,.attendance-portal{max-width:100%;overflow-x:clip}
  .attendance-portal .record-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px}
  .attendance-portal .record-controls button{min-height:44px;width:100%;border-radius:11px;font-size:13px}
 }
+
+
+/* The history selector starts on today and stays legible in narrow iPhone layouts. */
+@media(max-width:620px){
+ .attendance-portal .history-tools{grid-template-columns:minmax(0,1fr);gap:9px;padding:12px}
+ .attendance-portal .history-date{grid-template-columns:42px minmax(0,1fr);min-height:68px;gap:10px;padding:10px 12px}
+ .attendance-portal .history-date>span{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#e8f2ff;color:#3178d7;font-size:22px}
+ .attendance-portal .history-date div{min-width:0;display:grid;gap:5px}
+ .attendance-portal .history-date small{font-size:11px;line-height:1.25;color:#607a7d}
+ .attendance-portal .history-date input{display:block;box-sizing:border-box;width:100%;min-width:0;height:42px;min-height:42px;padding:0 10px;border:1px solid #cbded8;border-radius:10px;background:#fff;color:#173846;font:500 16px/1.2 system-ui,sans-serif;appearance:auto;-webkit-appearance:auto}
+ .attendance-portal .history-selection{padding:12px 14px}
+ .attendance-portal .history-selection strong{display:block;font-size:14px;line-height:1.35}
+ .attendance-portal .clear-history{min-height:42px;border:1px solid #cbded8;border-radius:10px;background:#fff;color:#126f64;font-size:14px;font-weight:650}
+}
