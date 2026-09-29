@@ -1,3 +1,5 @@
+import { jsPDF } from "jspdf";
+import { createReliefTablePdf } from "../../../../public/ekeberadaan-app/relief-table-pdf.js";
 import { env, waitUntil } from "cloudflare:workers";
 import { NextRequest } from "next/server";
 import { markAbsenceDeletedInSheet, upsertAbsenceToSheet } from "../../../lib/google-sheets";
@@ -34,7 +36,12 @@ export async function GET(request:NextRequest,c:{params:Promise<{path:string[]}>
  if(root==="schedules"){const x=await env.DB.prepare("SELECT * FROM relief_schedules ORDER BY created_at DESC").all();return json({versions:x.results.map((r:any)=>({id:r.id,fileName:r.file_name,sourceLabel:r.source_label,teacherCount:Number(r.teacher_count),isActive:r.is_active==="1",createdAt:r.created_at,teachers:JSON.parse(r.teachers_json)}))})}
  if(root==="settings")return json(await reliefSettings())
  if(root==="coordinators"){const settings=await reliefSettings();return json({coordinators:coordinatorNames(settings.coordinators)})}
- if(root==="relief-plans"&&p[2]==="pdf"){const f=await env.FILES.get(`relief-pdfs/${p[1]}.pdf`);return f?new Response(f.body,{headers:{"Content-Type":"application/pdf","Content-Disposition":`inline; filename="${p[1]}.pdf"`}}):json({error:"PDF tidak ditemui"},404)}
+ if(root==="relief-plans"&&p[2]==="pdf"){
+ const plan=await env.DB.prepare("SELECT date,day,created_by,assignments_json FROM relief_plans WHERE id=?").bind(p[1]).first<{date:string;day:string;created_by:string;assignments_json:string}>();
+ if(!plan)return json({error:"PDF tidak ditemui"},404);
+ const pdf=createReliefTablePdf(jsPDF,plan.date,plan.day,plan.created_by,JSON.parse(plan.assignments_json));
+ return new Response(pdf.output('arraybuffer'),{headers:{"Content-Type":"application/pdf","Content-Disposition":`inline; filename="Relief-${plan.date}.pdf"`,"Cache-Control":"private, no-store"}});
+ }
  if(root==="relief-plans"){const x=await env.DB.prepare("SELECT * FROM relief_plans ORDER BY date DESC,created_at DESC").all();return json({plans:x.results.map((r:any)=>({id:r.id,date:r.date,day:r.day,createdBy:r.created_by,assignments:JSON.parse(r.assignments_json),fileName:r.file_name,createdAt:r.created_at,pdfUrl:`/api/relief-legacy/relief-plans/${r.id}/pdf`}))})}
  return json({error:"Laluan tidak ditemui"},404)}
 export async function POST(request:NextRequest,c:{params:Promise<{path:string[]}>}){const p=await parts(c),root=p[0];
