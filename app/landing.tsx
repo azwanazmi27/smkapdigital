@@ -1061,6 +1061,24 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
   const [listRoom, setListRoom] = useState("Semua bilik");
   const [printingList, setPrintingList] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
+  const deleteDialogRef=useRef<HTMLElement|null>(null);
+  useEffect(()=>{
+    if (!deleteTarget) return;
+    const trigger=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const dialog=deleteDialogRef.current;
+    dialog?.querySelector<HTMLButtonElement>("button")?.focus({preventScroll:true});
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();setDeleteTarget(null);}
+      if(event.key==="Tab"&&dialog){
+        const buttons=Array.from(dialog.querySelectorAll<HTMLButtonElement>("button"));
+        const first=buttons[0],last=buttons[buttons.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus({preventScroll:true});}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus({preventScroll:true});}
+      }
+    };
+    document.addEventListener("keydown",onKey,true);
+    return()=>{document.removeEventListener("keydown",onKey,true);if(trigger?.isConnected)trigger.focus({preventScroll:true});};
+  },[deleteTarget]);
   const bookings=bookingRows(snapshot,date,date);
   const listBookings=bookingRows(snapshot,listFrom,listTo);
   const statusQuery=bookingQuery(snapshot,date,date);
@@ -1196,7 +1214,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
         </section>
       </div>}
     </>, document.body)}
-    {deleteTarget && <div className="achievement-confirm" role="dialog" aria-modal="true" aria-labelledby="delete-booking-title" onMouseDown={(event) => event.target === event.currentTarget && setDeleteTarget(null)}><section><span className="modal-overline">PENGESAHAN PADAM</span><h3 id="delete-booking-title">Padam tempahan ini?</h3><p><strong>{deleteTarget.room}</strong><br />{formatBookingDateRange(deleteTarget.startDate, deleteTarget.endDate)}<br />{formatBookingTime(deleteTarget.startTime)}–{formatBookingTime(deleteTarget.endTime)} · {deleteTarget.applicantName}</p><small>Tempahan yang dipadam tidak boleh dipulihkan.</small><div><button type="button" onClick={() => setDeleteTarget(null)}>Batal</button><button type="button" className="danger" onClick={() => void deleteBooking()}>Ya, padam tempahan</button></div></section></div>}
+    {deleteTarget && typeof document !== "undefined" && createPortal(<div className="achievement-confirm booking-delete-confirm" role="alertdialog" aria-modal="true" aria-labelledby="delete-booking-title" onMouseDown={(event) => event.target === event.currentTarget && setDeleteTarget(null)}><section ref={deleteDialogRef} tabIndex={-1}><span className="modal-overline">PENGESAHAN PADAM</span><h3 id="delete-booking-title">Padam tempahan ini?</h3><p><strong>{deleteTarget.room}</strong><br />{formatBookingDateRange(deleteTarget.startDate, deleteTarget.endDate)}<br />{formatBookingTime(deleteTarget.startTime)}–{formatBookingTime(deleteTarget.endTime)} · {deleteTarget.applicantName}</p><small>Tempahan yang dipadam tidak boleh dipulihkan.</small><div><button type="button" onClick={() => setDeleteTarget(null)}>Batal</button><button type="button" className="danger" onClick={() => void deleteBooking()}>Ya, padam tempahan</button></div></section></div>, document.body)}
   </div>;
 }
 

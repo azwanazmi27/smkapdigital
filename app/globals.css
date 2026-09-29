@@ -1576,3 +1576,7 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .booking-feedback button { padding:8px 12px; border:1px solid currentColor; border-radius:10px; background:transparent; color:inherit; font:inherit; }
 .booking-list article.booking-pending { border-left:3px solid #f4ce7a; }
 .booking-pending .booking-list-actions>b { color:#ffe2a3; background:rgba(192,139,43,.15); white-space:normal; }
+
+/* Body portal: confirmation must follow the viewport, not the scrolled booking sheet. */
+.booking-delete-confirm { z-index:260; box-sizing:border-box; padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+.booking-delete-confirm>section { box-sizing:border-box; max-height:calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y:auto; }
