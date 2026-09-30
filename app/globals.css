@@ -1585,3 +1585,16 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .booking-delete-confirm h3 { color:#f4ffff; }
 .booking-delete-confirm p,.booking-delete-confirm small { color:#cce1e3; }
 .booking-delete-confirm p strong { color:#f4ffff; }
+
+.work-upload fieldset.work-unmatched{border:2px solid #ed7f87;background:rgba(147,42,54,.13)}
+.work-upload .work-unmatched legend,.work-upload .work-match-warning{color:#ffb7bc}
+.work-upload .work-match-warning{margin:0;font-size:.9rem;line-height:1.5}
+.work-upload select[aria-invalid=true]{border-color:#ed7f87}
+.staff-work button.work-document-delete{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#482b34;color:#ffd3d6;border:1px solid #b86570;flex-shrink:0}
+.work-document-delete svg{width:18px;height:18px}
+.work-delete-confirm{margin:auto;max-height:calc(100dvh - 48px)}
+.work-delete-confirm h3,.work-delete-confirm strong{color:#edf7f6}
+.work-delete-confirm p{color:#c4d9dc;line-height:1.6}
+.work-delete-confirm p[role=alert]{color:#ffb7bc}
+.work-delete-confirm button{font-size:1rem}
+@media(max-width:560px){.work-upload .work-document-delete{width:100%}}
