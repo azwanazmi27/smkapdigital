@@ -1598,3 +1598,5 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .work-delete-confirm p[role=alert]{color:#ffb7bc}
 .work-delete-confirm button{font-size:1rem}
 @media(max-width:560px){.work-upload .work-document-delete{width:100%}}
+
+.my-teaching-day{margin:14px;padding:16px;border:1px solid #46747b;border-radius:16px;background:#0b303c;color:#edf7f6}.my-teaching-day h3{display:flex;align-items:center;gap:8px;margin:0;font-size:17px;color:#edf7f6}.my-teaching-day h3 svg{width:22px;height:22px}.my-teaching-day p{margin:8px 0;color:#b5cfd2;font-size:14px}.my-teaching-day ol{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}.my-teaching-day li{display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px;align-items:center;padding:12px;border:1px solid #365b66;border-radius:10px;background:#082631}.my-teaching-day li>span{color:#8be8dd;font-size:13px;font-weight:700}.my-teaching-day li div{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}.my-teaching-day strong{color:#edf7f6;font-size:15px}.my-teaching-day small{color:#b5cfd2;font-size:13px}

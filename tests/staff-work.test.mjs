@@ -104,3 +104,16 @@ test('document matching accepts joined and separated spelling in either source',
  assert.equal(model.matchDocumentUserId('Nurul Huda Abdullah',[{id:'huda',name:'Nurulhuda Binti Abdullah'}]),'huda');
  assert.equal(model.matchDocumentUserId('Nurul Huda Abdullah',[{id:'a',name:'Nurulhuda Abdullah'},{id:'b',name:'Nurul Huda Abdullah'}]),'');
 });
+
+test('personal timetable changes at Malaysia midnight and matches only the signed-in teacher',()=>{
+ const users=[{id:'a',name:'Noor Azwan Bin Azmi'},{id:'b',name:'Rahim Ali'}];
+ const teachers=[{name:'En. Azwan Azmi',schedule:{Isnin:[{start:3,end:4,subject:'BM',className:'1 A'}],Selasa:[{start:1,end:2,subject:'BI',className:'2 A'}]}}];
+ const monday=model.teachingDay(teachers,users[0],users,new Date('2026-09-28T15:59:59Z'));
+ assert.equal(monday.day,'Isnin');assert.equal(monday.lessons[0].subject,'BM');
+ const tuesday=model.teachingDay(teachers,users[0],users,new Date('2026-09-28T16:00:00Z'));
+ assert.equal(tuesday.day,'Selasa');assert.equal(tuesday.lessons[0].subject,'BI');
+ assert.equal(model.teachingDay(teachers,users[1],users).state,'unmatched');
+ assert.equal(model.teachingDay(teachers,users[0],users,new Date('2026-10-03T04:00:00Z')).lessons.length,0);
+ assert.equal(model.teachingDay([...teachers,...teachers],users[0],users).state,'unmatched');
+ assert.equal(model.teachingDay(null,users[0],users).state,'unavailable');
+});

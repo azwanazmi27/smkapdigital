@@ -100,3 +100,15 @@ export function matchDocumentUserId(name:string,users:NamedPerson[]){
  const candidates=normalized.filter(user=>documentCandidate(key,user.key));
  return candidates.length===1?candidates[0].id:'';
 }
+
+export type TeachingDay={date:string;day:string;state:'ready'|'unmatched'|'unavailable';lessons:{start:number;end:number;className:string;subject:string}[]};
+export function teachingDay(teachers:unknown,actor:NamedPerson,users:NamedPerson[],now=new Date()):TeachingDay{
+ const date=malaysiaDay(now),day=new Intl.DateTimeFormat('ms-MY',{timeZone:'Asia/Kuala_Lumpur',weekday:'long'}).format(now);
+ const base={date,day,lessons:[]} as TeachingDay;
+ if(!Array.isArray(teachers))return {...base,state:'unavailable'};
+ const matches=teachers.filter(t=>t&&typeof t.name==='string'&&matchDocumentUserId(t.name,users)===actor.id);
+ if(matches.length!==1)return {...base,state:'unmatched'};
+ const entries=matches[0].schedule?.[day];
+ const lessons=(Array.isArray(entries)?entries:[]).filter(l=>Number.isInteger(l.start)&&Number.isInteger(l.end)&&l.start>0&&l.end>=l.start&&typeof l.className==='string'&&typeof l.subject==='string').map(l=>({start:l.start,end:l.end,className:l.className,subject:l.subject})).sort((a,b)=>a.start-b.start);
+ return {...base,state:'ready',lessons};
+}
