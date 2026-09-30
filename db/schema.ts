@@ -123,3 +123,6 @@ export const staffTaskState=sqliteTable('staff_task_state',{
 export const staffReliefLinks=sqliteTable('staff_relief_links',{
  userId:text('user_id').primaryKey(),teacherId:text('teacher_id').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
 },t=>[uniqueIndex('staff_relief_teacher').on(t.teacherId)]);
+export const staffNameMappings=sqliteTable('staff_name_mappings',{
+ nameKey:text('name_key').primaryKey(),sourceName:text('source_name').notNull(),userId:text('user_id').notNull(),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
+});

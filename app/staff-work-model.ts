@@ -33,9 +33,11 @@ function reliefNameScore(a:string,b:string){
  if(left[0]===right[0]&&shared>=3&&dice>=0.7)return 20+shared*10+dice;
  return 0;
 }
-export function matchReliefTeacherId(assignments:ReliefAssignment[],actor:NamedPerson,users:NamedPerson[]){
+export function matchReliefTeacherId(assignments:ReliefAssignment[],actor:NamedPerson,users:NamedPerson[],mappings:Record<string,string>={}){
  const teachers=[...new Map(assignments.filter(item=>!item.cancelled&&item.reliefId&&item.reliefTeacher).map(item=>[item.reliefId!,{id:item.reliefId!,name:item.reliefTeacher!}])).values()];
- const ranked=teachers.map(teacher=>({...teacher,score:reliefNameScore(actor.name,teacher.name)})).filter(teacher=>teacher.score>0).sort((a,b)=>b.score-a.score);
+ const explicit=teachers.filter(teacher=>mappings[documentNameKey(teacher.name)]===actor.id);
+ if(explicit.length)return explicit.length===1?explicit[0].id:'';
+ const ranked=teachers.filter(teacher=>!mappings[documentNameKey(teacher.name)]).map(teacher=>({...teacher,score:reliefNameScore(actor.name,teacher.name)})).filter(teacher=>teacher.score>0).sort((a,b)=>b.score-a.score);
  if(!ranked.length||(ranked[1]&&ranked[1].score===ranked[0].score))return '';
  const candidate=ranked[0],owners=users.map(user=>({...user,score:reliefNameScore(user.name,candidate.name)})).filter(user=>user.score>0).sort((a,b)=>b.score-a.score);
  return owners[0]?.id===actor.id&&(!owners[1]||owners[1].score<owners[0].score)?candidate.id:'';
@@ -102,11 +104,11 @@ export function matchDocumentUserId(name:string,users:NamedPerson[]){
 }
 
 export type TeachingDay={date:string;day:string;state:'ready'|'unmatched'|'unavailable';lessons:{start:number;end:number;className:string;subject:string}[]};
-export function teachingDay(teachers:unknown,actor:NamedPerson,users:NamedPerson[],now=new Date()):TeachingDay{
+export function teachingDay(teachers:unknown,actor:NamedPerson,users:NamedPerson[],now=new Date(),mappings:Record<string,string>={}):TeachingDay{
  const date=malaysiaDay(now),day=new Intl.DateTimeFormat('ms-MY',{timeZone:'Asia/Kuala_Lumpur',weekday:'long'}).format(now);
  const base={date,day,lessons:[]} as TeachingDay;
  if(!Array.isArray(teachers))return {...base,state:'unavailable'};
- const matches=teachers.filter(t=>t&&typeof t.name==='string'&&matchDocumentUserId(t.name,users)===actor.id);
+ const matches=teachers.filter(t=>t&&typeof t.name==='string'&&(mappings[documentNameKey(t.name)]||matchDocumentUserId(t.name,users))===actor.id);
  if(matches.length!==1)return {...base,state:'unmatched'};
  const entries=matches[0].schedule?.[day];
  const lessons=(Array.isArray(entries)?entries:[]).filter(l=>Number.isInteger(l.start)&&Number.isInteger(l.end)&&l.start>0&&l.end>=l.start&&typeof l.className==='string'&&typeof l.subject==='string').map(l=>({start:l.start,end:l.end,className:l.className,subject:l.subject})).sort((a,b)=>a.start-b.start);

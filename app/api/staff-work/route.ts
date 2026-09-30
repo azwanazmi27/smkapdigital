@@ -1,3 +1,4 @@
+import {staffNameMappings} from '../../lib/staff-name-mappings';
 import {env,waitUntil} from 'cloudflare:workers';
 import {portalActor} from '../../server-auth';
 import {generateAI} from '../../services/ai/router';
@@ -19,7 +20,7 @@ async function loadTasks(actor:Actor){
   const plans:ReliefPlan[]=latest.results.map(row=>{let assignments:ReliefPlan['assignments']=[];try{const parsed=JSON.parse(row.assignmentsJson);if(Array.isArray(parsed))assignments=parsed;}catch{ /* Ignore a malformed historical plan. */ }return {id:row.id,date:row.date,fileName:row.fileName,assignments};});
   if(plans.length){
    const users=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();
-   const teacherId=matchReliefTeacherId(plans[0].assignments,actor,users.results);
+   const teacherId=matchReliefTeacherId(plans[0].assignments,actor,users.results,await staffNameMappings());
    if(teacherId)tasks.push(...await reliefTasksForTeacher(plans,teacherId,today,now));
   }
  }
@@ -32,9 +33,9 @@ export async function GET(request:Request){try{
  const tasks=await loadTasks(actor),counts={duty:tasks.filter(t=>t.type==='duty').length,relief:tasks.filter(t=>t.type==='relief').length,program:tasks.filter(t=>t.type==='program').length};let timetable=teachingDay(null,actor,[]);
  try{
   const schedule=await env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1").first<{teachers_json:string}>();
-  if(schedule){const directory=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();timetable=teachingDay(JSON.parse(schedule.teachers_json),actor,directory.results);}
+  if(schedule){const directory=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();timetable=teachingDay(JSON.parse(schedule.teachers_json),actor,directory.results,new Date(),await staffNameMappings());}
  }catch(error){console.error('Personal timetable unavailable',error);}
- return reply({tasks,counts,hasUnseen:tasks.some(t=>t.unseen),today:malaysiaDay(),timetable});
+ return reply({tasks,counts,hasUnseen:tasks.some(t=>t.unseen),today:malaysiaDay(),timetable,canManageNames:admin(actor.role)});
  }catch{return reply({error:'Tugasan tidak dapat dimuatkan. Cuba lagi.'},503);}}
 export async function POST(request:Request){try{
  const actor=await portalActor(request) as Actor|null;if(!actor)return reply({error:'Sila log masuk.'},401);

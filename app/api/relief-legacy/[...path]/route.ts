@@ -1,3 +1,4 @@
+import {staffNameMappings} from '../../../lib/staff-name-mappings';
 import { jsPDF } from "jspdf";
 import { createReliefTablePdf } from "../../../../public/ekeberadaan-app/relief-table-pdf.js";
 import { env, waitUntil } from "cloudflare:workers";
@@ -68,10 +69,10 @@ if(root==="relief-plans"){
   const subscribed:{userId:string}[]=(await env.DB.prepare('SELECT DISTINCT user_id AS userId FROM push_subscriptions').all()).results;
   const next:ReliefPlan={date:b.date,fileName:text(b.fileName),assignments:b.assignments as ReliefAssignment[]};
   let oldAssignments:ReliefAssignment[]=[];try{const parsed=JSON.parse(previous?.assignmentsJson||'[]');if(Array.isArray(parsed))oldAssignments=parsed;}catch{ /* Bad historical plan cannot block publication. */ }
-  const notices:TaskNotice[]=[];
+  const notices:TaskNotice[]=[],nameMappings=await staffNameMappings();
   for(const {userId} of subscribed){const user=users.find(item=>item.id===userId);if(!user)continue;
-   const teacherId=matchReliefTeacherId(next.assignments,user,users);if(!teacherId)continue;
-   const oldTeacherId=matchReliefTeacherId(oldAssignments,user,users);
+   const teacherId=matchReliefTeacherId(next.assignments,user,users,nameMappings);if(!teacherId)continue;
+   const oldTeacherId=matchReliefTeacherId(oldAssignments,user,users,nameMappings);
    const oldTasks=oldTeacherId?await reliefTasksForTeacher([{date:b.date,fileName:previous?.fileName||'',assignments:oldAssignments}],oldTeacherId,b.date,publishedAt):[];
    const oldIds=new Set(oldTasks.map(task=>task.id));
    for(const task of await reliefTasksForTeacher([next],teacherId,b.date,publishedAt))if(!oldIds.has(task.id))notices.push({userId,taskId:`relief-publish:${id}:${task.id}`,title:'Relief hari ini',body:`${task.context} · ${task.detail}`.slice(0,500),url:'/?module=warga'});

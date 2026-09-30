@@ -117,3 +117,14 @@ test('personal timetable changes at Malaysia midnight and matches only the signe
  assert.equal(model.teachingDay([...teachers,...teachers],users[0],users).state,'unmatched');
  assert.equal(model.teachingDay(null,users[0],users).state,'unavailable');
 });
+
+test('admin name mapping overrides automatic matching for both timetable and relief',()=>{
+ const users=[{id:'a',name:'Ali Ahmad'},{id:'b',name:'Abu Bakar'}],key=model.documentNameKey('Ali Ahmad'),mappings={[key]:'b'};
+ const teachers=[{name:'Ali Ahmad',schedule:{Isnin:[{start:1,end:2,subject:'BM',className:'1 A'}]}}];
+ const now=new Date('2026-09-28T04:00:00Z');
+ assert.equal(model.teachingDay(teachers,users[1],users,now,mappings).lessons.length,1);
+ assert.equal(model.teachingDay(teachers,users[0],users,now,mappings).state,'unmatched');
+ const assignments=[{reliefId:'teacher-1',reliefTeacher:'Ali Ahmad'}];
+ assert.equal(model.matchReliefTeacherId(assignments,users[1],users,mappings),'teacher-1');
+ assert.equal(model.matchReliefTeacherId(assignments,users[0],users,mappings),'');
+});
