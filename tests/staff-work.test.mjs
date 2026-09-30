@@ -85,3 +85,22 @@ test('printing publishes current assignments and PDF before invoking print',()=>
  assert.ok(source.includes('if(Ge&&await rt())window.print()'));
  assert.ok(source.includes('assignments:q.assignments,pdfBase64:t'));
 });
+
+test('document names ignore honorifics and missing father names without guessing ambiguous people',()=>{
+ const users=[{id:'wan',name:'Wan Harun Bin Wan Ali'},{id:'azwan',name:'Noor Azwan Bin Azmi'},{id:'siti',name:'Siti Aminah Binti Abdullah'}];
+ for(const name of ['En.Wan Harun Bin Wan Ali','Encik Wan Harun','Tn. Haji Wan Harun','En Wan Harun B Wan Ali']) assert.equal(model.matchDocumentUserId(name,users),'wan');
+ for(const name of ['Pn.Siti Aminah Bt Abdullah','Puan Siti Aminah','Pn. Hajah Siti Aminah Bte Abdullah']) assert.equal(model.matchDocumentUserId(name,users),'siti');
+ assert.equal(model.matchDocumentUserId('Azwan Azmi',users),'azwan');
+ assert.equal(model.matchDocumentUserId('Noor Azwan',users),'azwan');
+ assert.equal(model.matchDocumentUserId('Wan',users),'');
+ assert.equal(model.matchDocumentUserId('Wan Harun',[...users,{id:'other',name:'Wan Harun Bin Ahmad'}]),'');
+ assert.equal(model.matchDocumentUserId('Pn Siti Aminah',[...users,{id:'other',name:'Siti Aminah Binti Hassan'}]),'');
+ assert.equal(model.matchDocumentUserId('En.Wan Harun Bin Wan Ali',[...users,{id:'duplicate',name:'Wan Harun Wan Ali'}]),'');
+});
+
+test('document matching accepts joined and separated spelling in either source',()=>{
+ assert.equal(model.matchDocumentUserId('Pn Nor Fatimawati',[{id:'nor',name:'Norfatimawati Binti Mahmood'}]),'nor');
+ assert.equal(model.matchDocumentUserId('Norfatimawati Mahmood',[{id:'nor',name:'Nor Fatimawati Binti Mahmood'}]),'nor');
+ assert.equal(model.matchDocumentUserId('Nurul Huda Abdullah',[{id:'huda',name:'Nurulhuda Binti Abdullah'}]),'huda');
+ assert.equal(model.matchDocumentUserId('Nurul Huda Abdullah',[{id:'a',name:'Nurulhuda Abdullah'},{id:'b',name:'Nurul Huda Abdullah'}]),'');
+});

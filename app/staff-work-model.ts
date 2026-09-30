@@ -76,3 +76,27 @@ export function workActions(task:{kind:string;role:string}):WorkAction[]{
  if(/\bsk@s\b|\bskas\b/.test(role))actions.push({module:'skas',label:'Buka Pusat SK@S'});
  return actions;
 }
+
+// Document names may omit honorifics/patronymics. Resolve only a unique candidate.
+export function documentNameKey(name:string){
+ return reliefNameKey(name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[.,/()-]/g,' ')
+  .replace(/^(?:(?:en|encik|pn|puan|tn|tuan|cik|cikgu|cg|ust|ustaz|ustazah|dr|haji|hajah|hj|hjh|dato|datuk|datin)\s+)+/i,''))
+  .replace(/\b(?:BTE|BT|BINT|BINTE|IBNI|IBNU)\b/g,'').replace(/\s+/g,' ').trim();
+}
+function documentCandidate(a:string,b:string){
+ const left=a.split(' ').filter(Boolean),right=b.split(' ').filter(Boolean);
+ const short=left.length<=right.length?left:right,long=left.length<=right.length?right:left;
+ if(short.length<2)return false;
+ let cursor=0;
+ for(const token of long)if(token===short[cursor])cursor++;
+ return cursor===short.length;
+}
+export function matchDocumentUserId(name:string,users:NamedPerson[]){
+ const key=documentNameKey(name);
+ if(!key)return '';
+ const normalized=users.map(user=>({...user,key:documentNameKey(user.name)}));
+ const exact=normalized.filter(user=>user.key===key || user.key.replace(/ /g,'')===key.replace(/ /g,''));
+ if(exact.length)return exact.length===1?exact[0].id:'';
+ const candidates=normalized.filter(user=>documentCandidate(key,user.key));
+ return candidates.length===1?candidates[0].id:'';
+}
