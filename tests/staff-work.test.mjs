@@ -128,3 +128,14 @@ test('admin name mapping overrides automatic matching for both timetable and rel
  assert.equal(model.matchReliefTeacherId(assignments,users[1],users,mappings),'teacher-1');
  assert.equal(model.matchReliefTeacherId(assignments,users[0],users,mappings),'');
 });
+
+test('personal absences appear before their date and expire after last Malaysia day',()=>{
+ const users=[{id:'a',name:'Noor Azwan Bin Azmi'},{id:'b',name:'Ali Ahmad'}];
+ const records=[{id:'x',teacherName:'Azwan Azmi',absenceDate:'2026-10-03',endDate:null,reason:'CRK',duration:'full',startTime:null,endTime:null}];
+ const get=now=>model.personalAbsenceTasks(records,users[0],users,{},new Date(now));
+ assert.equal(get('2026-10-01T02:00:00Z')[0].status,'Akan Datang');
+ assert.equal(get('2026-10-03T15:59:59Z').length,1);
+ assert.equal(get('2026-10-03T16:00:00Z').length,0);
+ assert.equal(model.personalAbsenceTasks(records,users[1],users,{},new Date('2026-10-01')).length,0);
+ records[0].endDate='2026-10-05';assert.equal(get('2026-10-04T02:00:00Z').length,1);
+});

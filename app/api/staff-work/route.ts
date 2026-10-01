@@ -5,7 +5,7 @@ import {generateAI} from '../../services/ai/router';
 import {reserveAIUsage} from '../../services/ai/usage';
 import {parseDutyScheduleText} from '../../staff-work-pdf';
 import {sendTaskNotices,type TaskNotice} from '../../lib/task-push';
-import {teachingDay,malaysiaDay,matchDocumentUserId,matchReliefTeacherId,reliefTasksForTeacher,reliefVisibleNow,sortStaffTasks,stableTaskKey,validDate,type ReliefPlan,type StaffTask,type WorkAssignment} from '../../staff-work-model';
+import {personalAbsenceTasks,type PersonalAbsence,teachingDay,malaysiaDay,matchDocumentUserId,matchReliefTeacherId,reliefTasksForTeacher,reliefVisibleNow,sortStaffTasks,stableTaskKey,validDate,type ReliefPlan,type StaffTask,type WorkAssignment} from '../../staff-work-model';
 const clean=(v:unknown,n=200)=>typeof v==='string'?v.trim().slice(0,n):'';
 const admin=(role:string)=>['admin','super_admin'].includes(role);
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
@@ -24,13 +24,15 @@ async function loadTasks(actor:Actor){
    if(teacherId)tasks.push(...await reliefTasksForTeacher(plans,teacherId,today,now));
   }
  }
+ const absenceRecords=await env.DB.prepare("SELECT id,teacher_name AS teacherName,absence_date AS absenceDate,end_date AS endDate,reason,duration,start_time AS startTime,end_time AS endTime FROM absences WHERE COALESCE(NULLIF(end_date,''),absence_date)>=?").bind(today).all<PersonalAbsence>();
+ if(absenceRecords.results.length){const directory=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();tasks.push(...personalAbsenceTasks(absenceRecords.results,actor,directory.results,await staffNameMappings(),now));}
  const states=await env.DB.prepare('SELECT task_id AS taskId,dismissed,seen_at AS seenAt FROM staff_task_state WHERE user_id=?').bind(actor.id).all<{taskId:string;dismissed:number;seenAt:string}>(),state=new Map(states.results.map(v=>[v.taskId,v]));return sortStaffTasks(tasks.filter(task=>!state.get(task.id)?.dismissed).map(task=>({...task,unseen:!state.get(task.id)?.seenAt})));
 }
 export async function GET(request:Request){try{
  const actor=await portalActor(request) as Actor|null;if(!actor)return reply({error:'Sila log masuk.'},401);const canManageDuty=await coordinator(actor),url=new URL(request.url),id=url.searchParams.get('file');
  if(id){const doc=await env.DB.prepare('SELECT owner_id,kind,file_key,filename FROM staff_work_documents WHERE id=?').bind(id).first<{owner_id:string;kind:string;file_key:string;filename:string}>();if(!doc)return reply({error:'Fail tidak ditemui.'},404);const assigned=await env.DB.prepare('SELECT id FROM staff_work_assignments WHERE document_id=? AND user_id=?').bind(id,actor.id).first();if(doc.owner_id!==actor.id&&!(canManageDuty&&doc.kind==='duty')&&!assigned)return reply({error:'Tiada akses kepada fail ini.'},403);const file=await env.FILES.get(doc.file_key);if(!file)return reply({error:'Fail tidak tersedia.'},404);return new Response(file.body,{headers:{'Content-Type':file.httpMetadata?.contentType||'application/pdf','Content-Disposition':`inline; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,'Cache-Control':'private, no-store'}});}
  if(url.searchParams.get('view')==='uploads'){const docs=await env.DB.prepare(`SELECT id,title,kind,filename,published,assignments_json AS assignmentsJson FROM staff_work_documents ${canManageDuty?"WHERE kind='duty' OR owner_id=?":'WHERE owner_id=?'} ORDER BY created_at DESC LIMIT 100`).bind(actor.id).all(),users=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL ORDER BY name").all(),managers=admin(actor.role)?await env.DB.prepare("SELECT user_id AS userId FROM admin_module_permissions WHERE module_key='staff_work' AND enabled=1").all():{results:[]};return reply({documents:docs.results,users:users.results,canManageDuty,managers:managers.results});}
- const tasks=await loadTasks(actor),counts={duty:tasks.filter(t=>t.type==='duty').length,relief:tasks.filter(t=>t.type==='relief').length,program:tasks.filter(t=>t.type==='program').length};let timetable=teachingDay(null,actor,[]);
+ const tasks=await loadTasks(actor),counts={duty:tasks.filter(t=>t.type==='duty').length,relief:tasks.filter(t=>t.type==='relief').length,program:tasks.filter(t=>t.type==='program').length,absence:tasks.filter(t=>t.type==='absence').length};let timetable=teachingDay(null,actor,[]);
  try{
   const schedule=await env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1").first<{teachers_json:string}>();
   if(schedule){const directory=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();timetable=teachingDay(JSON.parse(schedule.teachers_json),actor,directory.results,new Date(),await staffNameMappings());}

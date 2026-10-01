@@ -1619,3 +1619,5 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .agenda-lesson>div{display:grid;gap:5px;min-width:0;flex:1}.agenda-lesson strong{font-size:17px;font-weight:750;color:#f1f8fa;overflow-wrap:anywhere}.agenda-lesson div>span{font-size:12px;color:#b6cbd1;overflow-wrap:anywhere}.agenda-lesson>svg{width:16px;height:16px;color:#648c97;flex-shrink:0}
 .teaching-agenda .agenda-empty{padding:18px 20px;margin:0;font-size:14px;line-height:1.6;color:#bad0d5}
 @media(min-width:700px){.agenda-lessons{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}.agenda-heading{padding:24px}.teaching-agenda{margin:8px 18px 24px}}
+
+.type-absence .my-task-copy b{background:#f4bfac;color:#4b251d}.type-absence .my-task-open>time{border-color:#f4bfac}

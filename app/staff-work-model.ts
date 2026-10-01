@@ -15,7 +15,7 @@ export function validDate(s:string){return typeof s==='string'&&/^20\d{2}-\d{2}-
 export function currentWeek(now=new Date()){const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);const start=d.toISOString().slice(0,10);d.setUTCDate(d.getUTCDate()+6);return {start,end:d.toISOString().slice(0,10)};}
 
 export type WorkAction={module:'oprgenerator'|'oprduty'|'etempahan'|'epemantauan'|'ekeberadaan'|'uploads'|'skas';label:string;tab?:'daily'|'weekly'};
-export type StaffTaskType='relief'|'duty'|'program';
+export type StaffTaskType='relief'|'duty'|'program'|'absence';
 export type StaffTask={id:string;type:StaffTaskType;title:string;context:string;detail:string;source:string;startDate:string;endDate:string;status:string;documentId?:string;pdfUrl?:string;unseen:boolean;actions:WorkAction[]};
 export type ReliefAssignment={absentId?:string;absentTeacher?:string;reliefId?:string;reliefTeacher?:string;cancelled?:boolean;periods?:Array<number|string>;lesson?:{className?:string;subject?:string}};
 export type ReliefPlan={id?:string;date:string;fileName:string;assignments:ReliefAssignment[]};
@@ -113,4 +113,12 @@ export function teachingDay(teachers:unknown,actor:NamedPerson,users:NamedPerson
  const entries=matches[0].schedule?.[day];
  const lessons=(Array.isArray(entries)?entries:[]).filter(l=>Number.isInteger(l.start)&&Number.isInteger(l.end)&&l.start>0&&l.end>=l.start&&typeof l.className==='string'&&typeof l.subject==='string').map(l=>({start:l.start,end:l.end,className:l.className,subject:l.subject})).sort((a,b)=>a.start-b.start);
  return {...base,state:'ready',lessons};
+}
+
+export type PersonalAbsence={id:string;teacherName:string;absenceDate:string;endDate:string|null;reason:string;duration:string;startTime:string|null;endTime:string|null};
+export function personalAbsenceTasks(records:PersonalAbsence[],actor:NamedPerson,users:NamedPerson[],mappings:Record<string,string>={},now=new Date()):StaffTask[]{
+ const today=malaysiaDay(now);
+ return records.filter(row=>validDate(row.absenceDate)&&((mappings[documentNameKey(row.teacherName)]||matchDocumentUserId(row.teacherName,users))===actor.id)&&(row.endDate||row.absenceDate)>=today).map(row=>({
+  id:`absence:${row.id}`,type:'absence',title:'Ketidakhadiran',context:row.reason,detail:row.duration==='partial'?`${row.startTime||''}–${row.endTime||''}`:'Sepanjang hari',source:'e-Keberadaan',startDate:row.absenceDate,endDate:row.endDate||row.absenceDate,status:row.absenceDate>today?'Akan Datang':'Sedang Berlangsung',unseen:false,actions:[{module:'ekeberadaan',label:'Buka e-Keberadaan'}]
+ }));
 }
