@@ -1,3 +1,4 @@
+import {prepareDutyDeletions} from "../../lib/duty-deletions";
 import { env } from "cloudflare:workers";
 
 type DutyRow = { id:string; reportDate:string; weekNumber:number; schoolYear:number; dayName:string; teachers:string; teacherTotal:number; teacherPresent:number; teacherAbsent:number; cleanlinessStatus:string; disciplineStatus:string; safetyStatus:string; healthStatus:string; canteenStatus:string; activityNote:string; generalNote:string; detailsJson:string; preparedBy:string; createdAt:string; updatedAt:string };
@@ -13,9 +14,11 @@ const select = "SELECT id,report_date AS reportDate,week_number AS weekNumber,sc
 
 export async function GET(request: Request) {
   try {
-    await prepare(); const url = new URL(request.url); const week = Number(url.searchParams.get("week")); const year = Number(url.searchParams.get("year"));
+    await prepare(); await prepareDutyDeletions(); const url = new URL(request.url); const week = Number(url.searchParams.get("week")); const year = Number(url.searchParams.get("year"));
     const result = week && year ? await env.DB.prepare(`${select} WHERE school_year=? AND week_number=? ORDER BY report_date`).bind(year,week).all<DutyRow>() : await env.DB.prepare(`${select} ORDER BY report_date DESC${url.searchParams.get("all")==="1"?"":" LIMIT 60"}`).all<DutyRow>();
-    return Response.json({ records:result.results },{ headers:{ "Cache-Control":"private, no-store" } });
+    const deleted=await env.DB.prepare("SELECT report_date,week_number,deleted_at FROM opr_duty_deletions").all<{report_date:string;week_number:number;deleted_at:string}>();
+    const records=result.results.filter(record=>!deleted.results.some(item=>item.report_date===record.reportDate&&item.week_number===record.weekNumber&&item.deleted_at>=record.updatedAt));
+    return Response.json({ records },{ headers:{ "Cache-Control":"private, no-store" } });
   } catch (error) { console.error("OPR duty read",error); return Response.json({ error:"Laporan guru bertugas tidak dapat dibaca sekarang." },{ status:500 }); }
 }
 

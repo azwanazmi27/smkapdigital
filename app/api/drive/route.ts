@@ -1,3 +1,4 @@
+import {prepareDutyDeletions,deletedDutyIdentity} from "../../lib/duty-deletions";
 import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
 import { portalActor } from "../../server-auth";
@@ -368,7 +369,14 @@ export async function DELETE(request:Request){
     const me=await admin(request);if(!me)return Response.json({error:"Hanya pentadbir boleh memadam laporan."},{status:403});
     const id=new URL(request.url).searchParams.get("id")||"";
     if(!/^[\w-]{10,120}$/.test(id))return Response.json({error:"ID fail tidak sah."},{status:400});
+    const source=await env.DB.prepare("SELECT name FROM opr_reports WHERE id=?").bind(id).first<{name:string}>();
+    await prepareDutyDeletions();
     await scriptAction({action:"delete",id},60_000);
+    const duty=source?deletedDutyIdentity(source.name):null;
+    const remaining=duty?await env.DB.prepare("SELECT id FROM opr_reports WHERE id<>? AND name LIKE ?").bind(id,`${duty.date}-Minggu-${duty.week}-Laporan-Harian-Guru-Bertugas-%`).all():null;
+    const currentDuty=duty?await env.DB.prepare("SELECT prepared_by FROM opr_duty_reports WHERE report_date=? AND week_number=?").bind(duty.date,duty.week).first<{prepared_by:string}>():null;
+    const deletedAuthor=source?.name.match(/__PENYEDIA__(.+)\.pdf$/i)?.[1]?.toUpperCase();
+    if(duty&&(!remaining?.results.length||currentDuty?.prepared_by.toUpperCase()===deletedAuthor))await env.DB.prepare("INSERT INTO opr_duty_deletions (report_date,week_number,deleted_at) VALUES (?,?,?) ON CONFLICT(report_date,week_number) DO UPDATE SET deleted_at=excluded.deleted_at").bind(duty.date,duty.week,new Date().toISOString()).run();
     await prepareOprMetadata();
     await env.DB.batch([
       env.DB.prepare("DELETE FROM opr_reports WHERE id=?").bind(id),
