@@ -1352,7 +1352,7 @@ function isoWeek(dateValue:string) { const date=new Date(`${dateValue}T12:00:00`
 function schoolWeekDates(year:number,week:number) { const jan4=new Date(Date.UTC(year,0,4)); const monday=new Date(jan4); monday.setUTCDate(jan4.getUTCDate()-(jan4.getUTCDay()||7)+1+(week-1)*7); return Array.from({length:5},(_,index)=>{ const date=new Date(monday); date.setUTCDate(monday.getUTCDate()+index); return date.toISOString().slice(0,10); }); }
 function dutyWeekDates(year:number,week:number,reports:DutyReport[],period="") {
   const anchor=period||dutyPeriods(reports)[0];
-  return anchor?dutyDates(anchor):schoolWeekDates(year,week);
+  return anchor?dutyDates(anchor):[];
 }
 function latestDutyRecordsByDate(records:DutyReport[]) {
   const latest=new globalThis.Map<string,DutyReport>();
