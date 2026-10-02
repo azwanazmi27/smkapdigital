@@ -103,10 +103,10 @@ export function matchDocumentUserId(name:string,users:NamedPerson[]){
  return candidates.length===1?candidates[0].id:'';
 }
 
-export type TeachingDay={date:string;day:string;state:'ready'|'unmatched'|'unavailable';lessons:{start:number;end:number;className:string;subject:string}[]};
+export type TeachingDay={date:string;day:string;state:'ready'|'unmatched'|'unavailable';lessons:{start:number;end:number;className:string;subject:string;startTime?:string;endTime?:string}[]};
 export function teachingDay(teachers:unknown,actor:NamedPerson,users:NamedPerson[],now=new Date(),mappings:Record<string,string>={}):TeachingDay{
  const date=malaysiaDay(now),day=new Intl.DateTimeFormat('ms-MY',{timeZone:'Asia/Kuala_Lumpur',weekday:'long'}).format(now);
- const base={date,day,lessons:[]} as TeachingDay;
+ const base:TeachingDay={date,day,lessons:[],state:'unavailable'};
  if(!Array.isArray(teachers))return {...base,state:'unavailable'};
  const matches=teachers.filter(t=>t&&typeof t.name==='string'&&(mappings[documentNameKey(t.name)]||matchDocumentUserId(t.name,users))===actor.id);
  if(matches.length!==1)return {...base,state:'unmatched'};

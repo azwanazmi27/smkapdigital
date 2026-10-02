@@ -1621,3 +1621,15 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 @media(min-width:700px){.agenda-lessons{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}.agenda-heading{padding:24px}.teaching-agenda{margin:8px 18px 24px}}
 
 .type-absence .my-task-copy b{background:#f4bfac;color:#4b251d}.type-absence .my-task-open>time{border-color:#f4bfac}
+
+.form6-settings { min-width:0; }
+.form6-settings label { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.form6-settings input,.form6-settings select { box-sizing:border-box; width:100%; min-width:0; min-height:44px; padding:10px; border:1px solid #527c84; border-radius:10px; background:#0a2632; color:#eefafa; font-size:16px; }
+.form6-grid,.form6-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:16px 0; }
+.form6-row { padding:16px; border:1px solid #527c84; border-radius:14px; }
+.form6-settings fieldset { min-width:0; margin:16px 0; padding:16px; border:1px solid #527c84; border-radius:16px; }
+.form6-settings .form6-invalid { border:1px solid #f88b85; padding:12px; border-radius:10px; color:#ffb5b0; margin:12px 0; }
+.form6-settings .form6-review { flex-direction:row; align-items:center; margin:20px 0; }
+.form6-review input { width:22px; min-height:22px; flex-shrink:0; }
+@media(min-width:900px) { .form6-row { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:480px) { .form6-grid { grid-template-columns:minmax(0,1fr); } }

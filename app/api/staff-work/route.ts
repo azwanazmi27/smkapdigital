@@ -1,3 +1,4 @@
+import {form6Lessons,type Form6Data} from '../../form6-model';
 import {staffNameMappings} from '../../lib/staff-name-mappings';
 import {env,waitUntil} from 'cloudflare:workers';
 import {portalActor} from '../../server-auth';
@@ -37,6 +38,10 @@ export async function GET(request:Request){try{
   const schedule=await env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1").first<{teachers_json:string}>();
   if(schedule){const directory=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();timetable=teachingDay(JSON.parse(schedule.teachers_json),actor,directory.results,new Date(),await staffNameMappings());}
  }catch(error){console.error('Personal timetable unavailable',error);}
+ try {
+  const row=await env.DB.prepare("SELECT data_json FROM form6_timetable WHERE id='active'").first<{data_json:string}>();
+  if(row){const data=JSON.parse(row.data_json) as Form6Data,lessons=form6Lessons(data,actor.id,timetable.day);if(lessons){timetable={...timetable,state:'ready',lessons};}}
+ }catch(error){console.error('Form6 timetable unavailable',error);}
  return reply({tasks,counts,hasUnseen:tasks.some(t=>t.unseen),today:malaysiaDay(),timetable,canManageNames:admin(actor.role)});
  }catch{return reply({error:'Tugasan tidak dapat dimuatkan. Cuba lagi.'},503);}}
 export async function POST(request:Request){try{

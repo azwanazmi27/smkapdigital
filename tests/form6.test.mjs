@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {readFileSync} from 'node:fs';
+const compiled=ts.transpileModule(readFileSync('app/form6-model.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {form6Errors}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
+const sample=()=>({teachers:[{name:'Noor Azwan',userId:'a',lessons:[{day:'Isnin',start:1,end:2,subject:'SEJ',className:'6 SAYUTI'}]}],times:[{day:'Isnin',period:1,startTime:'07:20',endTime:'08:00'},{day:'Isnin',period:2,startTime:'08:00',endTime:'08:30'}]});
+test('accepts custom unequal period lengths',()=>assert.deepEqual(form6Errors(sample()),[]));
+test('blocks missing period times including merged lesson interior',()=>{const d=sample();d.times.pop();assert.match(form6Errors(d).join(),/Masa belum diisi/);});
+test('blocks unmatched and duplicated accounts',()=>{const d=sample();d.teachers[0].userId='';assert.match(form6Errors(d).join(),/Padankan nama/);d.teachers[0].userId='a';d.teachers.push({...d.teachers[0]});assert.match(form6Errors(d).join(),/Akaun berulang/);});
+test('rejects overlapping classes and times',()=>{const d=sample();d.teachers[0].lessons.push({...d.teachers[0].lessons[0]});d.times[1].startTime='07:50';assert.match(form6Errors(d).join(),/Kelas bertindih/);assert.match(form6Errors(d).join(),/Masa bertindih/);});
+test('different weekday cannot supply missing times',()=>{const d=sample();d.times[1].day='Selasa';assert.match(form6Errors(d).join(),/Isnin W2/);});
+test('daily schedule uses day-specific times and never leaks another teacher',async()=>{const {form6Lessons,normalizeForm6}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));const d=sample();assert.equal(form6Lessons(d,'other','Isnin'),null);assert.deepEqual(form6Lessons(d,'a','Selasa'),[]);assert.equal(form6Lessons(d,'a','Isnin')[0].startTime,'07:20');assert.equal(form6Lessons(d,'a','Isnin')[0].endTime,'08:30');assert.deepEqual(normalizeForm6(null),{teachers:[],times:[]});assert.equal(normalizeForm6({teachers:[null]}).teachers[0].userId,'');});
