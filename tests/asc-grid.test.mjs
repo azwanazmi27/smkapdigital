@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {ascGrid} from '../public/ekeberadaan-app/asc-grid.js';
+const OPS={save:1,restore:2,transform:3,constructPath:4};
+function fixture(scale){const item=(str,x,top,w=8,h=10)=>({str,transform:[1,0,0,1,x*scale,(600-top-h)*scale],height:h*scale,width:w*scale});const items=[...['Mo','Tu','We','Th','Fr'].map((s,i)=>item(s,10,100+i*90)),...Array.from({length:19},(_,i)=>item(String(i+1),100+i*30,50,10)),item('PSY',190,80),item('5 AT',200,110)];const lines=[185,275].map(x=>[0,[],[x-5,65,x-5,145]]);return {items,operators:{fnArray:[3,4,4],argsArray:[[scale,0,0,-scale,0,600*scale],...lines]}};}
+test('merged cells follow vector boundaries at different PDF scales',()=>{for(const scale of [0.75,1,1.5]){const f=fixture(scale),g=ascGrid(f.items,600*scale,f.operators,OPS);assert.deepEqual(g[0].cells.get(4).map(x=>x.str),['PSY','5 AT']);assert.ok(g[0].boundaries.has(6));}});
+test('unrecognised pages are rejected rather than guessed',()=>assert.throws(()=>ascGrid([],600,{fnArray:[],argsArray:[]},OPS)));
