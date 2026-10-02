@@ -5,7 +5,6 @@ export type Form6Time={day:string;period:number;startTime:string;endTime:string}
 export type Form6Data={teachers:Form6Teacher[];times:Form6Time[]};
 export function form6Errors(data:Form6Data){
  const errors:string[]=[]; const seen=new Set<string>();
- if(!data.teachers?.length)errors.push('Tambah guru secara manual atau muat naik jadual guru.');
  if(!data.times?.length)errors.push('Tambah waktu PdPC secara manual atau muat naik fail waktu.');
  for(const t of data.times||[]){const key=`${t.day}:${t.period}`;if(!schoolDays.includes(t.day)||!Number.isInteger(t.period)||t.period<1||t.period>30||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t.startTime)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t.endTime)||t.startTime>=t.endTime)errors.push(`Masa tidak sah: ${t.day} W${t.period}.`);if(seen.has(key))errors.push(`Waktu berulang: ${t.day} W${t.period}.`);seen.add(key);}
  for(const day of schoolDays){const times=(data.times||[]).filter(t=>t.day===day).sort((a,b)=>a.period-b.period);for(let i=1;i<times.length;i++)if(times[i].startTime<times[i-1].endTime)errors.push(`Masa bertindih: ${day} W${times[i].period}.`);}
@@ -27,4 +26,16 @@ export function form6Lessons(data:Form6Data,userId:string,day:string){
  const teacher=data.teachers.find(t=>t.userId===userId);
  if(!teacher)return null;
  return teacher.lessons.filter(l=>l.day===day).sort((a,b)=>a.start-b.start).map(l=>({...l,startTime:data.times.find(t=>t.day===day&&t.period===l.start)?.startTime,endTime:data.times.find(t=>t.day===day&&t.period===l.end)?.endTime}));
+}
+
+/** Merge imports by account; retain teachers absent from the new document. */
+export function mergeForm6Teachers(existing:Form6Teacher[],incoming:Form6Teacher[]):Form6Teacher[]{
+ const merged=existing.map(t=>({...t}));
+ const key=(name:string)=>name.toLocaleLowerCase('ms-MY').replace(/[^\p{L}\p{N}]/gu,'');
+ for(const teacher of incoming){
+  const index=merged.findIndex(t=>teacher.userId&&t.userId?teacher.userId===t.userId:!!key(teacher.name)&&key(t.name)===key(teacher.name));
+  if(index<0)merged.push(teacher);
+  else merged[index]={...teacher,userId:teacher.userId||merged[index].userId};
+ }
+ return merged;
 }
