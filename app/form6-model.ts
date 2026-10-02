@@ -5,8 +5,8 @@ export type Form6Time={day:string;period:number;startTime:string;endTime:string}
 export type Form6Data={teachers:Form6Teacher[];times:Form6Time[]};
 export function form6Errors(data:Form6Data){
  const errors:string[]=[]; const seen=new Set<string>();
- if(!data.teachers?.length)errors.push('Muat naik jadual guru dahulu.');
- if(!data.times?.length)errors.push('Muat naik waktu PdPC dahulu.');
+ if(!data.teachers?.length)errors.push('Tambah guru secara manual atau muat naik jadual guru.');
+ if(!data.times?.length)errors.push('Tambah waktu PdPC secara manual atau muat naik fail waktu.');
  for(const t of data.times||[]){const key=`${t.day}:${t.period}`;if(!schoolDays.includes(t.day)||!Number.isInteger(t.period)||t.period<1||t.period>30||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t.startTime)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t.endTime)||t.startTime>=t.endTime)errors.push(`Masa tidak sah: ${t.day} W${t.period}.`);if(seen.has(key))errors.push(`Waktu berulang: ${t.day} W${t.period}.`);seen.add(key);}
  for(const day of schoolDays){const times=(data.times||[]).filter(t=>t.day===day).sort((a,b)=>a.period-b.period);for(let i=1;i<times.length;i++)if(times[i].startTime<times[i-1].endTime)errors.push(`Masa bertindih: ${day} W${times[i].period}.`);}
  const users=new Set<string>();
