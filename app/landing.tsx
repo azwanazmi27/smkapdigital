@@ -1,4 +1,5 @@
 "use client";
+import {loadJsPdf} from "./services/pdf-runtime";
 import {Form6Settings} from "./form6-settings";
 import {dutyPeriods,dutyDates} from "./duty-calendar";
 import {bookingStartIsPast, nextBookingSlot, malaysiaTime} from "./booking-time";
@@ -24,12 +25,6 @@ import { EPanitiaCentre } from "./epanitia-centre";
 
 type PdfDocument = InstanceType<(typeof import("jspdf"))["jsPDF"]>;
 
-// jsPDF is only needed once a teacher opens a PDF preview or saves a report.
-// Keeping it out of the opening bundle makes the first visit much lighter on phones.
-async function loadJsPdf() {
-  const { jsPDF } = await import("jspdf");
-  return jsPDF;
-}
 
 type Folder = "uploads" | "upload-paper" | "upload-duty" | "ibubapa" | "warga" | "assessment" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
