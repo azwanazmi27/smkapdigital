@@ -14,7 +14,7 @@ const select = "SELECT id,report_date AS reportDate,week_number AS weekNumber,sc
 export async function GET(request: Request) {
   try {
     await prepare(); const url = new URL(request.url); const week = Number(url.searchParams.get("week")); const year = Number(url.searchParams.get("year"));
-    const result = week && year ? await env.DB.prepare(`${select} WHERE school_year=? AND week_number=? ORDER BY report_date`).bind(year,week).all<DutyRow>() : await env.DB.prepare(`${select} ORDER BY report_date DESC LIMIT 60`).all<DutyRow>();
+    const result = week && year ? await env.DB.prepare(`${select} WHERE school_year=? AND week_number=? ORDER BY report_date`).bind(year,week).all<DutyRow>() : await env.DB.prepare(`${select} ORDER BY report_date DESC${url.searchParams.get("all")==="1"?"":" LIMIT 60"}`).all<DutyRow>();
     return Response.json({ records:result.results },{ headers:{ "Cache-Control":"private, no-store" } });
   } catch (error) { console.error("OPR duty read",error); return Response.json({ error:"Laporan guru bertugas tidak dapat dibaca sekarang." },{ status:500 }); }
 }
@@ -24,9 +24,9 @@ export async function POST(request: Request) {
     await prepare(); const body = await request.json() as Record<string,unknown>;
     const text = (key:string,max=800) => typeof body[key] === "string" ? String(body[key]).trim().slice(0,max) : "";
     const integer = (key:string,max=999) => Math.max(0,Math.min(max,Number(body[key]) || 0));
-    const reportDate=text("reportDate",10), teachers=text("teachers",500), preparedBy=text("preparedBy",120),weekNumber=integer("weekNumber",53),schoolYear=integer("schoolYear",2100);
+    const reportDate=text("reportDate",10), teachers=text("teachers",500), preparedBy=text("preparedBy",120),weekNumber=Number(body.weekNumber),schoolYear=integer("schoolYear",2100);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(reportDate) || !teachers || !preparedBy) return Response.json({ error:"Tarikh, nama guru bertugas dan nama penyedia diperlukan." },{ status:400 });
-    if(weekNumber<1||weekNumber>53||schoolYear<2020)return Response.json({error:"Nombor minggu dan tahun persekolahan tidak sah."},{status:400});
+    if(!Number.isInteger(weekNumber)||weekNumber<1||weekNumber>77||schoolYear<2020)return Response.json({error:"Nombor minggu dan tahun persekolahan tidak sah."},{status:400});
     const allowedStatus=["Baik","Memuaskan","Perlu perhatian","Tiada isu"];
     for (const key of ["cleanlinessStatus","disciplineStatus","safetyStatus","healthStatus","canteenStatus"]) if (!allowedStatus.includes(text(key,30))) return Response.json({ error:"Status laporan tidak sah." },{ status:400 });
     const detailsJson=typeof body.details==="object"&&body.details?JSON.stringify(body.details).slice(0,12000):"{}"; const submittedAt=text("submittedAt",40); const submittedTime=Date.parse(submittedAt); const createdAt=new Date().toISOString(); const updatedAt=Number.isFinite(submittedTime)?new Date(submittedTime).toISOString():createdAt; const id=text("id",80)||crypto.randomUUID();
