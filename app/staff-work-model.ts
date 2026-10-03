@@ -2,6 +2,8 @@ export type WorkAssignment={userId:string;name:string;role:string;startDate:stri
 export const normalName=(s:string)=>s.toUpperCase().replace(/\b(CIKGU|ENCIK|PUAN|USTAZAH|USTAZ|DR)\b/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 export const reliefNameKey=(s:string)=>normalName(s)
  .replace(/\bTG\b/g,'TENGKU')
+ .replace(/\bABD\b/g,'ABDUL')
+ .replace(/\bLATIFF\b/g,'LATIF')
  .replace(/\bNORFATIMAWATI\b/g,'NOR FATIMAWATI')
  .replace(/\bIZZUDDIN\b/g,'IZZUDIN')
  .replace(/\b(?:BT|BTE)\b/g,'BINTI')
@@ -121,4 +123,13 @@ export function personalAbsenceTasks(records:PersonalAbsence[],actor:NamedPerson
  return records.filter(row=>validDate(row.absenceDate)&&((mappings[documentNameKey(row.teacherName)]||matchDocumentUserId(row.teacherName,users))===actor.id)&&(row.endDate||row.absenceDate)>=today).map(row=>({
   id:`absence:${row.id}`,type:'absence',title:'Ketidakhadiran',context:row.reason,detail:row.duration==='partial'?`${row.startTime||''}–${row.endTime||''}`:'Sepanjang hari',source:'e-Keberadaan',startDate:row.absenceDate,endDate:row.endDate||row.absenceDate,status:row.absenceDate>today?'Akan Datang':'Sedang Berlangsung',unseen:false,actions:[{module:'ekeberadaan',label:'Buka e-Keberadaan'}]
  }));
+}
+
+export function absenceScheduleTeacher(name:string,teacherId:string,schedule:NamedPerson[],users:NamedPerson[],mappings:Record<string,string>,approved:{name:string;teacherId:string}[]=[]){
+ const explicit=approved.filter(r=>r.teacherId===teacherId).flatMap(r=>schedule.filter(t=>documentNameKey(t.name)===documentNameKey(r.name)));
+ const unique=[...new Map(explicit.map(t=>[t.id,t])).values()];
+ if(unique.length===1)return unique[0];
+ const owner=mappings[documentNameKey(name)]||matchDocumentUserId(name,users);
+ if(owner){const matches=schedule.filter(t=>(mappings[documentNameKey(t.name)]||matchDocumentUserId(t.name,users))===owner);if(matches.length===1)return matches[0];if(matches.length>1)return null;}
+ const id=matchDocumentUserId(name,schedule);return schedule.find(t=>t.id===id)||null;
 }

@@ -139,3 +139,6 @@ test('personal absences appear before their date and expire after last Malaysia 
  assert.equal(model.personalAbsenceTasks(records,users[1],users,{},new Date('2026-10-01')).length,0);
  records[0].endDate='2026-10-05';assert.equal(get('2026-10-04T02:00:00Z').length,1);
 });
+
+test('document patronymic abbreviations match the same directory identity',()=>{assert.equal(model.matchDocumentUserId('En. MOHD RASHIDI B ABD LATIFF',[{id:'r',name:'MOHD RASHIDI ABDUL LATIF'}]),'r');assert.equal(model.matchDocumentUserId('En. MOHD RASHIDI B ABD LATIFF',[{id:'r',name:'MOHD RASHIDI ABDUL LATIF'},{id:'s',name:'MOHD RASHIDI ABD LATIFF'}]),'');});
+test('absence maps to active timetable identity using approved or unique name',()=>{const schedule=[{id:'t',name:'MOHD RASHIDI B ABD LATIFF'}],users=[{id:'u',name:'MOHD RASHIDI ABDUL LATIF'}];assert.equal(model.absenceScheduleTeacher('MOHD RASHIDI ABDUL LATIF','a',schedule,users,{}).id,'t');assert.equal(model.absenceScheduleTeacher('Unrelated','a',schedule,users,{},[{name:schedule[0].name,teacherId:'a'}]).id,'t');assert.equal(model.absenceScheduleTeacher('Unrelated','a',schedule,users,{}),null);});

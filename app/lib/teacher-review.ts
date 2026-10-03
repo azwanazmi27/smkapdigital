@@ -1,8 +1,8 @@
+import {matchDocumentUserId} from '../staff-work-model';
 import type { env } from 'cloudflare:workers';
 export const teacherNameKey = (name: string) => name.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleUpperCase('ms-MY');
 
-// Only exact names (apart from case/spacing) are automatically matched.
-// Abbreviations and similar names require an explicit administrator decision.
+// Match only one unambiguous teacher; uncertain names remain for administrator review.
 export function reviewNames(input: unknown) {
  if (!Array.isArray(input)) return [];
  const names = new Map<string,string>();
@@ -17,6 +17,7 @@ export function reviewNames(input: unknown) {
 export async function syncTeacherReview(db: typeof env.DB, scheduleId: string, sourceLabel: string, input: unknown) {
  const existing = await db.prepare('SELECT id,name FROM teachers').all<{id:string;name:string}>();
  const known = new Map<string,string>(existing.results.map((t:{id:string;name:string})=>[teacherNameKey(t.name),t.id]));
+ for(const {key,name} of reviewNames(input)){if(!known.has(key)){const id=matchDocumentUserId(name,existing.results);if(id)known.set(key,id);}}
  const now = new Date().toISOString();
  const statements = reviewNames(input).map(({key,name})=>db.prepare(`INSERT INTO relief_teacher_review
   (name_key,name,schedule_id,source_label,status,teacher_id,reviewed_at,updated_at) VALUES (?,?,?,?,?,?,?,?)
