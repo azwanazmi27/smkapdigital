@@ -133,3 +133,14 @@ export function absenceScheduleTeacher(name:string,teacherId:string,schedule:Nam
  if(owner){const matches=schedule.filter(t=>(mappings[documentNameKey(t.name)]||matchDocumentUserId(t.name,users))===owner);if(matches.length===1)return matches[0];if(matches.length>1)return null;}
  const id=matchDocumentUserId(name,schedule);return schedule.find(t=>t.id===id)||null;
 }
+
+export function fillProgramDates<T extends {startDate:string;endDate:string}>(rows:T[],eventStart='',eventEnd=''):T[]{
+ let start=eventStart,end=eventEnd||eventStart;
+ if(!validDate(start)||!validDate(end)){
+  const ranges=[...new Set(rows.filter(r=>validDate(r.startDate||r.endDate)&&validDate(r.endDate||r.startDate)).map(r=>`${r.startDate||r.endDate}|${r.endDate||r.startDate}`))];
+  if(ranges.length!==1)return rows;
+  [start,end]=ranges[0].split('|');
+ }
+ if(end<start)return rows;
+ return rows.map(row=>row.startDate||row.endDate?{...row,startDate:row.startDate||row.endDate,endDate:row.endDate||row.startDate}:{...row,startDate:start,endDate:end});
+}
