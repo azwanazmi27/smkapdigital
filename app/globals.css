@@ -1662,3 +1662,25 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .my-tasks .my-task-row.type-relief{border-color:#686eaa;background:linear-gradient(120deg,#162e43,#262f52)}.my-tasks .my-task-row.type-duty{border-color:#766c45}.my-tasks .my-task-row.type-absence{border-color:#886457}
 .my-tasks.is-expanded .my-task-copy strong,.my-tasks.is-expanded .my-task-copy small{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;-webkit-line-clamp:unset}
 .my-tasks .relief-agenda .my-task-list{margin:14px 0 0}.my-tasks .relief-agenda .my-task-open{grid-template-columns:minmax(0,1fr) 22px;gap:8px;padding:16px}.my-tasks .relief-agenda .my-task-open time{display:none}.my-tasks .relief-agenda .my-task-open>i{grid-column:1;width:max-content}.my-tasks .relief-agenda .my-task-open>svg{grid-column:2;grid-row:1/3}.relief-agenda .agenda-heading h3{font-size:26px}
+
+/* Assigned work uses the same card language as the approved teaching agenda. */
+.task-agenda{container-type:inline-size}
+.task-agenda .my-task-list,.task-agenda.is-expanded .my-task-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;background:none;border:0;box-shadow:none;overflow:visible}
+.task-agenda .my-task-row{--work-accent:#70e5da;--work-tint:#13505a;position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid color-mix(in srgb,var(--work-accent) 45%,#173543);border-radius:22px;background:linear-gradient(125deg,#123442,#092b38 65%,var(--work-tint));box-shadow:inset 0 1px 0 #ffffff10;overflow:hidden}
+.task-agenda .my-task-row.type-duty{--work-accent:#f3cc64;--work-tint:#514829}.task-agenda .my-task-row.type-relief{--work-accent:#b4a4fa;--work-tint:#34396c}.task-agenda .my-task-row.type-absence{--work-accent:#f2b79d;--work-tint:#4c3639}
+.task-agenda .my-task-row:before{content:"";position:absolute;left:12px;top:20px;bottom:20px;width:4px;border-radius:8px;background:var(--work-accent);pointer-events:none}
+.task-agenda .my-task-row .my-task-open{display:flex;flex-direction:column;align-items:stretch;gap:14px;flex:1;min-height:0;padding:22px 22px 16px 30px;color:#f1fafb}
+.task-agenda .my-task-row .my-task-open time{display:block;align-self:auto;padding:0;border:0;color:var(--work-accent);font-size:12px;font-weight:750;line-height:1.5;letter-spacing:.02em;white-space:normal;font-variant-numeric:tabular-nums}
+.task-agenda .my-task-row .my-task-copy{display:flex;flex-direction:column;gap:10px}
+.task-agenda .my-task-row .my-task-copy b{display:flex;align-items:flex-start;gap:10px;width:auto;padding:0;background:none;border-radius:0;color:#f5fbff;font-size:21px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
+.task-agenda .my-task-row .my-task-copy b svg{width:24px;height:24px;flex-shrink:0;color:var(--work-accent)}
+.task-agenda .my-task-row .my-task-copy strong{display:block;font-size:15px;font-weight:600;line-height:1.5;color:#c7dce5;white-space:normal;overflow:visible;-webkit-line-clamp:unset}
+.task-agenda .my-task-row .my-task-copy small{font-size:13px;line-height:1.6;color:#b5cdd8;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.task-agenda .my-task-row .my-task-copy .my-task-source{display:flex;align-items:center;gap:7px;font-size:12px;color:#a9c4ce}.task-agenda .my-task-source svg{width:16px;height:16px;flex-shrink:0}
+.task-agenda .my-task-row .my-task-copy em{font-size:13px;color:var(--work-accent);line-height:1.5;margin-top:2px}
+.task-agenda .my-task-row .my-task-open>i{align-self:flex-start;margin-top:auto;padding:5px 10px;border:1px solid color-mix(in srgb,var(--work-accent) 35%,transparent);background:#071e2b66;color:var(--work-accent);font-size:11px;line-height:1.4}
+.task-agenda .my-task-row .my-task-open>svg{display:none}
+.task-agenda .my-task-row .my-task-delete{align-self:flex-end;width:44px;min-height:44px;height:44px;margin:0 12px 12px 0;border:1px solid #78545d;border-radius:12px;background:#4d283344;color:#ffb4bd}
+.task-agenda .relief-agenda .my-task-list{margin:16px 0 0}
+.task-agenda .relief-agenda .my-task-open time{display:block}
+@container(max-width:540px){.task-agenda .my-task-list,.task-agenda.is-expanded .my-task-list{grid-template-columns:1fr;gap:12px}.task-agenda .my-task-row .my-task-open{padding:20px 20px 12px 28px;gap:12px}.task-agenda .my-task-row .my-task-copy b{font-size:20px}.task-agenda .my-task-row .my-task-copy strong{font-size:14px}}
