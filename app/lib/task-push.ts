@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { buildPushPayload, type PushSubscription } from '@block65/webcrypto-web-push';
 
-export type TaskNotice = { userId: string; taskId: string; title: string; body: string; url: string };
+export type TaskNotice = { userId: string; taskId: string; title: string; body: string; url: string; ttl?: number };
 
 // A delivery is keyed by the assignment and device, so a repeated publication
 // cannot alert the same teacher twice for the same task.
@@ -20,7 +20,7 @@ export async function sendTaskNotices(notices: TaskNotice[]) {
       let status = 'failed';
       try {
         const subscription: PushSubscription = { endpoint: row.endpoint, expirationTime: null, keys: { p256dh: row.p256dh, auth: row.auth } };
-        const init = await buildPushPayload({ data: { title: notice.title, body: notice.body, url: notice.url, tag: `task-${notice.taskId}` }, options: { ttl: 86400, urgency: 'normal' } }, subscription, keys);
+        const init = await buildPushPayload({ data: { title: notice.title, body: notice.body, url: notice.url, tag: `task-${notice.taskId}` }, options: { ttl: notice.ttl ?? 86400, urgency: 'normal' } }, subscription, keys);
         const response = await fetch(row.endpoint, init as RequestInit);
         if (response.ok) status = 'sent';
         else if (response.status === 404 || response.status === 410) await env.DB.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(row.id).run();

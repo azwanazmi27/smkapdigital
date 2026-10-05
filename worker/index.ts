@@ -1,3 +1,4 @@
+import {sendClassReminders} from '../app/lib/class-reminders';
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
@@ -28,6 +29,10 @@ interface ExecutionContext {
 // const imageConfig: ImageConfig = { dangerouslyAllowSVG: true };
 
 const worker = {
+  async scheduled(_event: unknown, env: Env, ctx: ExecutionContext) {
+    if(env.MIGRATION_MODE)return;
+    ctx.waitUntil(sendClassReminders().catch(error=>console.error("Class reminders failed",error)));
+  },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const blocked = stagingBlock(request, env.MIGRATION_MODE);

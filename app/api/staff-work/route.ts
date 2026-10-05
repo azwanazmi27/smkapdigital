@@ -1,3 +1,4 @@
+import {applyMainstreamTimes,type MainstreamTimes} from '../../mainstream-times';
 import {matchDocumentRows} from '../../lib/document-name-matching';
 import {form6Lessons,type Form6Data} from '../../form6-model';
 import {staffNameMappings} from '../../lib/staff-name-mappings';
@@ -38,6 +39,7 @@ export async function GET(request:Request){try{
  try{
   const schedule=await env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1").first<{teachers_json:string}>();
   if(schedule){const directory=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();timetable=teachingDay(JSON.parse(schedule.teachers_json),actor,directory.results,new Date(),await staffNameMappings());}
+  const timing=await env.DB.prepare("SELECT data_json FROM mainstream_times WHERE id='active'").first<{data_json:string}>();if(timing)timetable=applyMainstreamTimes(timetable,JSON.parse(timing.data_json) as MainstreamTimes);
  }catch(error){console.error('Personal timetable unavailable',error);}
  try {
   const row=await env.DB.prepare("SELECT data_json FROM form6_timetable WHERE id='active'").first<{data_json:string}>();

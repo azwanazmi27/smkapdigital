@@ -1,0 +1,6 @@
+import {env} from 'cloudflare:workers';
+import {portalActor} from '../../server-auth';
+import {timingErrors,type MainstreamTimes} from '../../mainstream-times';
+const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
+export async function GET(request:Request){const actor=await portalActor(request);if(!actor||!['admin','super_admin'].includes(actor.role))return reply({error:'Untuk pentadbir sahaja.'},403);const row=await env.DB.prepare("SELECT data_json FROM mainstream_times WHERE id='active'").first<{data_json:string}>();return reply({data:row?JSON.parse(row.data_json):{times:[],lowerBreak:6,upperBreak:7}});}
+export async function POST(request:Request){const actor=await portalActor(request);if(!actor||!['admin','super_admin'].includes(actor.role))return reply({error:'Untuk pentadbir sahaja.'},403);try{const data=await request.json() as MainstreamTimes;const errors=timingErrors(data);if(errors.length)return reply({error:errors.join(' ')},400);await env.DB.prepare("INSERT INTO mainstream_times(id,data_json,updated_at) VALUES('active',?,?) ON CONFLICT(id) DO UPDATE SET data_json=excluded.data_json,updated_at=excluded.updated_at").bind(JSON.stringify(data),new Date().toISOString()).run();return reply({ok:true});}catch{return reply({error:'Waktu tidak dapat disimpan.'},400);}}
