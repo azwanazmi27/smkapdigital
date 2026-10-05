@@ -1,3 +1,4 @@
+import {announceRelief} from '../../../lib/daily-notices';
 import {staffNameMappings} from '../../../lib/staff-name-mappings';
 import { jsPDF } from "jspdf";
 import { createReliefTablePdf } from "../../../../public/ekeberadaan-app/relief-table-pdf.js";
@@ -61,6 +62,7 @@ if(root==="relief-plans"){
  const previous=currentDay?await env.DB.prepare("SELECT assignments_json AS assignmentsJson,file_name AS fileName FROM relief_plans WHERE date=? ORDER BY rowid DESC LIMIT 1").bind(b.date).first<{assignmentsJson:string;fileName:string}>():null;
  if(pdf){await archiveGeneratedReliefPdf({id,date:b.date,day:b.day,createdBy:b.createdBy,fileName:b.fileName,pdfBase64:pdf,now});await env.FILES.put(`relief-pdfs/${id}.pdf`,Uint8Array.from(atob(pdf),x=>x.charCodeAt(0)),{httpMetadata:{contentType:"application/pdf"}})}
  await env.DB.prepare("INSERT INTO relief_plans (id,date,day,created_by,assignments_json,file_name,created_at) VALUES (?,?,?,?,?,?,?)").bind(id,b.date,b.day,b.createdBy,JSON.stringify(b.assignments||[]),b.fileName||`${id}.pdf`,now).run();
+ if(b.date===malaysiaDay(publishedAt)&&await portalActor(request))waitUntil(announceRelief(String(b.date)).catch(error=>console.error('Relief announcement failed',error)));
  // Notification side effects require a signed-in portal account. The existing
  // relief publication flow remains available to its PIN-protected client.
  if(currentDay&&Array.isArray(b.assignments))try{

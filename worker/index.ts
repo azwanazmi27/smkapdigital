@@ -1,3 +1,4 @@
+import {sendMorningSummaries} from '../app/lib/daily-notices';
 import {sendReliefReminders} from '../app/lib/relief-reminders';
 import {sendClassReminders} from '../app/lib/class-reminders';
 /** Cloudflare Worker entry point for the vinext-starter template. */
@@ -32,6 +33,7 @@ interface ExecutionContext {
 const worker = {
   async scheduled(_event: unknown, env: Env, ctx: ExecutionContext) {
     if(env.MIGRATION_MODE)return;
+    ctx.waitUntil(sendMorningSummaries().catch(error=>console.error("Morning summaries failed",error)));
     ctx.waitUntil(sendReliefReminders().catch(error=>console.error("Relief reminders failed",error)));
     ctx.waitUntil(sendClassReminders().catch(error=>console.error("Class reminders failed",error)));
   },
