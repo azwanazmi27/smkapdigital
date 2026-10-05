@@ -1,6 +1,7 @@
+import type {NameMatch} from './name-matching';
 export const schoolDays=['Isnin','Selasa','Rabu','Khamis','Jumaat'];
 export type Form6Lesson={day:string;start:number;end:number;subject:string;className:string};
-export type Form6Teacher={name:string;userId:string;lessons:Form6Lesson[]};
+export type Form6Teacher=Partial<NameMatch>&{name:string;userId:string;lessons:Form6Lesson[]};
 export type Form6Time={day:string;period:number;startTime:string;endTime:string};
 export type Form6Data={teachers:Form6Teacher[];times:Form6Time[]};
 export function form6Errors(data:Form6Data){
