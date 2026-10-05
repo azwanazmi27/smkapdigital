@@ -6,7 +6,8 @@ import ts from 'typescript';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const compile=source=>ts.transpileModule(source.replace(/^import .*;\n/gm,'').replace(/export /g,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
-const {syncTeacherReview,teacherNameKey,reviewNames}=new Function(compile(read('app/lib/teacher-review.ts'))+';return {syncTeacherReview,teacherNameKey,reviewNames};')();
+const {matchDocumentUserId,absenceScheduleTeacher}=new Function(compile(read('app/staff-work-model.ts'))+';return {matchDocumentUserId,absenceScheduleTeacher};')();
+const {syncTeacherReview,teacherNameKey,reviewNames}=new Function('matchDocumentUserId',compile(read('app/lib/teacher-review.ts'))+';return {syncTeacherReview,teacherNameKey,reviewNames};')(matchDocumentUserId);
 const createRoutes=new Function('env','syncTeacherReview','verifyReliefPin',compile(read('app/api/teacher-review/route.ts'))+';return {GET,POST};');
 function fixture(){
  const sql=new DatabaseSync(':memory:');
@@ -60,7 +61,9 @@ test('manual match retains teacher identity and historical absences, relief inbo
  assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM teachers').get().n,1);
  assert.equal(f.sql.prepare('SELECT teacher_name FROM absences').get().teacher_name,'AINUL BT ALI');
  const query=read('app/api/relief-legacy/[...path]/route.ts').match(/if\(root==="absence-inbox"\).*?prepare\("([^"]+)"\)/)[1];
- assert.equal(f.sql.prepare(query).get().teacher_name,'AINUL BINTI ALI');
+ const absence=f.sql.prepare(query).get();
+ assert.equal(absence.teacher_name,'AINUL BT ALI');
+ assert.equal(absenceScheduleTeacher(absence.teacher_name,'teacher-1',[{name:'AINUL BINTI ALI'}],[],{},[{name:'AINUL BINTI ALI',teacherId:'teacher-1'}])?.name,'AINUL BINTI ALI');
 });
 test('native admin view receives existing admin PIN and reloads its approved teacher list',()=>{
  assert.match(read('public/ekeberadaan-app/assets/page-MSybSbxR.js'),/SMKAPTeacherReview,\{adminPin:re,onRefresh:me\}/);

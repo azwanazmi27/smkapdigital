@@ -1,4 +1,4 @@
-export type WorkAssignment={userId:string;name:string;role:string;startDate:string;endDate:string};
+export type WorkAssignment={original_name?:string;normalized_name?:string;match_type?:string;similarity_score?:number|null;candidates?:{userId:string;name:string;score:number}[];userId:string;name:string;role:string;startDate:string;endDate:string};
 export const normalName=(s:string)=>s.toUpperCase().replace(/\b(CIKGU|ENCIK|PUAN|USTAZAH|USTAZ|DR)\b/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 export const reliefNameKey=(s:string)=>normalName(s)
  .replace(/\bTG\b/g,'TENGKU')

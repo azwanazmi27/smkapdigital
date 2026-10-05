@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {matchName,normalizeDocumentName} from '../app/name-matching.ts';
+const users=[{id:'1',name:'MUHAMMAD AZWAN BIN AHMAD'},{id:'2',name:'MUHAMMAD AZHAR BIN AHMAD'}];
+test('confirmed mapping has priority over exact and updates can change target',()=>{const key=normalizeDocumentName(users[0].name);assert.equal(matchName(users[0].name,users,{[key]:{userId:'2'}}).userId,'2');assert.equal(matchName(users[0].name,users,{[key]:{userId:'1'}}).match_type,'Saved Mapping');});
+test('normalization preserves original and standardizes titles/patronymics',()=>{const name='En. Muhammad Azwan B Ahmad';const result=matchName(name,users,{});assert.equal(result.userId,'1');assert.equal(result.original_name,name);assert.equal(result.match_type,'Normalized Exact Match');});
+test('spelling variants are suggestions requiring confirmation even at high score',()=>{const result=matchName('MUHAMAD AZWAN B AHMAD',users,{});assert.equal(result.userId,'');assert.equal(result.candidates[0].userId,'1');assert.equal(result.match_type,'High Confidence Candidate');});
+test('split names and duplicate identities do not aggressively auto match',()=>{const result=matchName('Nor Fatimawati',[{id:'3',name:'NORFATIMAWATI'}],{});assert.equal(result.candidates[0].score,100);assert.equal(result.userId,'');assert.equal(matchName('SITI ALI',[{id:'1',name:'SITI ALI'},{id:'2',name:'SITI ALI'}],{}).userId,'');});
+test('no match memory and inactive targets prevent fallback',()=>{const key=normalizeDocumentName(users[0].name);assert.equal(matchName(users[0].name,users,{[key]:{userId:null}}).match_type,'Confirmed No Match');assert.equal(matchName(users[0].name,users,{[key]:{userId:'deleted'}}).userId,'');});
+test('thresholds configurable and empty names safe',()=>{assert.equal(matchName('',users,{}).userId,'');assert.equal(matchName('MUHAMAD AZWAN B AHMAD',users,{}, {high:100,review:85,margin:100}).match_type,'Review Required');});
