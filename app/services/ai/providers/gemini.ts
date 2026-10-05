@@ -17,7 +17,12 @@ export function geminiProvider(model: string, apiKey?: string) {
       });
     } catch (error) { throw providerError(error); }
     const raw = await response.text();
-    if (!response.ok) throw providerError(undefined, response.status, raw.slice(0, 500));
+    if (!response.ok) {
+        let message='';try{const parsed=JSON.parse(raw);message=String(parsed.error?.message||parsed.message||'').slice(0,300);}catch{}
+        if(apiKey)message=message.split(apiKey).join('[redacted]');
+        console.error('[AI rejection]',{provider:"gemini",status:response.status,message});
+        throw providerError(undefined, response.status, raw.slice(0, 500));
+      }
     let data: { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
     try { data = JSON.parse(raw); } catch { throw new AIProviderError("MALFORMED", "Invalid Gemini JSON"); }
     const text = data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";

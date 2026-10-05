@@ -1,7 +1,7 @@
 export type AIErrorCategory = "TIMEOUT" | "RATE_LIMIT" | "QUOTA" | "NETWORK" | "SERVER" | "AUTH" | "BAD_REQUEST" | "MALFORMED" | "UNKNOWN";
 
 export class AIProviderError extends Error {
-  constructor(public category: AIErrorCategory, message: string, public status?: number) {
+  constructor(public category: AIErrorCategory, message: string, public status?: number, public retryAfterMs?: number) {
     super(message);
     this.name = "AIProviderError";
   }
@@ -30,4 +30,11 @@ export function providerError(error: unknown, status?: number, detail = "") {
 
 export function isTransient(error: AIProviderError) {
   return ["TIMEOUT", "RATE_LIMIT", "QUOTA", "NETWORK", "SERVER"].includes(error.category);
+}
+
+// Providers can specify a cooldown as seconds, a date, or a duration in the error.
+export function retryAfterMs(header: string | null, detail = "", now = Date.now()): number | undefined {
+  let ms = header && /^\d+(?:\.\d+)?$/.test(header.trim()) ? Number(header) * 1000 : header ? Date.parse(header) - now : NaN;
+  if (!Number.isFinite(ms)) { const duration = detail.match(/try again in\s+(\d+(?:\.\d+)?)(ms|s|m)/i); if (duration) ms = Number(duration[1]) * (duration[2].toLowerCase() === 'ms' ? 1 : duration[2].toLowerCase() === 'm' ? 60000 : 1000); }
+  return Number.isFinite(ms) && ms >= 0 ? Math.min(Math.ceil(ms) + 250, 60000) : undefined;
 }

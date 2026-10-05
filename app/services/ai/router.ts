@@ -46,7 +46,7 @@ export async function generateAI(input: AIGenerateInput, options: { env?: NodeJS
       } catch (unknownError) {
         clearTimeout(timer!);
         const error = providerError(unknownError); logAI({ provider: name, model: provider.model, status: "failed", latencyMs: Date.now() - started, errorCategory: error.category }); recordFailure(name, error.category);
-        if (attempt < config.maxRetries && isTransient(error)) await delay(Math.min(250 * 2 ** attempt + Math.floor(random() * 150), 1500));
+        if (attempt < config.maxRetries && isTransient(error)) await delay(error.retryAfterMs ?? Math.min(250 * 2 ** attempt + Math.floor(random() * 150), 1500));
         else break;
       }
     }

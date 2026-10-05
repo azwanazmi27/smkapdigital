@@ -1,4 +1,4 @@
-import { AIProviderError, providerError } from "../errors";
+import { AIProviderError, providerError, retryAfterMs } from "../errors";
 import type { AIGenerateInput, AIGenerateResult, AIProviderName } from "../types";
 
 type CompatibleOptions = { name: AIProviderName; model: string; apiKey?: string; endpoint: string; extraHeaders?: Record<string, string> };
@@ -30,7 +30,14 @@ export function openAICompatibleProvider(options: CompatibleOptions) {
         });
       } catch (error) { throw providerError(error); }
       const raw = await response.text();
-      if (!response.ok) throw providerError(undefined, response.status, raw.slice(0, 500));
+      if (!response.ok) {
+        let message='';try{const parsed=JSON.parse(raw);message=String(parsed.error?.message||parsed.message||'').slice(0,300);}catch{}
+        if(options.apiKey)message=message.split(options.apiKey).join('[redacted]');
+        console.error('[AI rejection]',{provider:options.name,status:response.status,message});
+        const error = providerError(undefined, response.status, raw.slice(0, 500));
+        if(response.status===429)error.retryAfterMs=retryAfterMs(response.headers.get("retry-after"),raw);
+        throw error;
+      }
       let data: { choices?: Array<{ message?: { content?: unknown } }>; model?: string };
       try { data = JSON.parse(raw); } catch { throw new AIProviderError("MALFORMED", "Invalid provider JSON"); }
       const content = data.choices?.[0]?.message?.content;
