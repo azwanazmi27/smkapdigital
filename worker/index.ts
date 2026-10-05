@@ -1,3 +1,4 @@
+import {sendReliefReminders} from '../app/lib/relief-reminders';
 import {sendClassReminders} from '../app/lib/class-reminders';
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
@@ -31,6 +32,7 @@ interface ExecutionContext {
 const worker = {
   async scheduled(_event: unknown, env: Env, ctx: ExecutionContext) {
     if(env.MIGRATION_MODE)return;
+    ctx.waitUntil(sendReliefReminders().catch(error=>console.error("Relief reminders failed",error)));
     ctx.waitUntil(sendClassReminders().catch(error=>console.error("Class reminders failed",error)));
   },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

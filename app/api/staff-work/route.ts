@@ -1,3 +1,4 @@
+import {timedReliefTasks} from '../../relief-times';
 import {applyMainstreamTimes,type MainstreamTimes} from '../../mainstream-times';
 import {matchDocumentRows} from '../../lib/document-name-matching';
 import {form6Lessons,type Form6Data} from '../../form6-model';
@@ -24,7 +25,7 @@ async function loadTasks(actor:Actor){
   if(plans.length){
    const users=await env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>();
    const teacherId=matchReliefTeacherId(plans[0].assignments,actor,users.results,await staffNameMappings());
-   if(teacherId)tasks.push(...await reliefTasksForTeacher(plans,teacherId,today,now));
+   if(teacherId){const timing=await env.DB.prepare("SELECT data_json FROM mainstream_times WHERE id='active'").first<{data_json:string}>();const timed=await timedReliefTasks(plans[0],teacherId,timing?JSON.parse(timing.data_json):null,now);tasks.push(...timed.map(row=>row.task));}
   }
  }
  const absenceRecords=await env.DB.prepare("SELECT id,teacher_name AS teacherName,absence_date AS absenceDate,end_date AS endDate,reason,duration,start_time AS startTime,end_time AS endTime FROM absences WHERE COALESCE(NULLIF(end_date,''),absence_date)>=?").bind(today).all<PersonalAbsence>();
