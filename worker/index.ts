@@ -31,11 +31,16 @@ interface ExecutionContext {
 // const imageConfig: ImageConfig = { dangerouslyAllowSVG: true };
 
 const worker = {
-  async scheduled(_event: unknown, env: Env, ctx: ExecutionContext) {
+  async scheduled(event: {scheduledTime?:number}, env: Env, ctx: ExecutionContext) {
     if(env.MIGRATION_MODE)return;
-    ctx.waitUntil(sendMorningSummaries().catch(error=>console.error("Morning summaries failed",error)));
-    ctx.waitUntil(sendReliefReminders().catch(error=>console.error("Relief reminders failed",error)));
-    ctx.waitUntil(sendClassReminders().catch(error=>console.error("Class reminders failed",error)));
+    const now=new Date(event.scheduledTime ?? Date.now());
+    ctx.waitUntil((async()=>{
+      const budget={remaining:40}; // Stay below the Free-plan external subrequest ceiling.
+      for(const [name,run] of [['class',sendClassReminders],['relief',sendReliefReminders],['morning',sendMorningSummaries]] as const){
+        console.log('Reminder job started',name,now.toISOString());
+        try{await run(now,budget);console.log('Reminder job completed',name);}catch(error){console.error('Reminder job failed',name,error);}
+      }
+    })());
   },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);

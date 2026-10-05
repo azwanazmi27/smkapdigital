@@ -3,14 +3,14 @@ import {malaysiaDay,teachingDay,documentNameKey,matchDocumentUserId,matchReliefT
 import {form6Lessons,type Form6Data} from '../form6-model';
 import {applyMainstreamTimes} from '../mainstream-times';
 import {staffNameMappings} from './staff-name-mappings';
-import {sendTaskNotices,type TaskNotice} from './task-push';
+import {sendTaskNotices,type TaskNotice,type PushBudget} from './task-push';
 import {morningDue,morningBody,reliefReadyBody,TASKS_URL} from '../daily-notice-model';
 export async function announceRelief(date:string){
  if(date!==malaysiaDay())return;
  const users=await env.DB.prepare("SELECT DISTINCT u.id FROM portal_users u JOIN push_subscriptions s ON s.user_id=u.id WHERE u.status='active' AND u.deleted_at IS NULL").all<{id:string}>();
  await sendTaskNotices(users.results.map(u=>({userId:u.id,taskId:`relief-ready:${date}`,title:'Jadual relief telah disediakan',body:reliefReadyBody(date),url:TASKS_URL,ttl:3600})));
 }
-export async function sendMorningSummaries(now=new Date()){
+export async function sendMorningSummaries(now=new Date(),budget?:PushBudget){
  if(!morningDue(now))return;
  const today=malaysiaDay(now);
  const [users,schedule,timing,f6,plan,assignments,subscribed]=await Promise.all([
@@ -33,5 +33,5 @@ export async function sendMorningSummaries(now=new Date()){
  if(day.state!=='ready'&&!reliefs&&!duty&&!other)continue;
  notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:'Ringkasan Tugasan Saya',body:morningBody(actor.name,day.state==='ready'?periods.size:null,plan?reliefs:null,duty,other),url:TASKS_URL,ttl:3600});
  }
- await sendTaskNotices(notices);
+ await sendTaskNotices(notices,budget);
 }
