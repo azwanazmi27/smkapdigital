@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {readFileSync} from 'node:fs';
+const source=readFileSync('app/api/staff-work/route.ts','utf8');
+const block=source.slice(source.indexOf('   const chunks=[]'),source.indexOf('   const event=chunks.find'));
+const compiled=ts.transpileModule(`async function extract(pageGroups,generateAI){const prompt='read',programContext='',mime='application/pdf';${block}return chunks;}`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+const extract=new Function(compiled+';return extract;')();
+test('four document chunks are read sequentially and all retained',async()=>{let active=0,peak=0,calls=0;const result=await extract([['one'],['two'],['three'],['four']],async()=>{active++;peak=Math.max(peak,active);const i=++calls;await new Promise(resolve=>setTimeout(resolve,5));active--;return {text:JSON.stringify({assignments:[{name:`Teacher ${i}`} ]})};});assert.equal(peak,1);assert.equal(calls,4);assert.equal(result.length,4);});
+test('invalid chunk aborts instead of accepting incomplete extraction',async()=>{let calls=0;await assert.rejects(extract([['one'],['two']],async()=>{calls++;return {text:'null'};}),/Invalid document/);assert.equal(calls,1);});
