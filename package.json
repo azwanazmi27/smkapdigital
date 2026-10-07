@@ -13,7 +13,8 @@
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "test:ai": "node --import tsx --test tests/ai-router.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "build:notifications": "esbuild worker/notifications.ts --bundle --format=esm --platform=browser --target=es2022 --external:cloudflare:workers --external:node:crypto --outfile=dist-notifications/worker.js"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "1.0.2",

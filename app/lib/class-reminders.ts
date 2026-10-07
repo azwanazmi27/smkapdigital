@@ -1,3 +1,4 @@
+import {notificationSettings} from './notification-settings';
 import {reminderNameCache} from '../reminder-name-cache';
 import {env} from 'cloudflare:workers';
 import {malaysiaDay,teachingDay,personalAbsenceTasks,type PersonalAbsence} from '../staff-work-model';
@@ -7,6 +8,7 @@ import {staffNameMappings} from './staff-name-mappings';
 import {sendTaskNotices,type TaskNotice,type PushBudget} from './task-push';
 import {dueClasses} from '../class-reminder-model';
 export async function sendClassReminders(now=new Date(),budget?:PushBudget){
+ const settings=await notificationSettings();if(!settings.classEnabled)return;
  const [directory,schedule,timing,form6,absences]=await Promise.all([
  env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>(),
  env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1").first<{teachers_json:string}>(),
@@ -20,7 +22,7 @@ export async function sendClassReminders(now=new Date(),budget?:PushBudget){
  let day=teachingDay(teachers,actor,directory.results,now,cachedMappings);if(times)day=applyMainstreamTimes(day,times);
  const lessons=f6?form6Lessons(f6,actor.id,day.day):null;if(lessons)day={...day,state:'ready',lessons};
  const personal=personalAbsenceTasks(absences.results,actor,directory.results,cachedMappings,now);
- for(const lesson of dueClasses(day,now)){
+ for(const lesson of dueClasses(day,now,settings.leadMinutes)){
  const absent=personal.some(a=>{if(a.startDate>day.date||a.endDate<day.date)return false;const row=absences.results.find(r=>`absence:${r.id}`===a.id);return !row||row.duration!=='partial'||!row.startTime||!row.endTime||(row.startTime<lesson.endTime!&&row.endTime>lesson.startTime!);});if(absent)continue;
  notices.push({userId:actor.id,taskId:`class:${day.date}:${actor.id}:${lesson.startTime}:${lesson.className}:${lesson.subject}`,title:`Kelas bermula dalam ${Math.max(1,Math.ceil((Date.parse(`${day.date}T${lesson.startTime}:00+08:00`)-now.getTime())/60000))} minit`,body:`${lesson.subject} · ${lesson.className} · ${lesson.startTime}–${lesson.endTime}`,url:'/?module=warga&tasks=1',ttl:600});
  }}

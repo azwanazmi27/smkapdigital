@@ -1,3 +1,4 @@
+import {notificationSettings} from './notification-settings';
 import {env} from 'cloudflare:workers';
 import {malaysiaDay,matchReliefTeacherId,reliefVisibleNow,type ReliefPlan} from '../staff-work-model';
 import {timedReliefTasks} from '../relief-times';
@@ -5,6 +6,7 @@ import {dueClasses} from '../class-reminder-model';
 import {staffNameMappings} from './staff-name-mappings';
 import {sendTaskNotices,type TaskNotice,type PushBudget} from './task-push';
 export async function sendReliefReminders(now=new Date(),budget?:PushBudget){
+ const settings=await notificationSettings();if(!settings.reliefEnabled)return;
  if(!reliefVisibleNow(now))return;
  const today=malaysiaDay(now);
  // Re-read the latest plan on every run; never schedule against a superseded plan.
@@ -17,7 +19,7 @@ export async function sendReliefReminders(now=new Date(),budget?:PushBudget){
  const mappings=await staffNameMappings(),notices:TaskNotice[]=[];
  for(const actor of users){const teacherId=matchReliefTeacherId(assignments,actor,users,mappings);if(!teacherId)continue;
   for(const {task,sessions,absentTeacher} of await timedReliefTasks(plan,teacherId,config,now)){
-   for(const session of dueClasses({date:today,day:'',state:'ready',lessons:sessions},now)){
+   for(const session of dueClasses({date:today,day:'',state:'ready',lessons:sessions},now,settings.leadMinutes)){
     notices.push({userId:actor.id,taskId:`reminder:${task.id}:${actor.id}:${session.startTime}`,title:`Relief bermula dalam ${Math.max(1,Math.ceil((Date.parse(`${today}T${session.startTime}:00+08:00`)-now.getTime())/60000))} minit`,body:`${session.className} · ${session.subject} · ${session.startTime}–${session.endTime}${absentTeacher?` · Ganti ${absentTeacher}`:''}`,url:'/?module=warga&tasks=1',ttl:600});
    }
   }

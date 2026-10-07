@@ -1,6 +1,5 @@
-import {sendMorningSummaries} from '../app/lib/daily-notices';
-import {sendReliefReminders} from '../app/lib/relief-reminders';
-import {sendClassReminders} from '../app/lib/class-reminders';
+import {WorkerEntrypoint} from 'cloudflare:workers';
+import {sendTaskNotices,type TaskNotice} from '../app/lib/task-push';
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
@@ -31,17 +30,6 @@ interface ExecutionContext {
 // const imageConfig: ImageConfig = { dangerouslyAllowSVG: true };
 
 const worker = {
-  async scheduled(event: {scheduledTime?:number}, env: Env, ctx: ExecutionContext) {
-    if(env.MIGRATION_MODE)return;
-    const now=new Date(event.scheduledTime ?? Date.now());
-    ctx.waitUntil((async()=>{
-      const budget={remaining:40}; // Stay below the Free-plan external subrequest ceiling.
-      for(const [name,run] of [['class',sendClassReminders],['relief',sendReliefReminders],['morning',sendMorningSummaries]] as const){
-        console.log('Reminder job started',name,now.toISOString());
-        try{await run(now,budget);console.log('Reminder job completed',name);}catch(error){console.error('Reminder job failed',name,error);}
-      }
-    })());
-  },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const blocked = stagingBlock(request, env.MIGRATION_MODE);
@@ -63,3 +51,8 @@ const worker = {
 };
 
 export default worker;
+
+// Only accessible through an account-owned Service Binding, never a public route.
+export class NotificationPushService extends WorkerEntrypoint {
+ async send(notices:TaskNotice[],remaining:number){const budget={remaining:Math.min(35,Math.max(0,remaining))};await sendTaskNotices(notices,budget);return budget.remaining;}
+}

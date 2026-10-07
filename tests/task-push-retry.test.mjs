@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 test('failed and abandoned deliveries retry, successful and in-flight deliveries deduplicate',async()=>{
  const db=new DatabaseSync(':memory:');
- db.exec("CREATE TABLE portal_users(id TEXT,name TEXT,status TEXT,deleted_at TEXT); CREATE TABLE push_subscriptions(id TEXT,user_id TEXT,endpoint TEXT,p256dh TEXT,auth TEXT); INSERT INTO portal_users VALUES('a','Teacher','active',NULL); INSERT INTO push_subscriptions VALUES('device','a','https://push.invalid','key','auth');");
+ db.exec("CREATE TABLE notification_delivery_details(task_id TEXT,subscription_id TEXT,title TEXT,error TEXT,updated_at TEXT,PRIMARY KEY(task_id,subscription_id)); CREATE TABLE portal_users(id TEXT,name TEXT,status TEXT,deleted_at TEXT); CREATE TABLE push_subscriptions(id TEXT,user_id TEXT,endpoint TEXT,p256dh TEXT,auth TEXT); INSERT INTO portal_users VALUES('a','Teacher','active',NULL); INSERT INTO push_subscriptions VALUES('device','a','https://push.invalid','key','auth');");
  const env={VAPID_SERVER_PUBLIC_KEY:'public',VAPID_SERVER_PRIVATE_KEY:'private',DB:{prepare(sql){let values=[];return {bind(...args){values=args;return this},async run(){return {meta:{changes:Number(db.prepare(sql).run(...values).changes)}}},async all(){return {results:db.prepare(sql).all(...values)}}}}}};
  let source=readFileSync('app/lib/task-push.ts','utf8').replace(/import .*?from 'cloudflare:workers';/,'').replace(/import .*?from '@block65\/webcrypto-web-push';/,'');
  const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replace('export async function','async function');
