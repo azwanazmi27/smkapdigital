@@ -1,3 +1,4 @@
+import {selectRetryNotices,type RetryTarget} from '../notification-retry-model';
 import {reminderNameCache} from '../reminder-name-cache';
 import {notificationSettings} from './notification-settings';
 import {env} from 'cloudflare:workers';
@@ -12,7 +13,7 @@ export async function announceRelief(date:string){
  const users=await env.DB.prepare("SELECT DISTINCT u.id FROM portal_users u JOIN push_subscriptions s ON s.user_id=u.id WHERE u.status='active' AND u.deleted_at IS NULL").all<{id:string}>();
  await sendTaskNotices(users.results.map(u=>({userId:u.id,taskId:`relief-ready:${date}`,title:'Jadual relief telah disediakan',body:reliefReadyBody(date),url:TASKS_URL,ttl:3600})));
 }
-export async function sendMorningSummaries(now=new Date(),budget?:PushBudget,manual=false){
+export async function sendMorningSummaries(now=new Date(),budget?:PushBudget,manual=false,target?:RetryTarget){
  const settings=await notificationSettings();
  if(!settings.morningEnabled||(!manual&&!morningDue(now,settings.morningTime)))return;
  const today=malaysiaDay(now);
@@ -28,7 +29,7 @@ export async function sendMorningSummaries(now=new Date(),budget?:PushBudget,man
  let mappings=await staffNameMappings(),teachers=schedule?JSON.parse(schedule.teachers_json):null,times=timing?JSON.parse(timing.data_json):null,form6:Form6Data|null=f6?JSON.parse(f6.data_json):null,relief:ReliefAssignment[]=plan?JSON.parse(plan.assignments_json):[];
  mappings=reminderNameCache([...(Array.isArray(teachers)?teachers.map(t=>t.name).filter((n:unknown)=>typeof n==='string'):[]),...absences.results.map(a=>a.teacherName)],users.results,mappings);
  const ids=new Set(subscribed.results.map(u=>u.user_id)),notices:TaskNotice[]=[];
- for(const actor of users.results.filter(u=>ids.has(u.id))){
+ for(const actor of users.results.filter(u=>ids.has(u.id)&&(!target||u.id===target.userId))){
  const ownAbsences=personalAbsenceTasks(absences.results,actor,users.results,mappings,now);
  if(ownAbsences.length){const reasons=absences.results.filter(a=>ownAbsences.some(t=>t.id===`absence:${a.id}`)).map(a=>a.reason);notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:settings.morningTitle,body:absenceMorningBody(actor.name,reasons),url:TASKS_URL,ttl:3600});continue;}
  let day=teachingDay(teachers,actor,users.results,now,mappings);if(times)day=applyMainstreamTimes(day,times);const sixth=form6?form6Lessons(form6,actor.id,day.day):null;if(sixth)day={...day,state:'ready',lessons:sixth};
@@ -39,5 +40,5 @@ export async function sendMorningSummaries(now=new Date(),budget?:PushBudget,man
  if(day.state!=='ready'&&!reliefs&&!duty&&!other)continue;
  notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:settings.morningTitle,body:settings.morningGreeting.replaceAll('{nama}',actor.name)+'\n\n'+morningBody(actor.name,day.state==='ready'?periods.size:null,plan?reliefs:null,duty,other).split('\n\n')[1]+'\n\n'+settings.morningClosing.replaceAll('{nama}',actor.name),url:TASKS_URL,ttl:3600});
  }
- await sendTaskNotices(notices,budget);
+ await sendTaskNotices(selectRetryNotices(notices,target),budget);
 }

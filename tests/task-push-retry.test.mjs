@@ -23,5 +23,8 @@ test('failed and abandoned deliveries retry, successful and in-flight deliveries
  const budget={remaining:1};
  await send([{...notice,taskId:'next-a'},{...notice,taskId:'next-b'}],budget);assert.equal(calls,4);assert.equal(budget.remaining,0);
  await send([{...notice,taskId:'next-a'},{...notice,taskId:'next-b'}],{remaining:1});assert.equal(calls,5);
+ db.exec("INSERT INTO push_subscriptions VALUES('second-device','a','https://push.invalid/second','key','auth')");
+ const before=calls;await send([{...notice,taskId:'one-device-only',subscriptionId:'device'}],{remaining:1});assert.equal(calls,before+1);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM staff_task_push_deliveries WHERE task_id='one-device-only' AND subscription_id='second-device'").get().n,0);
  db.close();
 });

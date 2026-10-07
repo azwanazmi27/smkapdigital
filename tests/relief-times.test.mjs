@@ -1,3 +1,4 @@
+import {retryLessons,selectRetryNotices} from '../app/notification-retry-model.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -16,9 +17,10 @@ test('scheduled delivery follows latest replacement and ignores cancellation',as
  const js=ts.transpileModule(src,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replace('export async function','async function');
  let p=plan(),sent=[];const queries=[];const users=[{id:'user-a',name:'Guru A'},{id:'user-c',name:'Guru C'}];
  const env={DB:{prepare(sql){queries.push(sql);return {bind(){return this},async first(){return sql.includes('relief_plans')?{...p,assignmentsJson:JSON.stringify(p.assignments)}:{data_json:JSON.stringify(config)}},async all(){return {results:users}}}}}};
- const fn=new Function('notificationSettings','env','malaysiaDay','matchReliefTeacherId','reliefVisibleNow','timedReliefTasks','dueClasses','staffNameMappings','sendTaskNotices',js+';return sendReliefReminders;')(async()=>({reliefEnabled:true,leadMinutes:10}),env,malaysiaDay,matchReliefTeacherId,reliefVisibleNow,timedReliefTasks,dueClasses,async()=>({}),async n=>{sent=n});
+ const fn=new Function('retryLessons','selectRetryNotices','notificationSettings','env','malaysiaDay','matchReliefTeacherId','reliefVisibleNow','timedReliefTasks','dueClasses','staffNameMappings','sendTaskNotices',js+';return sendReliefReminders;')(retryLessons,selectRetryNotices,async()=>({reliefEnabled:true,leadMinutes:10}),env,malaysiaDay,matchReliefTeacherId,reliefVisibleNow,timedReliefTasks,dueClasses,async()=>({}),async n=>{sent=n});
  const now=new Date('2026-10-09T07:50:00+08:00');await fn(now);assert.equal(sent.length,1);assert.equal(sent[0].userId,'user-a');assert.equal(sent[0].ttl,600);
  p.assignments[0].reliefId='c';p.assignments[0].reliefTeacher='Guru C';await fn(now);assert.equal(sent.length,1);assert.equal(sent[0].userId,'user-c');
+ const selected={userId:'user-c',taskId:sent[0].taskId,subscriptionId:'phone-c'};await fn(new Date('2026-10-09T07:57:00+08:00'),undefined,selected);assert.equal(sent.length,1);assert.equal(sent[0].subscriptionId,'phone-c');assert.match(sent[0].title,/3 minit/);await fn(new Date('2026-10-09T08:00:00+08:00'),undefined,selected);assert.equal(sent.length,0);
  p.assignments[0].cancelled=true;await fn(now);assert.equal(sent.length,0);
  assert.ok(queries.some(q=>q.includes('WHERE date=? ORDER BY rowid DESC LIMIT 1')));
 });

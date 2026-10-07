@@ -1,3 +1,5 @@
+import {retryNotification} from '../app/lib/notification-retry';
+import type {RetryTarget} from '../app/notification-retry-model';
 import {WorkerEntrypoint} from 'cloudflare:workers';
 import {sendMorningSummaries} from '../app/lib/daily-notices';
 import {sendClassReminders} from '../app/lib/class-reminders';
@@ -20,6 +22,10 @@ export default {
 };
 
 export class NotificationScheduler extends WorkerEntrypoint<{DB:D1Database;MIGRATION_MODE?:string}> {
+ async retryDelivery(target:RetryTarget){
+  if(this.env.MIGRATION_MODE)throw new Error('Staging does not send');
+  return retryNotification(target);
+ }
  async retryMorning(){
   if(this.env.MIGRATION_MODE)throw new Error('Staging does not send');
   const id=crypto.randomUUID();

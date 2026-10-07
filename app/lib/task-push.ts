@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { buildPushPayload, type PushSubscription } from '@block65/webcrypto-web-push';
 
-export type TaskNotice = { userId: string; taskId: string; title: string; body: string; url: string; ttl?: number };
+export type TaskNotice = { userId: string; taskId: string; title: string; body: string; url: string; ttl?: number; subscriptionId?: string };
 
 // A delivery is keyed by the assignment and device, so a repeated publication
 // cannot alert the same teacher twice for the same task.
@@ -18,6 +18,7 @@ export async function sendTaskNotices(notices: TaskNotice[], budget?: PushBudget
   for (const notice of notices) {
     const subscriptions = await env.DB.prepare("SELECT s.id,s.endpoint,s.p256dh,s.auth FROM push_subscriptions s JOIN portal_users u ON u.id=s.user_id WHERE s.user_id=? AND u.status='active' AND u.deleted_at IS NULL").bind(notice.userId).all<{ id:string; endpoint:string; p256dh:string; auth:string }>();
     for (const row of subscriptions.results) {
+      if (notice.subscriptionId && row.id !== notice.subscriptionId) continue;
       if (budget && budget.remaining <= 0) return;
       const now = new Date().toISOString();
       const claim = await env.DB.prepare("INSERT INTO staff_task_push_deliveries(task_id,subscription_id,user_id,status,created_at,updated_at) VALUES(?,?,?,'sending',?,?) ON CONFLICT(task_id,subscription_id) DO UPDATE SET status='sending',updated_at=excluded.updated_at WHERE staff_task_push_deliveries.status='failed' OR (staff_task_push_deliveries.status='sending' AND staff_task_push_deliveries.updated_at < strftime('%Y-%m-%dT%H:%M:%fZ','now','-2 minutes'))").bind(notice.taskId,row.id,notice.userId,now,now).run();

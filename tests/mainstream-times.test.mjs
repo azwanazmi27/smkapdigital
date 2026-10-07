@@ -1,3 +1,4 @@
+import {retryLessons,selectRetryNotices} from '../app/notification-retry-model.ts';
 import {reminderNameCache} from '../app/reminder-name-cache.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,7 +22,7 @@ test('scheduler targets only subscribed teacher and suppresses absence',async()=
  let absent=false,sent=[];
  const directory=[{id:'a',name:'Guru A'},{id:'b',name:'Guru B'}];
  const env={DB:{prepare(sql){return {bind(){return this},async all(){return {results:sql.includes('portal_users')?directory:sql.includes('DISTINCT')?[{user_id:'a'}]:[]}},async first(){if(sql.includes('mainstream_times'))return {data_json:JSON.stringify(config)};return null;}}}}};
- const fn=new Function('notificationSettings','reminderNameCache','env','malaysiaDay','teachingDay','personalAbsenceTasks','applyMainstreamTimes','form6Lessons','staffNameMappings','sendTaskNotices','dueClasses',js+';return sendClassReminders;')(async()=>({classEnabled:true,leadMinutes:10}),reminderNameCache,env,()=> '2026-10-05',()=>day(),()=>absent?[{id:'absence:x',startDate:'2026-10-05',endDate:'2026-10-05'}]:[],applyMainstreamTimes,()=>null,async()=>({}),async notices=>{sent=notices},dueClasses);
+ const fn=new Function('retryLessons','selectRetryNotices','notificationSettings','reminderNameCache','env','malaysiaDay','teachingDay','personalAbsenceTasks','applyMainstreamTimes','form6Lessons','staffNameMappings','sendTaskNotices','dueClasses',js+';return sendClassReminders;')(retryLessons,selectRetryNotices,async()=>({classEnabled:true,leadMinutes:10}),reminderNameCache,env,()=> '2026-10-05',()=>day(),()=>absent?[{id:'absence:x',startDate:'2026-10-05',endDate:'2026-10-05'}]:[],applyMainstreamTimes,()=>null,async()=>({}),async notices=>{sent=notices},dueClasses);
  await fn(new Date('2026-10-04T23:30:10Z'));assert.equal(sent.length,1);assert.equal(sent[0].userId,'a');assert.equal(sent[0].ttl,600);assert.match(sent[0].body,/07:40/);
  absent=true;await fn(new Date('2026-10-04T23:30:10Z'));assert.equal(sent.length,0);
 });
