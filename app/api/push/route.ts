@@ -3,7 +3,7 @@ import { buildPushPayload, type PushSubscription } from "@block65/webcrypto-web-
 import { portalActor } from "../../server-auth";
 
 type PushBody = {
-  action?: "subscribe" | "unsubscribe" | "send";
+  action?: "subscribe" | "unsubscribe" | "send" | "status";
   endpoint?: string;
   expirationTime?: unknown;
   keys?: { p256dh?: string; auth?: string };
@@ -68,6 +68,10 @@ export async function POST(request: Request) {
     if (!me) return Response.json({ error: "Log masuk DELIMa diperlukan." }, { status: 403 });
     const input = await request.json() as PushBody;
     const now = new Date().toISOString();
+    if (input.action === "status") {
+      const row = await env.DB.prepare("SELECT id FROM push_subscriptions WHERE endpoint=? AND user_id=?").bind(clean(input.endpoint, 2000), me.id).first();
+      return Response.json({ registered: Boolean(row) }, { headers: { "Cache-Control": "private, no-store" } });
+    }
     if (input.action === "subscribe") {
       const endpoint = clean(input.endpoint, 2000), p256dh = clean(input.keys?.p256dh, 500), auth = clean(input.keys?.auth, 500);
       if (!endpoint.startsWith("https://") || !p256dh || !auth) return Response.json({ error: "Maklumat peranti tidak sah." }, { status: 400 });

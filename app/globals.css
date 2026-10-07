@@ -1684,3 +1684,19 @@ html,body{width:100%;max-width:100%;min-height:100%;overflow-x:hidden;background
 .task-agenda .relief-agenda .my-task-list{margin:16px 0 0}
 .task-agenda .relief-agenda .my-task-open time{display:block}
 @container(max-width:540px){.task-agenda .my-task-list,.task-agenda.is-expanded .my-task-list{grid-template-columns:1fr;gap:12px}.task-agenda .my-task-row .my-task-open{padding:20px 20px 12px 28px;gap:12px}.task-agenda .my-task-row .my-task-copy b{font-size:20px}.task-agenda .my-task-row .my-task-copy strong{font-size:14px}}
+
+/* Device-specific opt-in reminder; native dialog keeps focus above the portal. */
+dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:28px;border:1px solid #42727d;border-radius:24px;background:linear-gradient(145deg,#163e4b,#08232e);color:#f1fbfc;box-shadow:0 24px 80px #0008;text-align:left;}
+.device-push-reminder::backdrop{background:#001019ba;}
+.device-push-reminder .device-push-close{position:absolute;right:12px;top:12px;width:44px;height:44px;padding:0;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#c9e7eb;}
+.device-push-reminder .device-push-icon{display:grid;place-items:center;width:56px;height:56px;margin-bottom:20px;border-radius:17px;background:#77ddd326;color:#91eee3;}
+.device-push-reminder small{display:block;color:#8cdbd3;font-size:11px;font-weight:750;letter-spacing:.12em;}
+.device-push-reminder h2{margin:10px 0 12px;color:#f1fbfc;font-size:26px;line-height:1.2;font-weight:750;letter-spacing:-.025em;}
+.device-push-reminder p{margin:0;color:#c2dade;font-size:16px;line-height:1.6;}
+.device-push-reminder .device-push-actions{display:grid;gap:10px;margin-top:24px;}
+.device-push-reminder .device-push-actions button{min-height:48px;width:100%;padding:12px 16px;border:1px solid #52747d;border-radius:12px;background:#ffffff08;color:#e4f3f4;font-size:16px;font-weight:700;cursor:pointer;}
+.device-push-reminder .device-push-actions .device-push-enable{background:#83dfd5;border-color:#83dfd5;color:#062b34;}
+.device-push-reminder button:focus-visible{outline:3px solid #a4fff4;outline-offset:3px;}
+.device-push-reminder button:disabled{opacity:.65;cursor:wait;}
+.device-push-reminder .device-push-hint{margin-top:16px;font-size:12px;color:#a0bec5;line-height:1.5;}
+.device-push-reminder .device-push-error{margin-top:16px;padding:12px;border-radius:10px;background:#5a2636;color:#ffe0e5;font-size:14px;}

@@ -1,4 +1,5 @@
 "use client";
+import {DeviceNotificationReminder, useDeviceNotifications} from "./device-notification-reminder";
 import NotificationAutomation from './notification-automation';
 import {loadJsPdf} from "./services/pdf-runtime";
 import {MainstreamSettings} from "./mainstream-settings";
@@ -200,7 +201,8 @@ export function LandingPortal() {
   const [staffAnnouncementOpen,setStaffAnnouncementOpen]=useState(false);
   const [pushNotice,setPushNotice]=useState<{id:string;title:string;body:string;imageData?:string;createdAt:string}|null>(null);
   const [authError,setAuthError]=useState("");
-  const [pushState,setPushState]=useState<"idle"|"loading"|"enabled"|"blocked"|"unsupported">("idle");
+  const deviceNotifications=useDeviceNotifications(identity?.id);
+  const pushState=deviceNotifications.state;
   const folderModalRef=useRef<HTMLElement|null>(null);
   const historyReady=useRef(false);
   const restoringHistory=useRef(false);
@@ -328,7 +330,7 @@ export function LandingPortal() {
   const updatePhoto=async(file?:File)=>{if(!file||!identity)return;const base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(",")[1]||"");reader.onerror=()=>reject(Error("Gambar tidak dapat dibaca"));reader.readAsDataURL(file);});const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({photoBase64:base64,mimeType:file.type})}),data=await response.json();if(!response.ok)throw new Error(data.error);await loadIdentity(false);notify("Gambar profil berjaya dikemas kini");};
   const updateProfile=async(profile:{name:string;position:string;grade:string})=>{const response=await fetch("/api/admin-users?resource=profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)}),data=await response.json();if(!response.ok)throw new Error(data.error||"Profil tidak dapat dikemas kini.");setIdentity(current=>current?{...current,...profile}:current);notify("Profil berjaya dikemas kini");};
   const logout=async()=>{try{const response=await fetch("/api/session",{method:"DELETE"});if(!response.ok)throw Error();}catch{return notify("Log keluar belum berjaya. Semak sambungan dan cuba lagi.");}window.google?.accounts.id.disableAutoSelect?.();setIdentity(null);setIdentityChecked(true);setWelcome(false);setProfileOpen(false);setAuthOpen(false);setOpen(null);notify("Anda telah log keluar");};
-  const enableNotifications=async()=>{try{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){setPushState("unsupported");throw new Error("Peranti atau pelayar ini belum menyokong notifikasi portal.");}setPushState("loading");const permission=await Notification.requestPermission();if(permission!=="granted"){setPushState("blocked");throw new Error("Notifikasi belum dibenarkan pada peranti ini.");}const configResponse=await fetch("/api/push?view=config",{cache:"no-store"}),config=await configResponse.json() as{publicKey?:string;error?:string};if(!configResponse.ok||!config.publicKey)throw new Error(config.error||"Tetapan notifikasi belum tersedia.");await navigator.serviceWorker.register("/sw.js");const registration=await Promise.race([navigator.serviceWorker.ready,new Promise<ServiceWorkerRegistration>((_,reject)=>window.setTimeout(()=>reject(new Error("Service worker notifikasi tidak dapat dimulakan. Muat semula portal dan cuba lagi.")),10000))]),existing=await registration.pushManager.getSubscription();const decode=(value:string)=>{const normalized=(value+"=".repeat((4-value.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"),raw=atob(normalized);return Uint8Array.from(raw,char=>char.charCodeAt(0));};const subscription=existing||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(config.publicKey)});const response=await fetch("/api/push",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"subscribe",...subscription.toJSON()})}),data=await response.json() as{error?:string};if(!response.ok)throw new Error(data.error||"Peranti tidak dapat didaftarkan.");setPushState("enabled");notify("Notifikasi SMKAP telah diaktifkan pada peranti ini");}catch(error){setPushState(current=>current==="blocked"||current==="unsupported"?current:"idle");notify(error instanceof Error?error.message:"Notifikasi tidak dapat diaktifkan");}};
+  const enableNotifications=deviceNotifications.enable;
   const currentFolderContent=open&&folderContent[open as keyof typeof folderContent];
   const currentItems=currentFolderContent?.items.map(item=>item) || [];
   if(open==="warga")currentItems.push({icon:FolderOpen,title:"Pengurusan Sekolah",text:"Fail pengurusan, kurikulum, HEM, kokurikulum dan Tingkatan Enam",folder:"pengurusan"});
@@ -383,6 +385,13 @@ export function LandingPortal() {
     window.setTimeout(() => setToast(""), 2800);
   };
 
+  const previousPushState=useRef(pushState);
+  useEffect(()=>{
+    if(previousPushState.current==="loading"&&pushState==="enabled")notify("Notifikasi SMKAP telah diaktifkan pada peranti ini");
+    previousPushState.current=pushState;
+  },[pushState]);
+  useEffect(()=>{if(deviceNotifications.error)notify(deviceNotifications.error);},[deviceNotifications.error]);
+
   return <main className="landing-shell">
     <div className="landing-noise" aria-hidden="true"></div>
     <header className="landing-header">
@@ -435,6 +444,7 @@ export function LandingPortal() {
       </section>
     </div>}
     {authOpen&&<div className="staff-auth-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setAuthOpen(false)}><section className="staff-auth-card" role="dialog" aria-modal="true"><button onClick={()=>setAuthOpen(false)} aria-label="Tutup">×</button><GlassIcon icon={ShieldCheck} size="lg"/><span>AKSES WARGA SEKOLAH</span><h2>Log masuk dengan ID DELIMa</h2><p>Gunakan akaun <b>@moe-dl.edu.my</b> yang didaftarkan oleh sekolah.</p><div id="google-staff-signin"></div>{authError&&<small>{authError}</small>}</section></div>}
+    {identity&&<DeviceNotificationReminder key={identity.id} userId={identity.id} blocked={overlayActive||!!opening||attendanceSplash} state={pushState} checked={deviceNotifications.checked} error={deviceNotifications.error} enable={enableNotifications}/>}
     {welcome&&identity&&<LoginWelcome user={identity} pushState={pushState} enableNotifications={enableNotifications} close={()=>{setWelcome(false);if(unreadStaffAnnouncements().length)window.setTimeout(()=>setStaffAnnouncementOpen(true),180)}}/>}
     {staffAnnouncementOpen&&staffAnnouncements.length>0&&<StaffAnnouncementPopup items={staffAnnouncements} close={closeStaffAnnouncement}/>} 
     {pushNotice&&<PushNoticePopup item={pushNotice} close={()=>{setPushNotice(null);const url=new URL(window.location.href);url.searchParams.delete("notification");history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}}/>}
