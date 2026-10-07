@@ -24,7 +24,7 @@ export async function sendClassReminders(now=new Date(),budget?:PushBudget){
  const personal=personalAbsenceTasks(absences.results,actor,directory.results,cachedMappings,now);
  for(const lesson of dueClasses(day,now,settings.leadMinutes)){
  const absent=personal.some(a=>{if(a.startDate>day.date||a.endDate<day.date)return false;const row=absences.results.find(r=>`absence:${r.id}`===a.id);return !row||row.duration!=='partial'||!row.startTime||!row.endTime||(row.startTime<lesson.endTime!&&row.endTime>lesson.startTime!);});if(absent)continue;
- notices.push({userId:actor.id,taskId:`class:${day.date}:${actor.id}:${lesson.startTime}:${lesson.className}:${lesson.subject}`,title:`Kelas bermula dalam ${Math.max(1,Math.ceil((Date.parse(`${day.date}T${lesson.startTime}:00+08:00`)-now.getTime())/60000))} minit`,body:`${lesson.subject} · ${lesson.className} · ${lesson.startTime}–${lesson.endTime}`,url:'/?module=warga&tasks=1',ttl:600});
+ notices.push({userId:actor.id,taskId:`class:${day.date}:${actor.id}:${lesson.startTime}:${lesson.className}:${lesson.subject}`,title:`Kelas bermula dalam ${Math.max(1,Math.ceil((Date.parse(`${day.date}T${lesson.startTime}:00+08:00`)-now.getTime())/60000))} minit`,body:`${lesson.subject} · Kelas ${lesson.className.replace(/^Kelas\s+/i,'')}\n🕒 ${lesson.startTime}–${lesson.endTime}`,url:'/?module=warga&tasks=1',ttl:600});
  }}
  await sendTaskNotices(notices,budget);
 }

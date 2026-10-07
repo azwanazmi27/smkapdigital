@@ -9,12 +9,13 @@ export async function GET(request:Request){
  try{
  const date=new URL(request.url).searchParams.get('date')||malaysiaDay();if(!validDate(date))return Response.json({error:'Tarikh tidak sah.'},{status:400});
  const start=new Date(`${date}T00:00:00+08:00`).toISOString(),end=new Date(Date.parse(start)+86400000).toISOString();
- const [settings,runs,deliveries,subscriptions]=await Promise.all([
+ const [settings,runs,deliveries,subscriptions,heartbeat]=await Promise.all([
  notificationSettings(),
  env.DB.prepare('SELECT id,kind,started_at AS startedAt,finished_at AS finishedAt,status,error FROM notification_runs WHERE started_at>=? AND started_at<? ORDER BY started_at DESC LIMIT 180').bind(start,end).all(),
  env.DB.prepare(`SELECT d.task_id AS taskId,d.status,d.created_at AS createdAt,d.updated_at AS updatedAt,u.name,COALESCE(x.title,'') AS title,COALESCE(x.error,'') AS error FROM staff_task_push_deliveries d LEFT JOIN portal_users u ON u.id=d.user_id LEFT JOIN notification_delivery_details x ON x.task_id=d.task_id AND x.subscription_id=d.subscription_id WHERE d.created_at>=? AND d.created_at<? ORDER BY d.created_at DESC LIMIT 1000`).bind(start,end).all(),
- env.DB.prepare("SELECT u.name,COUNT(s.id) AS devices FROM portal_users u LEFT JOIN push_subscriptions s ON s.user_id=u.id WHERE u.status='active' AND u.deleted_at IS NULL GROUP BY u.id ORDER BY u.name").all()]);
- return Response.json({settings,runs:runs.results,deliveries:deliveries.results,subscriptions:subscriptions.results,date},{headers:{'Cache-Control':'private, no-store'}});
+ env.DB.prepare("SELECT u.name,COUNT(s.id) AS devices FROM portal_users u LEFT JOIN push_subscriptions s ON s.user_id=u.id WHERE u.status='active' AND u.deleted_at IS NULL GROUP BY u.id ORDER BY u.name").all(),
+ env.DB.prepare("SELECT MAX(started_at) AS latest FROM notification_runs WHERE kind IN ('class','relief','morning')").first<{latest:string|null}>()]);
+ return Response.json({settings,runs:runs.results,deliveries:deliveries.results,subscriptions:subscriptions.results,date,heartbeat:heartbeat?.latest||null},{headers:{'Cache-Control':'private, no-store'}});
  }catch(error){console.error('Notification monitor',error);return Response.json({error:'Rekod notifikasi belum dapat dibaca. Cuba segarkan semula.'},{status:500});}
 }
 export async function PUT(request:Request){

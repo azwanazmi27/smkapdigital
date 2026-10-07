@@ -8,8 +8,8 @@ test('personal summaries distinguish missing relief from zero assignments',()=>{
 test('morning retry window ends at 07:45 MYT',()=>{assert.equal(morningDue(new Date('2026-10-05T23:44:00Z')),true);assert.equal(morningDue(new Date('2026-10-05T23:45:00Z')),false);});
 test('absence greeting uses individual name and actual reason, including MC variants',async()=>{
  const {absenceMorningBody}=await import('../app/daily-notice-model.ts');
- assert.equal(absenceMorningBody('A',['MC']),'Selamat pagi Cikgu A\n\nCikgu dilaporkan tidak hadir kerana MC, semoga cikgu cepat sembuh.');
- assert.match(absenceMorningBody('B',['CRK']),/Cikgu B[\s\S]*kerana CRK, semoga urusan cikgu dipermudahkan/);
+ assert.equal(absenceMorningBody('A',['MC']),'Selamat pagi Cikgu A 🌤️\n\nCikgu dilaporkan tidak hadir hari ini kerana MC.\n\nSemoga cikgu cepat sembuh dan kembali sihat.');
+ assert.match(absenceMorningBody('B',['CRK']),/Cikgu B[\s\S]*kerana CRK[\s\S]*Semoga urusan cikgu dipermudahkan/);
  assert.match(absenceMorningBody('C',['Cuti Sakit']),/cepat sembuh/);
  assert.equal(absenceMorningBody('A',['MC','MC']).match(/kerana/g).length,1);
 });

@@ -26,8 +26,8 @@ export async function sendTaskNotices(notices: TaskNotice[], budget?: PushBudget
       let status = 'failed',failure='';
       try {
         const subscription: PushSubscription = { endpoint: row.endpoint, expirationTime: null, keys: { p256dh: row.p256dh, auth: row.auth } };
-        const init = await buildPushPayload({ data: { title: notice.title, body: notice.body, url: notice.url, tag: `task-${notice.taskId}` }, options: { ttl: notice.ttl ?? 86400, urgency: 'normal' } }, subscription, keys);
-        const response = await fetch(row.endpoint, init as RequestInit);
+        const init = await buildPushPayload({ data: { title: notice.title, body: notice.body, url: notice.url, tag: `task-${notice.taskId}` }, options: { ttl: notice.ttl ?? 86400, urgency: notice.ttl && notice.ttl<=3600 ? 'high' : 'normal' } }, subscription, keys);
+        const response = await fetch(row.endpoint, {...init,signal:AbortSignal.timeout(10000)} as RequestInit);
         if (response.ok) status = 'sent';
         else {failure=`HTTP ${response.status}`;console.warn('Task push rejected',response.status,notice.taskId);}
         if (response.status === 404 || response.status === 410) await env.DB.prepare('DELETE FROM push_subscriptions WHERE id=?').bind(row.id).run();

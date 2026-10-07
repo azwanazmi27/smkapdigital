@@ -16,7 +16,7 @@ Morning summaries target 07:25 Malaysia time on weekdays, with recovery retries 
 
 Teacher-name matches and misses are cached once per class-reminder run to avoid repeated fuzzy matching across every user. Scheduled jobs run sequentially, using the scheduled event timestamp, and log start/completion/failure for each stage. This avoids the CPU exhaustion observed in production.
 
-Scheduled jobs share a 35-delivery attempt budget per invocation to stay below the external subrequest limit. Remaining unsent notices are revisited on the next minute within their recovery window; sent notices do not consume the attempt budget.
+Time-sensitive class and relief jobs run before morning summaries, which have a longer recovery window. Scheduled jobs share a 35-delivery attempt budget per invocation to stay below the external subrequest limit. Remaining unsent notices are revisited on the next minute within their recovery window; sent notices do not consume the attempt budget.
 
 
 ## Separate scheduler and administrator monitoring
@@ -26,3 +26,5 @@ Apply `drizzle/0018_notification_monitor.sql`, build/deploy the portal (exports 
 Settings → Notifications includes administrator-only automated settings, date-filtered delivery results, provider errors, scheduler runs and users without devices. A completed scheduler run is not a delivery receipt. Old delivery rows have no detailed error information. Running jobs older than three minutes are shown as stalled (including CPU termination, which cannot execute a catch handler). Run history is retained for 14 days. Manual recovery only targets today's unsent summary, 35 devices per request, and preserves delivery deduplication.
 
 Defaults remain weekdays 07:25 Malaysia time and reminders 10 minutes before class/relief. Administrators can edit the time, greeting, closing and lead time. Current-day e-Keberadaan records override the normal summary with a personalized absence greeting, MC/cuti sakit recovery wish or the actual other reason with an ease-of-affairs wish. Future/expired absence records are excluded by date range. Teacher-name matching uses the same persistent mappings as tasks.
+
+Time-sensitive notifications use high push urgency. Each push network request has a ten-second timeout so an unresponsive provider cannot indefinitely block later teachers. The admin screen shows the latest scheduler heartbeat and warns when no fresh run has started for more than three minutes.

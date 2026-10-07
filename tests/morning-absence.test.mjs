@@ -13,5 +13,5 @@ test('morning absence overrides schedule only for matching current-day teacher',
  const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replaceAll('export async function','async function');
  const deps={env,...model,...notice,reminderNameCache,notificationSettings:async()=>defaultNotificationSettings,staffNameMappings:async()=>({}),form6Lessons:()=>null,applyMainstreamTimes:d=>d,sendTaskNotices:async n=>delivered=n};
  const run=new Function(...Object.keys(deps),js+';return sendMorningSummaries;')(...Object.values(deps));
- await run(new Date('2026-10-07T07:25:00+08:00'));assert.equal(delivered.length,1);assert.equal(delivered[0].userId,'a');assert.match(delivered[0].body,/Selamat pagi Cikgu Azwan bin Azmi/);assert.match(delivered[0].body,/kerana MC, semoga cikgu cepat sembuh/);assert.doesNotMatch(delivered[0].body,/Waktu Mengajar/);
+ await run(new Date('2026-10-07T07:25:00+08:00'));assert.equal(delivered.length,1);assert.equal(delivered[0].userId,'a');assert.match(delivered[0].body,/Selamat pagi Cikgu Azwan bin Azmi/);assert.match(delivered[0].body,/kerana MC[\s\S]*Semoga cikgu cepat sembuh/);assert.doesNotMatch(delivered[0].body,/Waktu Mengajar/);
 });

@@ -7,7 +7,7 @@ export default {
   if(env.MIGRATION_MODE)return;
   ctx.waitUntil((async()=>{
    const budget={remaining:35},now=new Date(event.scheduledTime);
-   for(const [kind,run] of [['morning',sendMorningSummaries],['class',sendClassReminders],['relief',sendReliefReminders]] as const){
+   for(const [kind,run] of [['class',sendClassReminders],['relief',sendReliefReminders],['morning',sendMorningSummaries]] as const){
     const id=crypto.randomUUID();
     await env.DB.prepare("INSERT INTO notification_runs(id,kind,started_at,status) VALUES(?,?,?,'running')").bind(id,kind,new Date().toISOString()).run();
     try{await run(now,budget);await env.DB.prepare("UPDATE notification_runs SET status='completed',finished_at=? WHERE id=?").bind(new Date().toISOString(),id).run();}
