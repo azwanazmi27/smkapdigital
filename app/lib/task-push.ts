@@ -7,6 +7,7 @@ export type TaskNotice = { userId: string; taskId: string; title: string; body: 
 // cannot alert the same teacher twice for the same task.
 export type PushBudget = { remaining: number };
 export async function sendTaskNotices(notices: TaskNotice[], budget?: PushBudget) {
+  if (!notices.length || (budget && budget.remaining <= 0)) return;
   const gateway=(env as unknown as {PUSH_SERVICE?:{send(notices:TaskNotice[],remaining:number):Promise<number>}}).PUSH_SERVICE;
   if(gateway){const left=await gateway.send(notices,budget?.remaining??35);if(budget)budget.remaining=left;return;}
   const publicKey = env.VAPID_SERVER_PUBLIC_KEY || '';

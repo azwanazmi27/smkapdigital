@@ -1,9 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import ts from 'typescript';
 import {readFileSync} from 'node:fs';
-const compiled=ts.transpileModule(readFileSync('app/staff-work-model.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
-const model=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
+import * as model from '../app/staff-work-model.ts';
 const task=(id,type,status,startDate)=>({id,type,status,startDate,endDate:startDate,title:id,context:'',detail:'',source:'',unseen:false,actions:[]});
 
 test('tarikh Malaysia bertukar tepat pada tengah malam tempatan',()=>{

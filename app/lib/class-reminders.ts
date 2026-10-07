@@ -1,24 +1,17 @@
+import {notificationContext,type NotificationContext} from './notification-context';
 import {retryLessons,selectRetryNotices,type RetryTarget} from '../notification-retry-model';
-import {notificationSettings} from './notification-settings';
 import {reminderNameCache} from '../reminder-name-cache';
-import {env} from 'cloudflare:workers';
-import {malaysiaDay,teachingDay,personalAbsenceTasks,type PersonalAbsence} from '../staff-work-model';
+import {teachingDay,personalAbsenceTasks} from '../staff-work-model';
 import {applyMainstreamTimes} from '../mainstream-times';
 import {form6Lessons,type Form6Data} from '../form6-model';
-import {staffNameMappings} from './staff-name-mappings';
 import {sendTaskNotices,type TaskNotice,type PushBudget} from './task-push';
 import {dueClasses} from '../class-reminder-model';
-export async function sendClassReminders(now=new Date(),budget?:PushBudget,target?:RetryTarget){
- const settings=await notificationSettings();if(!settings.classEnabled)return;
- const [directory,schedule,timing,form6,absences]=await Promise.all([
- env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string;name:string}>(),
- env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1").first<{teachers_json:string}>(),
- env.DB.prepare("SELECT data_json FROM mainstream_times WHERE id='active'").first<{data_json:string}>(),
- env.DB.prepare("SELECT data_json FROM form6_timetable WHERE id='active'").first<{data_json:string}>(),
- env.DB.prepare("SELECT id,teacher_name AS teacherName,absence_date AS absenceDate,end_date AS endDate,reason,duration,start_time AS startTime,end_time AS endTime FROM absences WHERE absence_date<=? AND COALESCE(NULLIF(end_date,''),absence_date)>=?").bind(malaysiaDay(now),malaysiaDay(now)).all<PersonalAbsence>()]);
- const mappings=await staffNameMappings(),teachers=schedule?JSON.parse(schedule.teachers_json):null,times=timing?JSON.parse(timing.data_json):null,f6:Form6Data|null=form6?JSON.parse(form6.data_json):null;
+export async function sendClassReminders(now=new Date(),budget?:PushBudget,target?:RetryTarget,context?:NotificationContext){
+ const snapshot=context??await notificationContext(now),{settings,users:directory,schedule,timing,form6,absences,mappings,subscribed}=snapshot;
+ if(!settings.classEnabled)return;
+ const teachers=schedule?JSON.parse(schedule.teachers_json):null,times=timing?JSON.parse(timing.data_json):null,f6:Form6Data|null=form6?JSON.parse(form6.data_json):null;
  const cachedMappings=reminderNameCache([...(Array.isArray(teachers)?teachers.map(t=>t.name).filter((n:unknown)=>typeof n==='string'):[]),...absences.results.map(a=>a.teacherName)],directory.results,mappings);
- const subscribed=await env.DB.prepare('SELECT DISTINCT user_id FROM push_subscriptions').all<{user_id:string}>();const ids=new Set(subscribed.results.map(s=>s.user_id));const notices:TaskNotice[]=[];
+ const ids=new Set(subscribed.results.map(s=>s.user_id));const notices:TaskNotice[]=[];
  for(const actor of directory.results.filter(u=>ids.has(u.id)&&(!target||u.id===target.userId))){
  let day=teachingDay(teachers,actor,directory.results,now,cachedMappings);if(times)day=applyMainstreamTimes(day,times);
  const lessons=f6?form6Lessons(f6,actor.id,day.day):null;if(lessons)day={...day,state:'ready',lessons};

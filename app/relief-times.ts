@@ -1,9 +1,10 @@
+import {malaysiaClock} from './malaysia-clock';
 import {reliefTasksForTeacher,type ReliefPlan,type TeachingDay} from './staff-work-model';
 import {applyMainstreamTimes,type MainstreamTimes} from './mainstream-times';
 export async function timedReliefTasks(plan:ReliefPlan,teacherId:string,config:MainstreamTimes|null,now=new Date()){
  const tasks=await reliefTasksForTeacher([plan],teacherId,plan.date,now);
  const entries=plan.assignments.filter(a=>a&&!a.cancelled&&a.reliefId===teacherId);
- const day=new Intl.DateTimeFormat('ms-MY',{timeZone:'Asia/Kuala_Lumpur',weekday:'long'}).format(now);
+ const day=malaysiaClock(now).day;
  return tasks.map((task,index)=>{
   const item=entries[index];const periods=[...new Set((item.periods||[]).map(Number).filter(p=>Number.isInteger(p)&&p>0&&p<=30))].sort((a,b)=>a-b);
   const groups:number[][]=[];for(const p of periods){const last=groups.at(-1);if(last&&last.at(-1)===p-1)last.push(p);else groups.push([p]);}
