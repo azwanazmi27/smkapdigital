@@ -1,10 +1,12 @@
+import {bookingRooms,lockBookingRoom,unlockBookingRoom,type BookingRoom} from "../../lib/booking-rooms";
+import {activePersonalBookings,ownsBooking,bookingDay} from "../../booking-model";
 import { bookingStartIsPast } from "../../booking-time";
 import { portalActor, type PortalActor } from "../../server-auth";
 import { clearBookingStatus, readBookingStatus } from "../../etempahan-cache";
 
 type BookingBody = Record<string, unknown>;
 
-const rooms = new Set(["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"]);
+
 const purposes = new Set(["PdPC", "Mesyuarat", "Taklimat", "Perjumpaan", "Latihan SPTS", "Program Sekolah", "Lain-lain"]);
 const clean = (value: unknown, max: number) => typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 
@@ -16,7 +18,7 @@ function connection() {
   return { url, token };
 }
 
-async function callGoogle(payload: Record<string, unknown>) {
+export async function callGoogle(payload: Record<string, unknown>) {
   const { url, token } = connection();
   const readOnly = payload.action === "etempahan_list" || payload.action === "etempahan_list_range";
   for (let attempt = 0; attempt < (readOnly ? 3 : 1); attempt++) {
@@ -33,12 +35,12 @@ async function callGoogle(payload: Record<string, unknown>) {
   throw new Error("Sambungan E-Tempahan gagal");
 }
 
-function normalizeBookings(value: unknown) {
+export function normalizeBookings(value: unknown) {
   return Array.isArray(value) ? value.flatMap((entry) => {
     if (!entry || typeof entry !== "object") return [];
     const row = entry as Record<string, unknown>;
     const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"] as const;
-    if (!required.every((key) => typeof row[key] === "string") || !rooms.has(String(row.room))) return [];
+    if (!required.every((key) => typeof row[key] === "string")) return [];
     const ownerEmail = clean(row.ownerEmail || row.createdByEmail || row.email || row.applicantEmail, 160).toLowerCase();
     return [{ ...(Object.fromEntries(required.map((key) => [key, row[key]])) as Record<typeof required[number], string>), participants: Number(row.participants) || 0, ownerEmail }];
   }) : [];
@@ -46,13 +48,10 @@ function normalizeBookings(value: unknown) {
 
 type NormalizedBooking = ReturnType<typeof normalizeBookings>[number];
 const isAdmin = (actor: PortalActor | null) => Boolean(actor && ["admin", "super_admin"].includes(actor.role));
-const samePerson = (booking: NormalizedBooking, actor: PortalActor | null) => Boolean(actor && (
-  (booking.ownerEmail && booking.ownerEmail === actor.email.toLowerCase()) ||
-  (!booking.ownerEmail && clean(booking.applicantName, 120).toLocaleLowerCase("ms-MY") === clean(actor.name, 120).toLocaleLowerCase("ms-MY"))
-));
-const presentBooking = (booking: NormalizedBooking, actor: PortalActor | null) => {
+const samePerson = (booking:NormalizedBooking,actor:PortalActor|null)=>!!actor&&ownsBooking(booking,actor);
+const presentBooking = (booking: NormalizedBooking, actor: PortalActor | null, catalog:BookingRoom[] = []) => {
   const { ownerEmail: _ownerEmail, ...safe } = booking;
-  return { ...safe, canDelete: booking.status !== "Dibatalkan" && (isAdmin(actor) || samePerson(booking, actor)) };
+  return { ...safe, room:catalog.find(room=>room.sourceName===booking.room)?.name||booking.room, canDelete: booking.status !== "Dibatalkan" && (isAdmin(actor) || samePerson(booking, actor)) };
 };
 
 function datesBetween(from: string, to: string, maximum = 62) {
@@ -68,6 +67,11 @@ export async function GET(request: Request) {
     const actor = await portalActor(request);
     if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah untuk menyemak tempahan." }, { status: 401 });
     const params = new URL(request.url).searchParams;
+    const catalog=await bookingRooms(true);
+    if(params.get('mine')==='1'){
+      const {value}=await readBookingStatus(new URL(request.url).origin,'upcoming',async()=>normalizeBookings((await callGoogle({action:'etempahan_list_range',from:bookingDay(),to:'9999-12-31'})).bookings));
+      return Response.json({success:true,account:`${actor.email}|${actor.role}`,bookings:activePersonalBookings(value,actor).map(row=>presentBooking(row,actor,catalog))},{headers:{'Cache-Control':'private, no-store'}});
+    }
     const date = params.get("date") || "", from = params.get("from") || "", to = params.get("to") || "";
     if (from || to) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
@@ -84,14 +88,14 @@ export async function GET(request: Request) {
       }
       const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
       results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
-      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)).map((booking) => presentBooking(booking, actor)) }, { headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)).map((booking) => presentBooking(booking, actor, catalog)) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
     const { value: bookings, checkedAt, source } = await readBookingStatus(new URL(request.url).origin, date, async () => {
       const result = await callGoogle({ action: "etempahan_list", date });
       return normalizeBookings(result.bookings);
     });
-    return Response.json({ success: true, bookings: bookings.map((booking) => presentBooking(booking, actor)), checkedAt, source }, { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json({ success: true, bookings: bookings.map((booking) => presentBooking(booking, actor, catalog)), checkedAt, source }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("E-Tempahan list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Status bilik tidak dapat dibaca sekarang." }, { status: 502 });
@@ -99,6 +103,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  let roomLock:{id:string;token:string}|undefined;
   try {
     const actor = await portalActor(request);
     if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah untuk membuat tempahan." }, { status: 401 });
@@ -108,7 +113,9 @@ export async function POST(request: Request) {
     // Bilangan peserta tidak lagi diminta dalam borang. Nilai ini dikekalkan
     // untuk serasi dengan rekod dan automasi Google Sheet sedia ada.
     const participants = Number(body.participants) || 1;
-    if (!rooms.has(room)) return Response.json({ error: "Sila pilih bilik atau ruang yang hendak ditempah." }, { status: 400 });
+    const catalog=await bookingRooms();
+    const selected=catalog.find(item=>item.name===room);
+    if (!selected) return Response.json({ error: "Sila pilih bilik atau ruang yang hendak ditempah." }, { status: 400 });
     if (!applicantName) return Response.json({ error: "Sila masukkan nama pemohon." }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ error: "Sila masukkan alamat e-mel yang sah." }, { status: 400 });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) return Response.json({ error: "Sila lengkapkan tarikh mula dan tarikh tamat." }, { status: 400 });
@@ -120,18 +127,21 @@ export async function POST(request: Request) {
     if (bookingStartIsPast(startDate,startTime)) return Response.json({error:"Waktu mula telah berlalu. Sila pilih waktu selepas sekarang (waktu Malaysia)."},{status:400});
     // Keep the original fields and send the legacy date/time aliases too. This
     // avoids a false overlap when the connected Sheet script still reads `date`.
-    const result = await callGoogle({ action: "etempahan_create", room, applicantName, email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
-    await clearBookingStatus(new URL(request.url).origin, datesBetween(startDate, endDate).slice(0, 61));
+    const token=await lockBookingRoom(selected.id);
+    if(!token)return Response.json({error:'Bilik ini sedang dikemas kini. Sila cuba semula.'},{status:409});
+    roomLock={id:selected.id,token};
+    const result = await callGoogle({ action: "etempahan_create", room:selected.sourceName, applicantName:actor.name, email:actor.email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
+    await clearBookingStatus(new URL(request.url).origin, ["upcoming",...datesBetween(startDate, endDate).slice(0, 61)]);
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
     // Send the confirmed row so the client does not wait for another Sheet read.
-    const booking = normalizeBookings([result.booking || {id:result.id,room,applicantName,purpose,startDate,startTime,endDate,endTime,participants,status:result.status || "Diluluskan",ownerEmail:email}])[0];
-    return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false, ...(booking ? {booking:presentBooking(booking,actor)} : {}) });
+    const booking = normalizeBookings([result.booking || {id:result.id,room:selected.sourceName,applicantName:actor.name,purpose,startDate,startTime,endDate,endTime,participants,status:result.status || "Diluluskan",ownerEmail:actor.email}])[0];
+    return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false, ...(booking ? {booking:presentBooking(booking,actor,catalog)} : {}) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat diproses.";
     const conflict = /bertindih|ditempah|conflict/i.test(message);
     console.error("E-Tempahan create error", message);
     return Response.json({ error: conflict ? message : "Tempahan tidak dapat diproses sekarang. E-mel keputusan tidak dihantar." }, { status: conflict ? 409 : 502 });
-  }
+  } finally {if(roomLock)await unlockBookingRoom(roomLock.id,roomLock.token).catch(error=>console.error("Room unlock failed",error));}
 }
 
 export async function DELETE(request: Request) {
@@ -160,7 +170,7 @@ export async function DELETE(request: Request) {
       }
     }
     if (lastError) throw lastError;
-    await clearBookingStatus(new URL(request.url).origin, datesBetween(booking.startDate, booking.endDate).slice(0, 61));
+    await clearBookingStatus(new URL(request.url).origin, ["upcoming",...datesBetween(booking.startDate, booking.endDate).slice(0, 61)]);
     return Response.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat dipadam.";

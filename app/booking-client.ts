@@ -1,4 +1,5 @@
 export type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string; canDelete?: boolean; pending?: boolean };
+export type BookingResult={account:string;method:'POST'|'DELETE';success:boolean;message:string;booking?:Booking};
 type Query = { from: string; to: string; rows: Booking[]; checkedAt: string; refreshing: boolean; error: string; invalidated?: boolean };
 type Change = { id: string; row: Booking; deleting: boolean };
 type Snapshot = { queries: Record<string, Query>; changes: Change[]; message: string; failed: boolean };
@@ -20,7 +21,7 @@ export function bookingRows(snapshot: Snapshot, from: string, to: string): Booki
 
 // Memory only, scoped to the signed-in account. Pending requests continue when
 // the sheet closes; reopening observes the same state instead of sending twice.
-export function createBookingClient(fetcher: typeof fetch = fetch) {
+export function createBookingClient(fetcher: typeof fetch = fetch, onResult?:(result:Omit<BookingResult,'account'>)=>void) {
   let snapshot: Snapshot = {queries:{},changes:[],message:"",failed:false};
   let generation = 0;
   const listeners = new Set<() => void>();
@@ -66,10 +67,12 @@ export function createBookingClient(fetcher: typeof fetch = fetch) {
       const saved=data.booking || {...row,id:data.id||row.id,status:"Diluluskan",pending:false};
       const queries=Object.fromEntries(Object.entries(snapshot.queries).map(([key,q])=>[key,{...q,rows:[...q.rows.filter(item=>item.id!==row.id && item.id!==saved.id),...(method!=="DELETE"&&overlaps(saved,q.from,q.to)?[saved]:[])],invalidated:true,error:""}]));
       emit({...snapshot,queries,changes:snapshot.changes.filter(change=>change.id!==row.id),message:method==="DELETE"?"Tempahan berjaya dipadam.":`Tempahan berjaya diluluskan.${data.emailSent===false?" E-mel pengesahan belum dapat dihantar.":""}`,failed:false});
+      onResult?.({method,success:true,message:method==='POST'?'Tempahan telah disahkan dan dipaparkan dalam Tempahan Saya.':'Tempahan berjaya dipadam.',booking:saved});
       return saved;
     } catch (error) {
       generation++;
       emit({...snapshot,changes:snapshot.changes.filter(change=>change.id!==row.id),message:error instanceof Error?error.message:"Perubahan belum dapat disahkan.",failed:true});
+      onResult?.({method,success:false,message:error instanceof Error?error.message:'Tempahan tidak dapat disahkan.'});
       // Refresh is read-only: never retry a write automatically after a network error.
       for (const query of Object.values(snapshot.queries)) if (overlaps(row,query.from,query.to)) void refresh(query.from,query.to,true);
       throw error;
@@ -80,7 +83,7 @@ export function createBookingClient(fetcher: typeof fetch = fetch) {
 const clients=new Map<string,ReturnType<typeof createBookingClient>>();
 export function bookingClientFor(account:string) {
   let client=clients.get(account);
-  if (!client) {client=createBookingClient();clients.set(account,client);}
+  if (!client) {client=createBookingClient(fetch,result=>{if(typeof window!=='undefined'&&clients.get(account)===client)window.dispatchEvent(new CustomEvent('booking-result',{detail:{...result,account}}));});clients.set(account,client);}
   return client;
 }
 export function clearBookingClients() { clients.clear(); }

@@ -1,4 +1,5 @@
 "use client";
+import {BookingFeedback,BookingRoomSettings,useBookingRooms} from "./booking-workspace";
 import {formatWeeklySummary,formatDailyNotes} from './duty-summary';
 import {WeeklySummaryPreview} from './weekly-summary-preview';
 import {drawWeeklySummary} from './weekly-summary-pdf';
@@ -454,6 +455,7 @@ export function LandingPortal() {
     {profileOpen&&identity&&<ProfileCard user={identity} close={()=>setProfileOpen(false)} save={updateProfile} updatePhoto={updatePhoto} logout={logout} notify={notify} pushState={pushState} enableNotifications={enableNotifications}/>} 
     {attendanceSplash&&<div className="attendance-splash" role="status" aria-live="polite"><img src="/ekeberadaan-loading.jpg" alt="SMKAP Digital e-Keberadaan"/><div className="attendance-splash-shade" aria-hidden="true"/><div className="attendance-splash-status"><i aria-hidden="true"/><span>Memuatkan e-Keberadaan…</span></div></div>}
     {opening&&<div className="portal-opening" role="status" aria-live="polite"><div><i aria-hidden="true"/><span><strong>Membuka {opening}</strong><small>Sila tunggu sebentar…</small></span></div></div>}
+    <BookingFeedback account={`${identity?.email||""}|${identity?.role||""}`} openTasks={()=>{sessionStorage.setItem('smkap_tasks_expanded','1');setOpen('warga');}}/>
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
   </main>;
 }
@@ -1022,11 +1024,11 @@ const exportJson=async(kind:"ekeberadaan"|"etempahan")=>{setExporting(kind);try{
   const orgPrevious=[...orgPeers].reverse().find(user=>(user.orgOrder??999)<currentOrgOrder);
   const orgNext=orgPeers.find(user=>(user.orgOrder??999)>currentOrgOrder);
   const placeAfter=(id:string)=>{if(!editing)return;const anchor=orgPeers.find(user=>user.id===id);if(!anchor){const first=orgPeers[0];setEditing({...editing,orgOrder:first?Math.max(0,(first.orgOrder??10)-10):orgChartDefaultOrder(editing.orgPosition||editing.position)});return;}const index=orgPeers.indexOf(anchor),next=orgPeers[index+1],anchorOrder=anchor.orgOrder??999;setEditing({...editing,orgOrder:next?(anchorOrder+(next.orgOrder??anchorOrder+20))/2:anchorOrder+10});};
-  const nav=[["dashboard","Dashboard"],["ai","Tetapan AI"],["mainstream","Jadual Arus Perdana"],["form6","Jadual Tingkatan Enam"],["years","Tahun Persekolahan"],["users","Pengguna"],["expertise","Kepakaran Guru"],["access","Akses Admin"],["content","Tentang Sekolah"],["announcements","Pengumuman"],["notifications","Notifikasi"],["calendar","Takwim"],["modules","Modul"],["drive","Dokumen & Google Drive"],["export","Eksport & Sandaran"],["trash","Tong Sampah"],["logs","Log Aktiviti"]];
+  const nav=[["dashboard","Dashboard"],["ai","Tetapan AI"],["mainstream","Jadual Arus Perdana"],["form6","Jadual Tingkatan Enam"],["rooms","Urus Bilik"],["years","Tahun Persekolahan"],["users","Pengguna"],["expertise","Kepakaran Guru"],["access","Akses Admin"],["content","Tentang Sekolah"],["announcements","Pengumuman"],["notifications","Notifikasi"],["calendar","Takwim"],["modules","Modul"],["drive","Dokumen & Google Drive"],["export","Eksport & Sandaran"],["trash","Tong Sampah"],["logs","Log Aktiviti"]];
   const actionLabel=(action:string)=>({create:"Tambah pengguna",update:"Ubah pengguna",delete:"Padam pengguna",restore:"Pulih pengguna",profile_update:"Kemas kini profil",settings_update:"Ubah tetapan",permissions_update:"Ubah kebenaran"}[action]||action);
   return <div className="admin-console"><header><div><span className="modal-overline">KAWALAN PENTADBIR</span><h2 id="folder-title">Pusat Pentadbiran Portal</h2><p>{me.name} · {me.role==="super_admin"?"Super Admin":"Admin"}</p></div><button onClick={logout}>Log keluar</button></header>
     <nav className="admin-tabs">{nav.filter(([key])=>me.role==="super_admin"||!["access","trash"].includes(key)).map(([key,label])=><button key={key} className={tab===key?"active":""} onClick={()=>setTab(key)}>{label}</button>)}</nav>
-    {tab==="ai"&&<AdminAIStatus/>}{tab==="mainstream"&&<MainstreamSettings/>}{tab==="form6"&&<Form6Settings/>}
+    {tab==="rooms"&&<BookingRoomSettings/>}{tab==="ai"&&<AdminAIStatus/>}{tab==="mainstream"&&<MainstreamSettings/>}{tab==="form6"&&<Form6Settings/>}
     {tab==="drive"&&<section className="admin-section admin-drive"><span className="modal-overline">PUSAT DOKUMEN SEKOLAH</span><h3>Dokumen & Google Drive</h3><p>Satu sambungan Google Drive sekolah digunakan oleh Pusat OPR, e-Panitia, Pengurusan Sekolah dan Pusat SK@S.</p><div className="admin-export-grid"><article><strong>Status sambungan</strong><span>{driveState==="connected"?"Disahkan dan boleh membaca fail":driveState==="error"?"Sambungan memerlukan perhatian":"Belum diuji dalam sesi ini"}</span><button onClick={()=>void testDrive()} disabled={driveState==="testing"}>{driveState==="testing"?"Sedang menguji…":"Uji sambungan Drive"}</button></article><article><strong>Storan rasmi</strong><span>Google Drive sekolah · semua modul menggunakan sambungan yang sama.</span><button onClick={()=>void testDrive()}>Sambung semula Google Drive</button></article><article><strong>Folder induk</strong><span>Folder tahun dan bidang dikawal oleh integrasi Drive pusat. Pemetaan modul tidak menyalin fail.</span><button onClick={()=>notify("Folder induk kekal pada sambungan Drive sekolah semasa")}>Periksa folder induk</button></article><article><strong>Identiti dokumen sekolah</strong><span>Logo, nama, alamat, footer dan format PDF menggunakan pembina OPR rasmi.</span><button onClick={()=>setTab("content")}>Buka identiti sekolah</button></article></div><div className="drive-admin-principles"><strong>Peraturan storan aktif</strong><span>✓ Kejayaan hanya dipaparkan selepas Drive memulangkan file ID</span><span>✓ Kandungan fail tidak disimpan dalam localStorage atau D1</span><span>✓ Versi dan pemetaan disimpan sebagai metadata rekod induk</span><span>✓ Shared Drive perlu diutamakan apabila dikonfigurasi oleh sekolah</span></div></section>}
     {tab==="dashboard"&&<><div className="admin-user-summary admin-kpis"><article><b>{users.length}</b><span>Jumlah pengguna</span></article><article><b>{users.filter(u=>u.role.includes("admin")).length}</b><span>Pentadbir</span></article><article><b>{users.filter(u=>u.status==="inactive").length}</b><span>Tidak aktif</span></article><article><b>{logs.length}</b><span>Aktiviti terkini</span></article></div><section className="admin-welcome"><strong>Semua kawalan penting dalam satu tempat</strong><p>Urus warga sekolah, hadkan kuasa admin, kemas kini maklumat awam, hentikan modul sementara dan semak setiap perubahan.</p><div>{moduleNames.map(([key,label])=><span key={key} className={settings[key]==="disabled"?"off":""}>{label}<b>{settings[key]==="disabled"?"Ditutup":"Aktif"}</b></span>)}</div></section></>}
     {tab==="years"&&<section className="admin-section admin-school-year"><span className="modal-overline">TAHUN PERSEKOLAHAN</span><h3>Tutup tahun dan buka tahun baharu</h3><p>Sediakan tahun seterusnya sebagai draf dahulu. Apabila draf diaktifkan, tahun semasa ditutup secara automatik dan rekodnya kekal boleh dibaca.</p>{schoolYearError?<div className="admin-year-error" role="alert"><span>{schoolYearError}</span><button onClick={()=>void loadSchoolYears()}>Cuba semula</button></div>:<><div className="admin-year-current"><span>TAHUN AKTIF</span><strong>{activeSchoolYear}</strong><small>Sedang digunakan untuk rekod dan muat naik baharu</small></div><div className="admin-year-flow"><article><b>1</b><div><strong>Sediakan tahun baharu</strong><small>Cipta ruang tahun seterusnya sebagai draf tanpa menutup {activeSchoolYear}.</small></div><button disabled={schoolYearBusy||schoolYears.some(item=>item.schoolYear>activeSchoolYear&&item.status==="draft")} onClick={()=>void createSchoolYear()}>{schoolYears.some(item=>item.schoolYear>activeSchoolYear&&item.status==="draft")?"Draf telah tersedia":"Sediakan tahun baharu"}</button></article><article><b>2</b><div><strong>Pilih draf untuk diaktifkan</strong><small>Tindakan ini akan menutup tahun {activeSchoolYear} secara automatik.</small></div><select value={selectedSchoolYear} onChange={event=>setSelectedSchoolYear(Number(event.target.value))} aria-label="Pilih tahun persekolahan">{schoolYears.map(item=><option key={item.schoolYear} value={item.schoolYear}>{item.schoolYear} · {item.status==="active"?"Aktif":item.status==="draft"?"Draf":"Ditutup"}</option>)}</select><button className="admin-year-activate" disabled={schoolYearBusy||schoolYears.find(item=>item.schoolYear===selectedSchoolYear)?.status!=="draft"} onClick={()=>void activateSchoolYear()}>{schoolYearBusy?"Sedang memproses…":`Aktifkan ${selectedSchoolYear}`}</button></article></div><div className="admin-year-history"><strong>Sejarah tahun</strong>{schoolYears.map(item=><span key={item.schoolYear} className={item.status}><b>{item.schoolYear}</b><em>{item.status==="active"?"Aktif":item.status==="draft"?"Draf":"Ditutup"}</em></span>)}</div></>}</section>}
@@ -1045,7 +1047,7 @@ const exportJson=async(kind:"ekeberadaan"|"etempahan")=>{setExporting(kind);try{
   </div>;
 }
 
-const bookingRooms = ["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Dewan Al Farabi", "Surau As-Syafie", "Bilik Seni"];
+
 const roomIcon = (room: string) => {
   const Icon = room === "Bilik KKQ" ? BookOpenText : room === "Makmal Sibaweh" ? Presentation : room.includes("Komputer") || room === "Pusat Akses" ? Monitor : room.includes("Dewan") ? Landmark : room.includes("Surau") ? MoonStar : room.includes("Sumber") ? BookOpen : room.includes("Seni") ? Palette : room.includes("Media") ? Video : BriefcaseBusiness;
   return <Icon aria-hidden="true" />;
@@ -1063,6 +1065,8 @@ const formatBookingTime = (value: string) => {
 };
 
 function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify: (message: string) => void; close: () => void; user:PortalIdentity|null; initialTab?:"dashboard"|"form" }) {
+  const roomCatalog=useBookingRooms();
+  const bookingRooms=roomCatalog.rooms.map(room=>room.name);
   const malaysiaDate = (date: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Kuala_Lumpur", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
   const today = malaysiaDate(new Date());
   const nextWeek = malaysiaDate(new Date(Date.now() + 6 * 86400000));
@@ -1115,14 +1119,14 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     document.addEventListener("visibilitychange",onVisible);
     return()=>{window.clearInterval(timer);document.removeEventListener("visibilitychange",onVisible);};
   },[bookingClient,date,tab,listFrom,listTo,roomPickerOpen]);
-  const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan" && new Date(`${item.endDate}T${item.endTime}`) > new Date());
+  const roomBookings = (room: string) => bookings.filter((item) => item.room === room && item.status !== "Dibatalkan" && new Date(`${item.endDate}T${item.endTime}:00+08:00`) > new Date());
   const visibleListBookings = listRoom === "Semua bilik" ? listBookings : listBookings.filter((item) => item.room === listRoom);
   const roomState = (room: string) => {
     if (verifiedDate !== date) return { label: "Belum disahkan", tone: "unknown" };
     const active = roomBookings(room);
     if (!active.length) return { label: "Kosong", tone: "available" };
     const now = new Date();
-    const inUse = active.some((item) => now >= new Date(`${item.startDate}T${item.startTime}`) && now <= new Date(`${item.endDate}T${item.endTime}`));
+    const inUse = active.some((item) => now >= new Date(`${item.startDate}T${item.startTime}:00+08:00`) && now <= new Date(`${item.endDate}T${item.endTime}:00+08:00`));
     return inUse ? { label: "Sedang digunakan", tone: "inuse" } : { label: "Ditempah", tone: "booked" };
   };
   const nextRoomBooking = (room: string) => [...roomBookings(room)].sort((a, b) => `${a.startDate}T${a.startTime}`.localeCompare(`${b.startDate}T${b.startTime}`))[0];
@@ -1145,7 +1149,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
     setListFrom(draft.startDate);setListTo(draft.startDate);setListRoom("Semua bilik");setTab("list");
     try {
       await bookingClient.mutate("POST",draft,optimistic);
-      notify("Tempahan berjaya diluluskan");
+
     } catch { /* The store retains the error and the form retains the draft. */ }
   };
   const printBookingList = async () => {
@@ -1194,7 +1198,7 @@ function BookingCentre({ notify, close, user, initialTab="dashboard" }: { notify
       <div className="booking-filter"><label>Semak tarikh<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><div><span><i className="available"></i>Kosong</span><span><i className="booked"></i>Ditempah</span><span><i className="inuse"></i>Sedang digunakan</span></div></div>
       <p className="booking-status-time">{statusCheckedAt ? `Paparan terakhir: ${new Date(statusCheckedAt).toLocaleTimeString("ms-MY",{timeZone:"Asia/Kuala_Lumpur",hour:"2-digit",minute:"2-digit"})}. Dikemas kini secara automatik.` : "Pilih bilik terus. Kekosongan akan disahkan sebelum tempahan diluluskan."}</p>
       {statusQuery?.error && <div className="booking-status-error" role="alert"><p>{statusQuery.error} {statusCheckedAt?"Paparan terakhir dikekalkan.":""}</p><button type="button" onClick={()=>void loadBookings()}>Cuba semula</button></div>}
-      <div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">{verifiedDate===date?"Tiada tempahan pada tarikh ini.":"Status belum disahkan."}</p>}<button onClick={() => beginBooking(room)}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>
+      {roomCatalog.error&&<p role="alert">{roomCatalog.error} <button onClick={()=>void roomCatalog.reload()}>Cuba semula</button></p>}<div className="room-grid">{bookingRooms.map((room) => { const state = roomState(room); const slots = roomBookings(room); return <article key={room} className={state.tone}><header><span>{roomIcon(room)}</span><div><h3>{room}</h3><b>{state.label}</b></div></header>{slots.length ? <div className="room-slots">{slots.slice(0,3).map((item) => <p key={item.id}><strong>{item.startTime}–{item.endTime}</strong><span>{item.applicantName} · {item.purpose}</span></p>)}</div> : <p className="room-free">{verifiedDate===date?"Tiada tempahan pada tarikh ini.":"Status belum disahkan."}</p>}<button onClick={() => beginBooking(room)}>{state.tone === "available" ? "Tempah bilik ini" : "Lihat slot lain"} →</button></article>; })}</div>
     </> : tab === "list" ? <>
       <div className="booking-list-filter"><label>Dari<input type="date" value={listFrom} onChange={(event) => setListFrom(event.target.value)} /></label><label>Hingga<input type="date" min={listFrom} value={listTo} onChange={(event) => setListTo(event.target.value)} /></label><label>Bilik<select value={listRoom} onChange={(event) => setListRoom(event.target.value)}><option>Semua bilik</option>{bookingRooms.map((room) => <option key={room}>{room}</option>)}</select></label><button onClick={() => void bookingClient.refresh(listFrom,listTo,true)}>Segarkan</button><button className="booking-print" onClick={() => void printBookingList()} disabled={printingList || snapshot.changes.length>0 || !visibleListBookings.length}>{printingList ? "Menjana PDF..." : "Muat turun PDF"}</button></div>
       {listError && <p className="visitor-error">{listError}</p>}
