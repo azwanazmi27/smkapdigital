@@ -1700,3 +1700,21 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 .device-push-reminder button:disabled{opacity:.65;cursor:wait;}
 .device-push-reminder .device-push-hint{margin-top:16px;font-size:12px;color:#a0bec5;line-height:1.5;}
 .device-push-reminder .device-push-error{margin-top:16px;padding:12px;border-radius:10px;background:#5a2636;color:#ffe0e5;font-size:14px;}
+
+/* Weekly duty report: editorial hierarchy matches the exported PDF. */
+.weekly-summary .weekly-ai-message{font-size:.875rem;line-height:1.5;color:#b6cbcc;margin:0 0 1rem}
+.weekly-summary .weekly-formatted-preview{display:block;margin:0;padding:1.5rem;border:1px solid #ccdbe0;border-radius:1rem;background:#fff;color:#374b58;text-align:left}
+.weekly-formatted-preview section+section{margin-top:1.5rem}
+.weekly-formatted-preview h4{margin:0 0 .75rem;color:#163652;font-size:1.125rem;line-height:1.4;font-weight:700}
+.weekly-formatted-preview h4 span{display:inline-block;min-width:1.5rem;font-variant-numeric:tabular-nums}
+.weekly-formatted-preview p{margin:0 0 .75rem;font-size:1rem;line-height:1.6;overflow-wrap:anywhere;white-space:pre-line}
+.weekly-formatted-preview p:last-child{margin-bottom:0}
+.weekly-formatted-preview strong{font-weight:700;color:inherit}
+.weekly-formatted-preview em{font-style:italic;color:inherit}
+.weekly-summary-editor{margin-top:1rem;padding:1rem;border:1px solid #47636e;border-radius:.75rem}
+.weekly-summary-editor summary{cursor:pointer;font-weight:700;padding:.25rem 0}
+.weekly-summary-editor label{display:block;margin:1rem 0 .5rem;font-weight:600}
+.weekly-summary-editor p{font-size:.875rem;line-height:1.5;color:#b6cbcc}
+.weekly-summary-editor textarea{font-size:1rem;line-height:1.6}
+.weekly-summary>div:not(.weekly-formatted-preview){flex-wrap:wrap}
+@media(max-width:600px){.weekly-summary .weekly-formatted-preview{padding:1rem}.weekly-summary>div:not(.weekly-formatted-preview)>button{width:100%}}
