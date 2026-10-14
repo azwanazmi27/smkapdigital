@@ -1718,3 +1718,9 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 .weekly-summary-editor textarea{font-size:1rem;line-height:1.6}
 .weekly-summary>div:not(.weekly-formatted-preview){flex-wrap:wrap}
 @media(max-width:600px){.weekly-summary .weekly-formatted-preview{padding:1rem}.weekly-summary>div:not(.weekly-formatted-preview)>button{width:100%}}
+.weekly-formatted-preview .weekly-day-notes{margin:.75rem 0 1rem}
+.weekly-formatted-preview .weekly-day-notes>strong{display:block;margin-bottom:.375rem;color:#163652}
+.weekly-formatted-preview ul{margin:0;padding-left:1.4rem;list-style:disc}
+.weekly-formatted-preview li{margin:.375rem 0;font-size:1rem;line-height:1.6;overflow-wrap:anywhere}
+.weekly-summary .weekly-manual-approval{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;margin:0 0 1rem;border:1px solid #dcac61;border-radius:.75rem;background:#342b20;color:#ffe9c2;font-size:.875rem;line-height:1.5}
+.weekly-manual-approval input{flex:0 0 auto;width:1.2rem;height:1.2rem;margin:.1rem 0}
