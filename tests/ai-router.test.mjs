@@ -17,4 +17,13 @@ test("6 four failures reach Cloudflare",async()=>{const s=setup({gemini:fail(),g
 test("7 all provider failures return friendly error",async()=>{const s=setup(Object.fromEntries(names.map(n=>[n,fail()])));await assert.rejects(()=>generateAI(input,s),e=>e instanceof AIUnavailableError&&e.message==="Perkhidmatan AI sedang mengalami gangguan sementara. Sila cuba semula.")});
 test("8 missing Groq key skips without crash",async()=>{const s=setup({gemini:fail(),groq:"skip"});assert.equal((await generateAI(input,s)).provider,"mistral");assert.deepEqual(s.calls,["gemini","mistral"])});
 test("9 malformed provider response falls back safely",async()=>{const s=setup({gemini:"malformed"});assert.equal((await generateAI(input,s)).provider,"groq")});
+test("application validation failure falls back even when the provider returned valid JSON",async()=>{
+ const s=setup();const checked=[];
+ const result=await generateAI(input,{...s,validateResult(result){checked.push(result.provider);if(result.provider==='gemini')throw Error('Numerical facts changed');}});
+ assert.equal(result.provider,'groq');assert.deepEqual(checked,['gemini','groq']);assert.deepEqual(s.calls,['gemini','groq']);
+});
+test("no unvalidated answer escapes when every provider changes report facts",async()=>{
+ const s=setup();await assert.rejects(()=>generateAI(input,{...s,validateResult(){throw Error('Invalid report');}}),AIUnavailableError);
+ assert.deepEqual(s.calls,names);
+});
 test("10 secrets use server-only names",async()=>{const source=await import("node:fs/promises").then(fs=>fs.readFile(new URL("../.env.example",import.meta.url),"utf8")),assignments=source.split("\n").filter(line=>/^[A-Z][A-Z0-9_]*=/.test(line));assert.equal(assignments.some(line=>/^(NEXT_PUBLIC_|VITE_)/.test(line)),false);for(const key of ["GEMINI_API_KEY","GROQ_API_KEY","MISTRAL_API_KEY","OPENROUTER_API_KEY","CLOUDFLARE_API_TOKEN"])assert.match(source,new RegExp(`^${key}=`,"m"))});

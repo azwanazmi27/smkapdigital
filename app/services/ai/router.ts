@@ -22,7 +22,7 @@ export function configuredProviders(env: NodeJS.ProcessEnv = process.env): Recor
   };
 }
 
-export async function generateAI(input: AIGenerateInput, options: { env?: NodeJS.ProcessEnv; providers?: Partial<Record<AIProviderName, AIProvider>>; random?: () => number } = {}): Promise<AIGenerateResult> {
+export async function generateAI(input: AIGenerateInput, options: { env?: NodeJS.ProcessEnv; providers?: Partial<Record<AIProviderName, AIProvider>>; random?: () => number; validateResult?: (result: AIGenerateResult) => void } = {}): Promise<AIGenerateResult> {
   const env = options.env || process.env, config = getAIConfig(env), providers = options.providers || configuredProviders(env), random = options.random || Math.random;
   let providersAttempted = 0;
   for (const name of config.order) {
@@ -41,6 +41,12 @@ export async function generateAI(input: AIGenerateInput, options: { env?: NodeJS
         if (input.responseFormat === "json") {
           try { JSON.parse(result.text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()); }
           catch { throw new AIProviderError("MALFORMED", "Invalid structured response"); }
+        }
+        // Valid JSON is not necessarily a usable answer. Validate before success
+        // so a malformed report can use the next provider, like a failed request.
+        if (options.validateResult) {
+          try { options.validateResult(result); }
+          catch { throw new AIProviderError("MALFORMED", "Response failed application validation"); }
         }
         logAI({ provider: name, model: result.model, status: "success", latencyMs: result.latencyMs }); recordSuccess(result, providersAttempted > 1); return result;
       } catch (unknownError) {

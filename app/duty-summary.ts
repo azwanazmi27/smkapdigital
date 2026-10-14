@@ -24,6 +24,28 @@ export function summarySections(text:string):SummarySection[]{
  return sections.map(s=>({...s,body:s.body.trim()})).filter(s=>s.body||s.heading);
 }
 export type InlineRun={text:string;style:'normal'|'bold'|'italic'};
+// Accept harmless Markdown variations without treating them as changed facts.
+export function normalizeSummaryBody(body:string){
+ return body.replace(/\r\n?/g,'\n')
+  .replace(/^\s*(?:\*\*)?(Isnin|Selasa|Rabu|Khamis|Jumaat|Sabtu|Ahad)(?:\*\*)?\s*:?(?:\*\*)?\s*$/gm,'**$1**')
+  .replace(/^\s*[-•]\s+(?:\d+[.)]\s+)?/gm,'- ')
+  .replace(/^\s*\d+[.)]\s+(?=\S)/gm,'- ').trim();
+}
+export function prepareSummarySource(sections:SummarySection[]):SummarySection[]{
+ return sections.map(section=>{
+  let body=section.body;
+  // Older open tabs send inline day groups. Prepare those on the server too.
+  if(!/\*\*(?:Isnin|Selasa|Rabu|Khamis|Jumaat|Sabtu|Ahad)/.test(body)){
+   const days=[...body.matchAll(/\b(Isnin|Selasa|Rabu|Khamis|Jumaat|Sabtu|Ahad):\s*/g)];
+   if(days.length){
+    const prefix=body.slice(0,days[0].index).trim();
+    const entries=days.map((day,i)=>`${day[1]}: ${body.slice(day.index!+day[0].length,days[i+1]?.index??body.length).trim().replace(/;$/,'')}`);
+    body=[prefix,formatDailyNotes(entries)].filter(Boolean).join('\n\n');
+   }
+  }
+  return {...section,body:normalizeSummaryBody(body)};
+ });
+}
 export function summaryInline(text:string):InlineRun[]{
  // A small, safe formatting subset. HTML is always plain text, never executed.
  return text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g).filter(Boolean).map(part=>part.startsWith('**')&&part.endsWith('**')?{text:part.slice(2,-2),style:'bold'}:part.startsWith('*')&&part.endsWith('*')?{text:part.slice(1,-1),style:'italic'}:{text:part,style:'normal'});
@@ -32,10 +54,11 @@ export function validatePolishedSummary(source:SummarySection[],value:unknown){
  const result=value as {sections?:{body?:unknown}[]};
  if(!Array.isArray(result?.sections)||result.sections.length!==source.length)throw Error('Bahagian rumusan tidak lengkap');
  return source.map((section,i)=>{
-  const body=result.sections![i]?.body;
-  if(typeof body!=='string'||!body.trim()||body.length>12000||/^\s*\d+\.\s/m.test(body))throw Error('Format rumusan tidak sah');
+  const rawBody=result.sections![i]?.body;
+  if(typeof rawBody!=='string'||!rawBody.trim()||rawBody.length>12000)throw Error('Format rumusan tidak sah');
+  const body=normalizeSummaryBody(rawBody);
   // A writing assistant cannot silently add/remove numerical facts.
-  const numbers=(s:string)=>[...new Set(s.replace(/^\s*\d+[.)]\s+/gm,'').match(/\d+(?:[.,:/-]\d+)*/g)||[])].sort().join('|');
+  const numbers=(s:string)=>[...new Set(normalizeSummaryBody(s).match(/\d+(?:[.,:/-]\d+)*/g)||[])].sort().join('|');
   if(numbers(body)!==numbers(section.body))throw Error('Angka asal telah berubah');
   for(const day of weekdays)if(section.body.includes(`**${day}**`)&&!body.includes(`**${day}**`))throw Error('Kumpulan hari telah berubah');
   return {...section,body:body.trim()};

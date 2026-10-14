@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {formatDailyNotes,summaryBlocks,formatWeeklySummary,summarySections,summaryInline,validatePolishedSummary,serializeSummary} from '../app/duty-summary.ts';
+import {formatDailyNotes,prepareSummarySource,summaryBlocks,formatWeeklySummary,summarySections,summaryInline,validatePolishedSummary,serializeSummary} from '../app/duty-summary.ts';
 import {drawWeeklySummary} from '../app/weekly-summary-pdf.ts';
 import {jsPDF} from 'jspdf';
 test('numbered structure round-trips every paragraph and safe bold/italic runs',()=>{
@@ -16,6 +16,23 @@ test('AI cannot omit sections or silently change numerical facts',()=>{
  assert.throws(()=>validatePolishedSummary(source,{sections:[{body:'Minggu 41, 5 hari.'},{body:source[1].body}]}));
  assert.throws(()=>validatePolishedSummary(source,{sections:[{body:'Minggu 40, 5 hari. 1.\n2. tajuk lain'},{body:source[1].body}]}));
  assert.equal(validatePolishedSummary(source,{sections:source.map(s=>({body:s.body}))}).length,2);
+});
+test('colon and bullet variations do not reject a fact-preserving AI answer',()=>{
+ const source=[{heading:'Catatan',body:'**Selasa**\n- Ujian BM T4\n- Bengkel Siri 2 pada 12/10/2026'}];
+ for(const day of ['**Selasa:**','**Selasa**:','Selasa:']){
+  const body=`${day}\n- 1) Ujian BM T4\n2. Bengkel Siri 2 pada 12/10/2026`;
+  assert.equal(validatePolishedSummary(source,{sections:[{body}]})[0].body,source[0].body);
+  assert.throws(()=>validatePolishedSummary(source,{sections:[{body:body.replace('T4','T5')}]}));
+ }
+});
+test('legacy open-tab drafts are grouped before AI without losing numbered facts',()=>{
+ const [section]=prepareSummarySource([{heading:'Catatan',body:'Aktiviti: Selasa: 1) Ujian BM T4\n2) Kursus Siri 2 Selasa: IPU tinggi Khamis: 1. Ujian Tingkatan 4\n2. Bengkel Siri 2'}]);
+ assert.deepEqual(summaryBlocks(section.body),[
+  {kind:'paragraph',text:'Aktiviti:'},
+  {kind:'day',label:'Selasa',items:['Ujian BM T4','Kursus Siri 2','IPU tinggi']},
+  {kind:'day',label:'Khamis',items:['Ujian Tingkatan 4','Bengkel Siri 2']}
+ ]);
+ assert.deepEqual(prepareSummarySource([section]),[section]);
 });
 test('long PDF keeps every word above footer and reserves signatures on its final page',()=>{
  const pdf=new jsPDF({unit:'mm'}),texts=[];const write=pdf.text.bind(pdf);
