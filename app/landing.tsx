@@ -606,6 +606,7 @@ function AchievementArchive({ notify }: { notify: (message: string) => void }) {
   const [levelFilter,setLevelFilter] = useState("Semua peringkat");
   const [selected,setSelected] = useState<OprReport|null>(null);
   const [archiveUser,setArchiveUser] = useState<PortalIdentity|null>(null);
+  const isArchiveAdmin = archiveUser?.role === "admin" || archiveUser?.role === "super_admin";
   const [deleteTarget,setDeleteTarget] = useState<OprReport|null>(null);
   const [deleting,setDeleting] = useState(false);
   const [bundling,setBundling] = useState(false);
