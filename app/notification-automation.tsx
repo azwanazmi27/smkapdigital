@@ -7,7 +7,7 @@ type Delivery={taskId:string;userId:string;subscriptionId:string;name:string;sta
 type Run={id:string;kind:string;status:string;startedAt:string;finishedAt:string|null;error:string};
 const localDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur'}).format(new Date());
 const timestamp=(s:string)=>new Date(s).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-const kind=(id:string)=>id.startsWith('morning')?'Ringkasan pagi':id.startsWith('class')?'Kelas':id.startsWith('reminder')?'Peringatan relief':'Relief / tugasan';
+const kind=(id:string)=>id.startsWith('booking-coordinator:')?'Tempahan bilik seliaan':id.startsWith('morning')?'Ringkasan pagi':id.startsWith('class')?'Kelas':id.startsWith('reminder')?'Peringatan relief':'Relief / tugasan';
 export default function NotificationAutomation(){
  const [retrying,setRetrying]=useState(''),[retryResults,setRetryResults]=useState<Record<string,string>>({});
  const [heartbeat,setHeartbeat]=useState<string|null>(null),[settings,setSettings]=useState<NotificationSettings>(defaultNotificationSettings),[date,setDate]=useState(localDate),[runs,setRuns]=useState<Run[]>([]),[deliveries,setDeliveries]=useState<Delivery[]>([]),[subscriptions,setSubscriptions]=useState<{name:string;devices:number}[]>([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[filter,setFilter]=useState('all'),[query,setQuery]=useState('');

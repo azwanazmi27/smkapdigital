@@ -1,3 +1,4 @@
+import {currentBookingNotice} from './booking-notices';
 import {env} from 'cloudflare:workers';
 import {sendMorningSummaries} from './daily-notices';
 import {sendClassReminders} from './class-reminders';
@@ -19,7 +20,9 @@ export async function retryNotification(target:RetryTarget,now=new Date()){
  else if(target.taskId.startsWith('reminder:'))await sendReliefReminders(now,budget,target);
  else {
   let notice:TaskNotice|undefined;
-  if(target.taskId.startsWith('assignment:')){
+  if(target.taskId.startsWith('booking-coordinator:')){
+   const current=await currentBookingNotice(target.taskId,target.userId);if(current)notice={...current,subscriptionId:target.subscriptionId};
+  }else if(target.taskId.startsWith('assignment:')){
    const task=await env.DB.prepare("SELECT a.role,a.start_date AS startDate,a.end_date AS endDate,d.kind FROM staff_work_assignments a JOIN staff_work_documents d ON d.id=a.document_id WHERE a.id=? AND a.user_id=? AND d.published=1 AND (a.end_date='' OR a.end_date>=?)").bind(target.taskId.slice('assignment:'.length),target.userId,today).first<{role:string;startDate:string;endDate:string;kind:string}>();
    if(task)notice={...target,title:task.kind==='duty'?'Tugasan guru bertugas baharu':'Tugasan baharu',body:`${task.role}${task.startDate?` · ${task.startDate}${task.endDate&&task.endDate!==task.startDate?` hingga ${task.endDate}`:''}`:''}`.slice(0,500),url:TASKS_URL};
   }else if(reliefVisibleNow(now)){

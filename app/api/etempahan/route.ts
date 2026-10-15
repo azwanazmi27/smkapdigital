@@ -1,3 +1,7 @@
+import {waitUntil} from 'cloudflare:workers';
+import {bookingBlocks,roomCoordinators} from '../../lib/booking-controls';
+import {blockConflict,blockOccurrences,validBookingDate,validBookingTime} from '../../booking-block-model';
+import {queueBookingNotice,flushBookingNotices,cancelBookingNotice} from '../../lib/booking-notices';
 import {bookingRooms,lockBookingRoom,unlockBookingRoom,type BookingRoom} from "../../lib/booking-rooms";
 import {activePersonalBookings,ownsBooking,bookingDay} from "../../booking-model";
 import { bookingStartIsPast } from "../../booking-time";
@@ -23,7 +27,7 @@ export async function callGoogle(payload: Record<string, unknown>) {
   const readOnly = payload.action === "etempahan_list" || payload.action === "etempahan_list_range";
   for (let attempt = 0; attempt < (readOnly ? 3 : 1); attempt++) {
     try {
-      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, token }), redirect: "follow", cache: "no-store" });
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, token }), redirect: "follow", cache: "no-store", signal:AbortSignal.timeout(25000) });
       const result = await response.json() as Record<string, unknown>;
       if (!response.ok || result.ok !== true) throw new Error(typeof result.error === "string" ? result.error : "Sambungan E-Tempahan gagal");
       return result;
@@ -68,13 +72,17 @@ export async function GET(request: Request) {
     if (!actor) return Response.json({ error: "Sila log masuk dengan akaun sekolah untuk menyemak tempahan." }, { status: 401 });
     const params = new URL(request.url).searchParams;
     const catalog=await bookingRooms(true);
-    if(params.get('mine')==='1'){
+    if(params.get('mine')==='1'||params.get('supervised')==='1'){
+      const supervised=params.get('supervised')==='1';
+      const roomIds=supervised?(await roomCoordinators()).filter(c=>c.userId===actor.id).map(c=>c.roomId):[];
+      const sourceNames=new Set(catalog.filter(r=>roomIds.includes(r.id)&&!r.deletedAt).map(r=>r.sourceName));
+      if(supervised&&!sourceNames.size)return Response.json({success:true,account:`${actor.email}|${actor.role}`,bookings:[],isCoordinator:false},{headers:{'Cache-Control':'private, no-store'}});
       const {value}=await readBookingStatus(new URL(request.url).origin,'upcoming',async()=>normalizeBookings((await callGoogle({action:'etempahan_list_range',from:bookingDay(),to:'9999-12-31'})).bookings));
-      return Response.json({success:true,account:`${actor.email}|${actor.role}`,bookings:activePersonalBookings(value,actor).map(row=>presentBooking(row,actor,catalog))},{headers:{'Cache-Control':'private, no-store'}});
+      return Response.json({success:true,account:`${actor.email}|${actor.role}`,isCoordinator:supervised&&sourceNames.size>0,bookings:(supervised?[...new Map(value.filter(row=>sourceNames.has(row.room)&&row.status!=='Dibatalkan'&&Date.parse(`${row.endDate}T${row.endTime}:00+08:00`)>Date.now()).map(row=>[row.id,row])).values()]:activePersonalBookings(value,actor)).map(row=>presentBooking(row,actor,catalog))},{headers:{'Cache-Control':'private, no-store'}});
     }
     const date = params.get("date") || "", from = params.get("from") || "", to = params.get("to") || "";
     if (from || to) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
+      if (!validBookingDate(from) || !validBookingDate(to)) return Response.json({ error: "Julat tarikh tidak sah." }, { status: 400 });
       const dates = datesBetween(from, to);
       if (!dates.length || dates.length > 61) return Response.json({ error: "Julat senarai mestilah tidak melebihi 61 hari." }, { status: 400 });
       // The bridge reads the Sheet once for the whole range. Retain the
@@ -86,16 +94,17 @@ export async function GET(request: Request) {
         results = [];
         for (const item of dates) results.push(await callGoogle({ action: "etempahan_list", date: item }));
       }
+      const blocked=blockOccurrences(await bookingBlocks(),from,to,catalog);
       const unique = new Map<string, ReturnType<typeof normalizeBookings>[number]>();
       results.flatMap((result) => normalizeBookings(result.bookings)).forEach((booking) => unique.set(String(booking.id), booking));
-      return Response.json({ success: true, bookings: Array.from(unique.values()).sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)).map((booking) => presentBooking(booking, actor, catalog)) }, { headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ success: true, bookings: [...Array.from(unique.values()).map(booking=>presentBooking(booking,actor,catalog)),...blocked].sort((a, b) => `${a.startDate}${a.startTime}`.localeCompare(`${b.startDate}${b.startTime}`)) }, { headers: { "Cache-Control": "private, no-store" } });
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
+    if (!validBookingDate(date)) return Response.json({ error: "Tarikh tidak sah." }, { status: 400 });
     const { value: bookings, checkedAt, source } = await readBookingStatus(new URL(request.url).origin, date, async () => {
       const result = await callGoogle({ action: "etempahan_list", date });
       return normalizeBookings(result.bookings);
     });
-    return Response.json({ success: true, bookings: bookings.map((booking) => presentBooking(booking, actor, catalog)), checkedAt, source }, { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json({ success: true, bookings: [...bookings.map((booking) => presentBooking(booking, actor, catalog)),...blockOccurrences(await bookingBlocks(),date,date,catalog)], checkedAt, source }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("E-Tempahan list error", error instanceof Error ? error.message : error);
     return Response.json({ error: "Status bilik tidak dapat dibaca sekarang." }, { status: 502 });
@@ -118,8 +127,8 @@ export async function POST(request: Request) {
     if (!selected) return Response.json({ error: "Sila pilih bilik atau ruang yang hendak ditempah." }, { status: 400 });
     if (!applicantName) return Response.json({ error: "Sila masukkan nama pemohon." }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ error: "Sila masukkan alamat e-mel yang sah." }, { status: 400 });
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) return Response.json({ error: "Sila lengkapkan tarikh mula dan tarikh tamat." }, { status: 400 });
-    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return Response.json({ error: "Sila lengkapkan masa mula dan masa tamat." }, { status: 400 });
+    if (!validBookingDate(startDate) || !validBookingDate(endDate)) return Response.json({ error: "Sila lengkapkan tarikh mula dan tarikh tamat." }, { status: 400 });
+    if (!validBookingTime(startTime) || !validBookingTime(endTime)) return Response.json({ error: "Sila lengkapkan masa mula dan masa tamat." }, { status: 400 });
     if (!purposes.has(purpose)) return Response.json({ error: "Sila pilih tujuan penggunaan." }, { status: 400 });
     if (!Number.isInteger(participants) || participants < 1 || participants > 1000) return Response.json({ error: "Maklumat tempahan tidak sah." }, { status: 400 });
     const start = new Date(`${startDate}T${startTime}:00+08:00`), end = new Date(`${endDate}T${endTime}:00+08:00`);
@@ -130,11 +139,16 @@ export async function POST(request: Request) {
     const token=await lockBookingRoom(selected.id);
     if(!token)return Response.json({error:'Bilik ini sedang dikemas kini. Sila cuba semula.'},{status:409});
     roomLock={id:selected.id,token};
+    for(const block of await bookingBlocks(selected.id)){const conflict=blockConflict(block,{startDate,startTime,endDate,endTime});if(conflict)return Response.json({error:`Bilik disekat untuk ${conflict.reason} pada ${conflict.date}, ${conflict.startTime}–${conflict.endTime}. Sila pilih slot lain.`,conflict},{status:409});}
     const result = await callGoogle({ action: "etempahan_create", room:selected.sourceName, applicantName:actor.name, email:actor.email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
     await clearBookingStatus(new URL(request.url).origin, ["upcoming",...datesBetween(startDate, endDate).slice(0, 61)]);
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
     // Send the confirmed row so the client does not wait for another Sheet read.
     const booking = normalizeBookings([result.booking || {id:result.id,room:selected.sourceName,applicantName:actor.name,purpose,startDate,startTime,endDate,endTime,participants,status:result.status || "Diluluskan",ownerEmail:actor.email}])[0];
+    if(booking){
+      try{await queueBookingNotice(selected,{...booking,room:selected.name});waitUntil(flushBookingNotices({remaining:5},booking.id).catch(error=>console.error('Coordinator delivery',error)));}
+      catch(error){console.error('Coordinator notice queue failed',error);}
+    }
     return Response.json({ success: true, id: result.id, count, status: result.status || "Diluluskan", emailSent: result.emailSent !== false, ...(booking ? {booking:presentBooking(booking,actor,catalog)} : {}) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Tempahan tidak dapat diproses.";
@@ -170,6 +184,7 @@ export async function DELETE(request: Request) {
       }
     }
     if (lastError) throw lastError;
+    await cancelBookingNotice(id).catch(error=>console.error('Cancel booking notice',error));
     await clearBookingStatus(new URL(request.url).origin, ["upcoming",...datesBetween(booking.startDate, booking.endDate).slice(0, 61)]);
     return Response.json({ success: true });
   } catch (error) {

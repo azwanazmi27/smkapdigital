@@ -1728,3 +1728,41 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 /* Personal room bookings share the agenda surface; sections remain in one scroll. */
 .personal-bookings{margin-block:24px}.personal-booking-count{display:flex;gap:10px;align-items:center;color:#e8faf9}.personal-booking-count strong{font-size:34px}.personal-booking-count small{font-size:12px;line-height:1.5;color:#b9d4de}.personal-booking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.personal-booking-card{--booking-accent:#83e5d3;min-width:0;padding:22px;border:1px solid #3c747d;border-left:4px solid var(--booking-accent);border-radius:18px;background:linear-gradient(125deg,#153e48,#0b2837);color:#edf9fc}.personal-booking-card.multi-day{--booking-accent:#bda7ff;border-color:#5b638f;border-left-color:var(--booking-accent);background:linear-gradient(125deg,#243851,#112a3d)}.personal-booking-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}.personal-booking-top>span{display:flex;gap:6px;align-items:center;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--booking-accent)}.personal-booking-top svg{width:16px;height:16px}.personal-booking-top b{font-size:10px;background:#ffffff0d;border:1px solid #ffffff28;border-radius:30px;padding:5px 9px;color:#d3ecee}.personal-booking-card h4{font-size:22px;line-height:1.25;margin:0 0 9px;font-weight:750;color:#f0faff}.personal-booking-card p{font-size:13px;line-height:1.6;color:#bdd4de;margin:0 0 20px}.personal-booking-info{display:flex;gap:10px;align-items:center;margin:10px 0;font-size:13px;line-height:1.5;color:#c9e3ea;overflow-wrap:anywhere}.personal-booking-info svg{width:17px;height:17px;flex-shrink:0;color:var(--booking-accent)}.personal-booking-end{display:block;font-size:11px;color:#acc8d3;border-top:1px solid #ffffff15;padding-top:14px;margin-top:18px}.personal-booking-card summary{display:flex;justify-content:space-between;align-items:center;min-height:44px;font-size:12px;font-weight:700;color:var(--booking-accent);cursor:pointer;list-style:none}.personal-booking-card summary::-webkit-details-marker{display:none}.personal-booking-card summary svg{width:18px}.personal-booking-card details p{padding:12px;border-radius:10px;background:#061f2b;border:1px solid #456572;margin-bottom:0}.personal-booking-foot,.personal-booking-empty{font-size:12px;line-height:1.6;color:#afc8d3;margin:16px 0 0}.booking-result-dialog{width:min(440px,calc(100% - 32px));max-height:85dvh;overflow:auto;background:linear-gradient(135deg,#1c4852,#0a2938);border:1px solid #67a5a6;border-radius:24px;padding:28px;color:#eaf9fb;box-shadow:0 24px 70px #0007}.booking-result-dialog::backdrop{background:#04151dcc}.booking-result-dialog h3{font-size:24px;font-weight:700;color:#f1fcff;margin:16px 0}.booking-result-dialog p{font-size:15px;line-height:1.65;color:#cce1e8;margin:12px 0}.booking-result-dialog>svg{width:32px;height:32px;color:#96e9d7}.booking-result-dialog.failure>svg{color:#ffb9c0}.booking-result-dialog button{min-height:44px;padding:10px 16px;border:1px solid #55808b;border-radius:12px;background:#24505c;color:#eaf9fb;font-weight:650;margin-top:12px}.booking-result-dialog .booking-result-close{position:absolute;right:12px;top:8px;padding:8px;width:44px;margin:0;background:transparent;border:0}.booking-room-settings .admin-manage-list article>div:last-child{display:flex;gap:10px;flex-wrap:wrap}.booking-room-settings form button{margin-right:10px}.booking-room-settings input,.booking-room-settings textarea{font-size:16px}
 @media(max-width:650px){.personal-booking-grid{grid-template-columns:1fr}.personal-booking-card{padding:18px}.personal-booking-card h4{font-size:21px}.personal-bookings .agenda-heading{gap:12px}.personal-booking-count strong{font-size:28px}.personal-booking-count small{font-size:10px}.booking-room-settings .admin-manage-list article{flex-wrap:wrap}}
+
+/* Room coordination extends the existing scrollable work agenda. */
+.coordinator-bookings { border-color:rgba(189,168,255,.36); background:linear-gradient(125deg,rgba(49,57,93,.8),rgba(6,40,53,.96)); }
+.coordinator-bookings .agenda-eyebrow { color:#d0c1ff; }
+.coordinator-bookings .coordinator-applicant { color:#f2faff; margin-bottom:6px; overflow-wrap:anywhere; }
+.booking-room-settings select,.booking-block-settings input,.booking-block-settings select { width:100%; min-width:0; min-height:48px; color:#ecf9fc; background:#092631; border:1px solid #547581; border-radius:12px; padding:12px; font:inherit; color-scheme:dark; box-sizing:border-box; }
+.booking-room-settings label small { display:block; margin-top:8px; color:#b1cbd2; font-size:.85rem; line-height:1.5; }
+.booking-block-settings { margin-top:32px; padding-top:28px; border-top:1px solid rgba(140,202,213,.28); }
+.booking-block-settings>header { display:flex; gap:16px; align-items:flex-start; margin-bottom:20px; }
+.booking-block-settings>header h3 { margin:4px 0 8px; }
+.booking-block-settings>header p { margin:0; color:#b9d0d9; }
+.booking-block-icon { display:grid; place-items:center; flex-shrink:0; width:48px; height:48px; border:1px solid #9d8b56; border-radius:14px; background:rgba(225,185,77,.12); color:#f5d47b; }
+.booking-block-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.booking-block-fields label { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.booking-block-hint { color:#bad0d6; font-size:.9rem; line-height:1.6; }
+.booking-block-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.booking-block-actions button { min-height:44px; }
+.booking-block-actions .danger { background:rgba(217,90,108,.14); color:#ffc5ca; border:1px solid rgba(255,156,164,.5); }
+.booking-block-list { display:grid; gap:14px; margin-top:24px; }
+.booking-block-list article { display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; padding:20px; border:1px solid rgba(224,190,105,.4); border-radius:18px; background:linear-gradient(110deg,rgba(91,77,40,.18),rgba(7,35,46,.8)); }
+.booking-block-list h4 { margin:12px 0 6px; color:#f1f9fb; font-size:1.1rem; }
+.booking-block-list p { margin:0 0 12px; color:#c4d8de; }
+.booking-block-list small { display:block; margin-top:10px; color:#b5cad1; }
+.booking-block-badge { display:inline-flex; align-items:center; gap:7px; font-size:.8rem; font-weight:700; color:#f5d47b; }
+.booking-block-badge svg,.booking-block-slot svg { width:16px; height:16px; flex-shrink:0; }
+.booking-block-slot { display:flex; flex-wrap:wrap; gap:16px; color:#eefaff; font-variant-numeric:tabular-nums; }
+.booking-block-slot span { display:inline-flex; gap:7px; align-items:center; }
+.booking-block-message { padding:14px; border:1px solid #5ba998; border-radius:12px; color:#defaf1; line-height:1.6; }
+.booking-block-message.failed { color:#ffe0e3; border-color:#c57a86; }
+.booking-block-message button { display:block; margin-top:10px; }
+@media(max-width:560px){.booking-block-fields{grid-template-columns:minmax(0,1fr);gap:14px}.booking-block-list article{padding:16px}.booking-block-actions{width:100%}.booking-block-actions button{flex:1}.booking-block-settings>header{gap:12px}}
+.booking-room-settings .admin-content-form>div:last-child { display:flex; flex-wrap:wrap; gap:10px; }
+.booking-room-settings .admin-content-form button,.booking-block-actions button { padding:12px 18px; min-height:46px; border-radius:12px; border:1px solid rgba(145,210,218,.38); background:#1b4452; color:#e9f9fc; font-weight:650; font-size:.95rem; line-height:1.4; }
+.booking-room-settings .admin-content-form button:first-child { background:linear-gradient(110deg,#83ded0,#79c7df); border-color:transparent; color:#082d38; }
+.booking-room-settings label small { font-weight:400; }
+.booking-room-settings .selected-coordinator { color:#e4f7fa; overflow-wrap:anywhere; font-weight:500; }
+.booking-room-settings button:disabled { opacity:.55; cursor:wait; }
+.booking-room-settings button:focus-visible { outline:2px solid #9ff5e7; outline-offset:3px; }

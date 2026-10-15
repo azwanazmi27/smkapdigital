@@ -1,3 +1,4 @@
+import {flushBookingNotices} from '../app/lib/booking-notices';
 import {notificationDue} from '../app/lib/notification-due';
 import {notificationContext} from '../app/lib/notification-context';
 import {retryNotification} from '../app/lib/notification-retry';
@@ -11,7 +12,8 @@ export default {
   if(env.MIGRATION_MODE)return;
   ctx.waitUntil((async()=>{
    const budget={remaining:35},now=new Date(event.scheduledTime),due=await notificationDue(now);
-   if(!due.class&&!due.relief&&!due.morning)return;
+   const bookings=async()=>{try{await flushBookingNotices({remaining:Math.min(5,budget.remaining)});}catch(error){console.error('Booking notification outbox',error);}};
+   if(!due.class&&!due.relief&&!due.morning){await bookings();return;}
    const context=await notificationContext(now);
    const jobs=([
     ['class',()=>sendClassReminders(now,budget,undefined,context)],
@@ -25,6 +27,7 @@ export default {
     catch(error){console.error('Notification job failed',kind,error);updates.push(env.DB.prepare("UPDATE notification_runs SET status='failed',finished_at=?,error=? WHERE id=?").bind(new Date().toISOString(),String(error).slice(0,300),id));}
    }
    await env.DB.batch(updates);
+   await bookings();
    if(now.getUTCMinutes()===0)await env.DB.prepare("DELETE FROM notification_runs WHERE started_at < datetime('now','-14 days')").run();
   })());
  },
