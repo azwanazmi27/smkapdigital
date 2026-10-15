@@ -1766,3 +1766,42 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 .booking-room-settings .selected-coordinator { color:#e4f7fa; overflow-wrap:anywhere; font-weight:500; }
 .booking-room-settings button:disabled { opacity:.55; cursor:wait; }
 .booking-room-settings button:focus-visible { outline:2px solid #9ff5e7; outline-offset:3px; }
+
+/* Booking layouts size to the panel, not the outer browser viewport. */
+.folder-modal.booking-modal{width:min(1040px,100%);max-height:calc(100dvh - 48px);overscroll-behavior:contain;scrollbar-gutter:stable}
+.booking-centre{min-width:0;container-type:inline-size}
+.booking-centre .room-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.booking-centre .room-grid article,.booking-centre .room-grid header>div,.booking-centre .room-slots{min-width:0}
+.booking-centre .room-slots{grid-template-columns:minmax(0,1fr)}
+.booking-centre .room-slots p{min-width:0}
+.booking-centre .room-grid header>span{flex-shrink:0}
+.booking-centre .room-grid h3,.booking-list-details{overflow-wrap:anywhere}
+.booking-centre .booking-list-filter{flex-wrap:wrap}
+.booking-centre .booking-list-filter label{flex:1 1 150px}
+.booking-centre .booking-list-filter :is(input,select){width:100%;min-width:0;max-width:100%}
+.booking-centre .booking-head>div{min-width:0}
+.booking-centre .booking-head>button{flex-shrink:0;max-width:200px}
+@container(max-width:600px){
+ .booking-head{flex-wrap:wrap}
+ .booking-list article{grid-template-columns:48px minmax(0,1fr)}
+ .booking-list article .booking-list-actions{grid-column:2;display:flex;justify-content:flex-start;flex-wrap:wrap}
+}
+.booking-result-dialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overscroll-behavior:contain}
+.booking-feedback-dialog{padding:32px;text-align:center;background:radial-gradient(ellipse at 50% 0,#28576466,transparent 65%),linear-gradient(145deg,#163d4a,#092633)}
+.booking-feedback-dialog .booking-result-close{top:10px;right:10px;display:grid;place-items:center;color:#bad5dc;border-radius:50%}
+.booking-feedback-dialog .booking-result-close svg{width:22px;height:22px}
+.booking-feedback-dialog button:focus-visible{outline:2px solid #8ce4df;outline-offset:3px}
+.booking-result-icon{display:grid;place-items:center;width:88px;height:88px;margin:12px auto 20px;border:1px solid #e9a7b14d;border-radius:28px;background:linear-gradient(145deg,#e7a8b21f,#e7a8b208);color:#ffc0c7;box-shadow:inset 0 1px #ffffff12}
+.booking-result-icon svg{width:64px;height:64px}
+.booking-feedback-dialog.success .booking-result-icon{color:#91e5cf;border-color:#91e5cf44;background:#91e5cf12}
+.booking-feedback-dialog.success .booking-result-icon svg{width:46px;height:46px}
+.booking-result-eyebrow{display:block;color:#b3cdd6;font-size:10px;line-height:1.5;font-weight:750;letter-spacing:.12em}
+.booking-feedback-dialog h3{font-size:26px;line-height:1.2;letter-spacing:-.025em;margin:10px auto 16px;max-width:320px;text-wrap:balance}
+.booking-feedback-dialog p{font-size:15px;line-height:1.65;overflow-wrap:anywhere;margin:0}
+.booking-feedback-dialog .booking-result-details{margin-top:16px;padding:14px;border:1px solid #ffffff16;border-radius:14px;background:#071f2b66}
+.booking-feedback-dialog .booking-result-action{width:100%;min-height:48px;margin-top:24px;background:#b6e6e6;color:#082b37;border-color:#b6e6e6}
+@media(max-width:700px){
+ .folder-modal.booking-modal{max-height:94dvh;width:100%;scrollbar-gutter:auto}
+ .booking-feedback-dialog{width:calc(100% - 32px);max-width:440px;padding:28px 24px 24px;border-radius:24px}
+ .booking-feedback-dialog h3{font-size:25px}
+}

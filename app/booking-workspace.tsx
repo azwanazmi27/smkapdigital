@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {Building2,CalendarDays,Clock3,ChevronRight,X,CheckCircle2,AlertCircle} from 'lucide-react';
+import {Building2,CalendarDays,Clock3,ChevronRight,X,CheckCircle2} from 'lucide-react';
 import {BookingBlockSettings} from './booking-block-settings';
 import {bookingEnd} from './booking-model';
 import type {Booking,BookingResult} from './booking-client';
@@ -27,7 +27,15 @@ export function BookingFeedback({account,openTasks}:{account:string;openTasks:()
  const dialog=useRef<HTMLDialogElement>(null),[result,setResult]=useState<BookingResult|null>(null);
  useEffect(()=>{const receive=(event:Event)=>{const next=(event as CustomEvent<BookingResult>).detail;if(next.account!==account||next.method!=='POST')return;setResult(next);dialog.current?.showModal();};window.addEventListener('booking-result',receive);return()=>window.removeEventListener('booking-result',receive);},[account]);
  useEffect(()=>{dialog.current?.close();setResult(null);},[account]);
- return <dialog ref={dialog} className={`booking-result-dialog ${result?.success?'success':'failure'}`} aria-labelledby="booking-result-title"><button className="booking-result-close" aria-label="Tutup notifikasi tempahan" onClick={()=>dialog.current?.close()}><X/></button>{result?.success?<CheckCircle2/>:<AlertCircle/>}<h3 id="booking-result-title">{result?.success?'Tempahan berjaya':'Tempahan tidak berjaya'}</h3><p>{result?.message}</p>{result?.success&&result.booking&&<p><strong>{result.booking.room}</strong><br/>{date(result.booking.startDate)}{result.booking.startDate!==result.booking.endDate&&` – ${date(result.booking.endDate)}`}<br/>{result.booking.startTime}–{result.booking.endTime}</p>}<button onClick={()=>{dialog.current?.close();if(result?.success)openTasks();}}>{result?.success?'Lihat Tempahan Saya':'Kembali'}</button></dialog>;
+ return <dialog ref={dialog} className={`booking-result-dialog booking-feedback-dialog ${result?.success?'success':'failure'}`} aria-labelledby="booking-result-title" aria-describedby="booking-result-message">
+  <button className="booking-result-close" aria-label="Tutup notifikasi tempahan" onClick={()=>dialog.current?.close()}><X aria-hidden="true"/></button>
+  <div className="booking-result-icon" aria-hidden="true">{result?.success?<CheckCircle2/>:<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="30" r="23" stroke="currentColor" strokeWidth="3"/><path d="M22 26v3m20-3v3M24 41c4-5 12-5 16 0" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><path d="M47 34s-5 6-5 9a5 5 0 0 0 10 0c0-3-5-9-5-9Z" fill="#8ddde8" stroke="#123746" strokeWidth="2"/></svg>}</div>
+  <span className="booking-result-eyebrow">{result?.success?'TEMPAHAN DISAHKAN':'SLOT TIDAK DAPAT DITEMPAH'}</span>
+  <h3 id="booking-result-title">{result?.success?'Tempahan berjaya':'Tempahan tidak berjaya'}</h3>
+  <p id="booking-result-message">{result?.message}</p>
+  {result?.success&&result.booking&&<p className="booking-result-details"><strong>{result.booking.room}</strong><br/>{date(result.booking.startDate)}{result.booking.startDate!==result.booking.endDate&&` – ${date(result.booking.endDate)}`}<br/>{result.booking.startTime}–{result.booking.endTime}</p>}
+  <button className="booking-result-action" onClick={()=>{dialog.current?.close();if(result?.success)openTasks();}}>{result?.success?'Lihat Tempahan Saya':'Kembali'}</button>
+ </dialog>;
 }
 export function BookingRoomSettings(){
  const {rooms,users,error,reload}=useBookingRooms(true),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[editing,setEditing]=useState<RoomOption|null>(null),[coordinatorId,setCoordinatorId]=useState(''),[name,setName]=useState(''),[description,setDescription]=useState(''),[remove,setRemove]=useState<RoomOption|null>(null),confirm=useRef<HTMLDialogElement>(null);
