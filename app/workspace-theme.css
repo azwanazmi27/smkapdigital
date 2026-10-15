@@ -1,0 +1,157 @@
+/* Personal workspace: approved Aurora design, scoped to tasks only. */
+.my-tasks.task-agenda{background:linear-gradient(150deg,#102b3de8,#091c2deb 65%);border:1px solid #749bbb40;border-radius:28px;box-shadow:0 28px 90px #0005,inset 0 1px #b0e6ff20;isolation:isolate}
+.task-agenda .my-tasks-head{background:radial-gradient(ellipse at 0 0,#2c899142,transparent 65%),linear-gradient(110deg,#173c4a,#112439);padding:24px;border-color:#80e5ed21}.task-agenda .my-tasks-title strong{font-size:25px;letter-spacing:-.7px;color:#f0fcff}.task-agenda .my-tasks-title small{color:#b0c9d6}.task-agenda .my-tasks-icon{border-radius:17px;background:linear-gradient(140deg,#a4fff1,#56c2e8);border:1px solid #c9fffa;box-shadow:0 5px 25px #46d3d929,inset 0 2px #fff8;color:#073a4c}.task-agenda .my-tasks-chevron{color:#a8e9ed}.task-agenda .my-tasks-body>div{padding-top:24px}
+.task-agenda .agenda-heading{position:relative;overflow:hidden;border-radius:22px;background:radial-gradient(ellipse at 82% 10%,#3ab6b52e,transparent 55%),linear-gradient(115deg,#123d50,#102a40 60%,#123b4c);border:1px solid #6ac4de4f;box-shadow:inset 0 1px #c9f8ff29,0 10px 30px #0002}
+.task-agenda .agenda-heading:after{content:"";pointer-events:none;position:absolute;right:-70px;top:-130px;width:330px;height:330px;border:1px solid #7bdeed15;border-radius:50%;box-shadow:0 0 0 34px #7bdeed04,0 0 0 70px #7bdeed03}
+.task-agenda .agenda-eyebrow{color:#8ee8e2;letter-spacing:.17em}.task-agenda .agenda-heading h3{color:#f1fcff;text-shadow:0 3px 24px #8bddff18}.task-agenda .agenda-today{background:linear-gradient(120deg,#176749,#227d60);border:1px solid #70dda47a;box-shadow:inset 0 1px #c9ffe32b;color:#c9ffde}.task-agenda .agenda-book{background:linear-gradient(140deg,#34849780,#163c5380);border:1px solid #7bddf65c;box-shadow:inset 0 2px #dcffff29,0 6px 16px #0002;border-radius:18px;color:#b0f9f6}.task-agenda .agenda-header-meta{border-color:#6bb3cd33}.task-agenda .agenda-summary strong{color:#f3fbff}.task-agenda .agenda-summary span,.task-agenda .agenda-heading p{color:#b0ccdc}
+.task-agenda .agenda-lessons li{--agenda-accent:#70f0da;position:relative;background:radial-gradient(ellipse at 100% 100%,#167a7f65,transparent 64%),linear-gradient(125deg,#133e4b,#0b2437);border:1px solid #59dac65c;border-radius:20px;box-shadow:inset 0 1px #a4ffe629,0 7px 24px #0003;overflow:hidden}
+.task-agenda .agenda-lessons li:nth-child(2){--agenda-accent:#bdabff;background:radial-gradient(ellipse at 100% 100%,#6559b457,transparent 65%),linear-gradient(125deg,#263453,#11263b);border-color:#a18aef66}
+.task-agenda .agenda-lessons li:nth-child(3){--agenda-accent:#f4d16e;background:radial-gradient(ellipse at 100% 100%,#8e742f60,transparent 65%),linear-gradient(125deg,#3e4034,#142a37);border-color:#e5be5b66}
+.task-agenda .agenda-lessons li:before{box-shadow:0 0 12px color-mix(in srgb,var(--agenda-accent) 40%,transparent)}.task-agenda .agenda-lessons li:after{content:"";position:absolute;right:-80px;bottom:-126px;width:300px;height:200px;border-radius:50%;background:linear-gradient(130deg,transparent,color-mix(in srgb,var(--agenda-accent) 12%,transparent));transform:rotate(-20deg);pointer-events:none}.task-agenda .agenda-period strong{text-shadow:0 2px 20px #c5f4ff15}.task-agenda .agenda-lesson{border-color:var(--agenda-accent)}.task-agenda .agenda-lesson>svg{padding:8px;box-sizing:content-box;top:-7px;right:-6px;border-radius:12px;background:#ffffff09;border:1px solid #ffffff15}.task-agenda .agenda-lesson strong{padding-right:40px;letter-spacing:-.5px}.task-agenda .agenda-time{color:#d9edf4}
+.task-agenda .relief-agenda{position:relative;padding:20px;border-radius:22px;border:1px solid #9c8de044;background:radial-gradient(ellipse at 100% 0,#6b4b9c24,transparent 60%),linear-gradient(115deg,#152d40,#11263b);box-shadow:inset 0 1px #bda9ff18,0 8px 24px #0002}.task-agenda .relief-agenda .agenda-heading{background:none;padding:0 0 12px;border:0;box-shadow:none}.task-agenda .relief-agenda .agenda-heading:after{display:none}.task-agenda .relief-agenda .agenda-eyebrow{color:#c5b4ff}.task-agenda .relief-agenda .agenda-book{color:#d2c3ff;background:linear-gradient(145deg,#7262ab55,#31355344);border-color:#b39ff455}.task-agenda .relief-agenda-content{padding:0;border:0;background:none;box-shadow:none}.task-agenda .relief-agenda-content>p{color:#c0d2df}.task-agenda .relief-pdf-link{background:linear-gradient(115deg,#302f5655,#26375455);border:1px solid #a398dc44;color:#d5cbff;box-shadow:inset 0 1px #ffffff0d}
+.task-agenda .booking-workspace-disclosure{position:relative;border:1px solid #5ecacb4d;border-radius:19px;background:radial-gradient(ellipse at 95% 100%,#176c722d,transparent 65%),linear-gradient(115deg,#133543,#102738);box-shadow:inset 0 1px #95f6ed1c,0 7px 20px #0002}.task-agenda .coordinator-bookings .booking-workspace-disclosure{border-color:#8c9ae557;background:radial-gradient(ellipse at 95% 100%,#5a45992b,transparent 65%),linear-gradient(115deg,#25334f,#152a40)}.task-agenda .booking-disclosure-icon{background:linear-gradient(135deg,#4d9b9a55,#23647e44);border:1px solid #9ceddf44;box-shadow:inset 0 1px #fff2,0 4px 14px #0002;border-radius:13px;color:#a3f3e6}.task-agenda .coordinator-bookings .booking-disclosure-icon{background:linear-gradient(135deg,#7970b766,#3b4b8344);border-color:#baaff359;color:#d4cbff}.task-agenda .booking-disclosure-title strong{letter-spacing:-.3px}.task-agenda .booking-disclosure-count{background:#8edbd615;color:#c8fafa;border:1px solid #a6dfe524}.task-agenda .coordinator-bookings .booking-disclosure-count{color:#e0d8ff;border-color:#aa9bd633;background:#b4a2ef14}
+.task-agenda .workspace-section-heading h3{font-size:24px;letter-spacing:-.6px}.task-agenda .workspace-section-heading .agenda-eyebrow{color:#9fb4ce}.task-agenda .my-task-row{border:1px solid color-mix(in srgb,var(--work-accent) 40%,#183146);border-radius:20px;background:radial-gradient(ellipse at 100% 100%,color-mix(in srgb,var(--work-accent) 14%,transparent),transparent 60%),linear-gradient(120deg,#16384a,#102437);box-shadow:inset 0 1px #ffffff1a,0 8px 22px #0003}.task-agenda .my-task-row.type-duty{background:radial-gradient(ellipse at 100% 100%,#b18d2f24,transparent 65%),linear-gradient(120deg,#343d3c,#162c3a)}.task-agenda .my-task-row:before{box-shadow:0 0 14px color-mix(in srgb,var(--work-accent) 28%,transparent)}.task-agenda .my-task-row .my-task-copy b{font-size:22px;letter-spacing:-.3px}.task-agenda .my-task-row .my-task-copy b svg{padding:6px;width:36px;height:36px;box-sizing:border-box;background:color-mix(in srgb,var(--work-accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--work-accent) 28%,transparent);border-radius:10px;margin-top:-4px}.task-agenda .my-task-row .my-task-delete{background:#0a1c2c70;border-color:#e29ab826;color:#dcb5c3}.task-agenda .my-task-row .my-task-open>i{background:#071c2988;border-radius:30px;box-shadow:inset 0 1px #fff1}.task-agenda .personal-booking-card{border-color:#78bedc40;background:linear-gradient(135deg,#173a4a,#102638);box-shadow:inset 0 1px #bffbff16}
+@container workspace (max-width:650px){.my-tasks.task-agenda{border-radius:23px}.task-agenda .my-tasks-head{padding:18px 14px}.task-agenda .my-tasks-title strong{font-size:22px}.task-agenda .relief-agenda{padding:16px}.task-agenda .agenda-lesson>svg{padding:5px;right:-3px;top:-4px;border-radius:9px}.task-agenda .agenda-lesson strong{padding-right:28px}.task-agenda .workspace-section-heading h3{font-size:22px}.task-agenda .my-task-row .my-task-copy b{font-size:21px}}
+.my-tasks.task-agenda{background:#0a1523;border-color:#264052;border-radius:30px;box-shadow:0 40px 120px #0008}
+.task-agenda .my-tasks-head{background:#0d1e2c;border-bottom:1px solid #9be8ed1c;padding:24px 28px}
+.task-agenda .my-tasks-title strong{font-size:28px;letter-spacing:-1px}
+.task-agenda .my-tasks-icon{background:linear-gradient(145deg,#b6fff2,#60d1e5);border-radius:18px;box-shadow:0 6px 24px #45e4d12b}
+.task-agenda .my-tasks-body>div{padding-top:24px}
+.task-agenda .teaching-agenda{margin-inline:24px}
+.task-agenda .agenda-heading{min-height:196px;padding:30px 32px;border-radius:24px;border:1px solid #85ffdd5c;background:radial-gradient(ellipse at 65% -25%,#b3ffd659,transparent 58%),radial-gradient(ellipse at 15% 100%,#09b5ab45,transparent 65%),linear-gradient(115deg,#0c414a,#0d3745 50%,#0f263c);box-shadow:inset 0 1px #dbfff84d,0 15px 36px #0003;overflow:hidden}
+.task-agenda .agenda-heading:after{right:40px;top:-148px;width:450px;height:450px;border:1px solid #87ffd536;box-shadow:0 0 0 35px #6edfc50a,0 0 0 72px #6edfc506;background:none}
+.task-agenda .agenda-heading>div{position:relative;z-index:1}
+.task-agenda .agenda-eyebrow{font-size:11px;letter-spacing:.22em;color:#8ff7df}
+.task-agenda .teaching-agenda .agenda-heading h3{font-size:58px;font-weight:760;letter-spacing:-2.5px;line-height:1.05;margin:13px 0 10px}
+.task-agenda .agenda-heading p{font-size:17px;color:#bce5e6}
+.task-agenda .agenda-today{font-size:10px;letter-spacing:0;font-weight:700;padding:6px 10px;background:#b0ffe9;color:#0d423e;border:0;box-shadow:0 3px 15px #7ef2c926;vertical-align:middle}
+.task-agenda .agenda-header-meta{display:flex;gap:18px;border:1px solid #befff02e;padding:20px 25px;border-radius:20px;background:linear-gradient(135deg,#c9ffff12,#081d2b77);box-shadow:inset 0 1px #e2ffff21,0 10px 26px #0002;backdrop-filter:blur(16px)}
+.task-agenda .agenda-header-meta .agenda-book{width:64px;height:64px;transform:rotate(-8deg);border-radius:18px;background:linear-gradient(145deg,#b9fff4,#55bace);color:#103c49;border-color:#d5fffa;box-shadow:inset 0 2px #fff9,4px 7px 0 #24617466,0 12px 24px #0004}
+.task-agenda .agenda-header-meta .agenda-book svg{width:38px;height:38px}
+.task-agenda .agenda-summary strong{font-size:46px;line-height:1;letter-spacing:-2px}
+.task-agenda .agenda-summary span{font-size:12px;color:#c5e3e9}
+.task-agenda .agenda-header-label{display:none}
+.task-agenda .agenda-lessons{gap:16px;margin-top:16px}
+.task-agenda .agenda-lessons li{padding:26px 26px 26px 30px;grid-template-columns:100px minmax(0,1fr);min-height:182px;border-radius:23px;background:radial-gradient(ellipse at 100% 100%,#4c538e44,transparent 68%),linear-gradient(130deg,#192e43,#101c31);border-color:#7896c846}
+.task-agenda .agenda-lessons li:first-child{--agenda-accent:#0f625f;background:radial-gradient(ellipse at 100% 0%,#e3ffe87a,transparent 65%),linear-gradient(120deg,#8fe9d4,#a8ede4);border:1px solid #cbfff0;box-shadow:inset 0 2px #e9fff9aa,0 12px 35px #0ba88919;color:#103c43}
+.task-agenda .agenda-lessons li:first-child .agenda-period small,.task-agenda .agenda-lessons li:first-child .agenda-lesson div>span{color:#28565e}
+.task-agenda .agenda-lessons li:first-child .agenda-period strong,.task-agenda .agenda-lessons li:first-child .agenda-lesson strong{color:#103d44;text-shadow:none}
+.task-agenda .agenda-lessons li:first-child .agenda-lesson>svg{color:#185e5b;background:#f4fffa40;border-color:#1e665c26}
+.task-agenda .agenda-lessons li:first-child:before{background:#1c786e;box-shadow:none}
+.task-agenda .agenda-lessons li:first-child:after{background:linear-gradient(130deg,transparent,#157e751c)}
+.task-agenda .agenda-period strong{font-size:46px;font-weight:750;letter-spacing:-2px}
+.task-agenda .agenda-period small{font-size:10px;letter-spacing:.16em}
+.task-agenda .agenda-lesson{padding-left:22px;border-left-width:1px}
+.task-agenda .agenda-lesson strong{font-size:29px;letter-spacing:-.8px;padding-right:35px}
+.task-agenda .agenda-lesson div>span{font-size:14px}
+.task-agenda .agenda-lesson div>.agenda-time{font-size:16px;letter-spacing:-.2px;margin-top:9px}
+.task-agenda .agenda-lesson>svg{padding:7px;width:19px;height:19px;top:-3px;right:-4px}
+.task-agenda .agenda-lessons li:after{width:350px;right:-100px;bottom:-120px}
+.task-agenda .relief-agenda{padding:24px 26px;border-radius:23px;background:radial-gradient(ellipse at 100% 0%,#6c40ad42,transparent 60%),linear-gradient(115deg,#1a2339,#171b33);border-color:#b497ef42;box-shadow:inset 0 1px #dfcaff26,0 10px 30px #0002}
+.task-agenda .relief-agenda .agenda-heading{min-height:0;padding:0 0 14px;background:none;border:0;box-shadow:none}
+.task-agenda .relief-agenda .agenda-heading h3{font-size:30px;letter-spacing:-1px;margin:9px 0 7px}
+.task-agenda .relief-agenda .agenda-heading p{font-size:13px}
+.task-agenda .relief-agenda .agenda-eyebrow{color:#bca9f2;font-size:10px}
+.task-agenda .relief-agenda .agenda-book{width:68px;height:68px;border-radius:20px;background:linear-gradient(140deg,#9c88d85c,#443c6b33);color:#e2d4ff;box-shadow:inset 0 2px #d3c3ff38,0 9px 22px #0003;transform:rotate(6deg)}
+.task-agenda .relief-agenda-content>p{color:#d1d8e9;font-size:14px}
+.task-agenda .relief-pdf-link{background:#c2b0f0;color:#272541;border:1px solid #d7c7ff;box-shadow:0 5px 18px #8b69cc17;font-weight:750;min-height:46px}
+.task-agenda .booking-workspace-disclosure{background:linear-gradient(110deg,#122f3a,#0e202f);border-color:#7fe8dc33;border-radius:20px;box-shadow:inset 0 1px #9eeddf13}
+.task-agenda .coordinator-bookings .booking-workspace-disclosure{background:linear-gradient(110deg,#25283f,#132136);border-color:#aea6ed38}
+.task-agenda .booking-workspace-disclosure>summary{padding:21px 22px;gap:16px;min-height:98px}
+.task-agenda .booking-disclosure-title strong{font-size:18px;letter-spacing:-.4px}
+.task-agenda .booking-disclosure-title small{font-size:12px;color:#afc6d3}
+.task-agenda .booking-disclosure-icon{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#99eddf,#4fa3b3);color:#103f4b;border-color:#a6eee2;box-shadow:inset 0 2px #e5ffff70,0 5px 15px #0003}
+.task-agenda .coordinator-bookings .booking-disclosure-icon{background:linear-gradient(145deg,#d3c1ff,#8576c0);color:#322653;border-color:#d5c5ff}
+.task-agenda .booking-disclosure-count{font-size:24px;font-weight:650;background:none;border:0;color:#d1f7f4;min-width:32px}
+.task-agenda .coordinator-bookings .booking-disclosure-count{color:#dfd3ff;background:none;border:0}
+.task-agenda .my-tasks-body>div>.workspace-section-heading{margin:30px 24px 16px}
+.task-agenda .workspace-section-heading h3{font-size:26px;margin-top:5px;letter-spacing:-.8px}
+.task-agenda .workspace-section-heading .agenda-eyebrow{font-size:9px;color:#849eaf}
+.task-agenda .my-task-list{margin-inline:24px;gap:16px}
+.task-agenda .my-task-row{background:radial-gradient(ellipse at 100% 100%,#1a576255,transparent 65%),linear-gradient(120deg,#142c3d,#0f1f30);border-color:#72d5cd44;border-radius:22px}
+.task-agenda .my-task-row.type-duty{background:radial-gradient(ellipse at 100% 100%,#8e683833,transparent 65%),linear-gradient(120deg,#36332b,#242935);border-color:#d5b57444}
+.task-agenda .my-task-row .my-task-open{padding:25px 24px 18px 30px;gap:14px}
+.task-agenda .my-task-row .my-task-copy b{font-size:24px;letter-spacing:-.6px}
+.task-agenda .my-task-row .my-task-copy b svg{background:linear-gradient(145deg,#95ecdf,#53a5ad);color:#16424a;border-color:#a8eadf;box-shadow:inset 0 1px #fff7}
+.task-agenda .my-task-row.type-duty .my-task-copy b svg{background:linear-gradient(145deg,#fae2a2,#b49654);color:#493c23;border-color:#fae4a9}
+.task-agenda .my-task-row .my-task-copy strong{color:#e1e9ef;font-size:14px}
+.task-agenda .my-task-row .my-task-copy small{color:#afc2cd}
+.task-agenda .my-task-row .my-task-open time{letter-spacing:.08em;font-size:11px}
+@container workspace (max-width:650px){.task-agenda .my-tasks-head{padding:20px 16px}.task-agenda .my-tasks-title strong{font-size:24px}.task-agenda .teaching-agenda{margin-inline:12px}.task-agenda .agenda-heading{min-height:150px;padding:20px 16px;border-radius:20px;gap:10px}.task-agenda .teaching-agenda .agenda-heading h3{font-size:34px;letter-spacing:-1.4px;flex-wrap:wrap;gap:8px;margin-top:12px}.task-agenda .agenda-heading p{font-size:13px}.task-agenda .agenda-eyebrow{font-size:9px}.task-agenda .agenda-today{font-size:9px;padding:5px 8px}.task-agenda .agenda-header-meta{padding:14px 12px;gap:0;border-radius:15px}.task-agenda .agenda-header-meta .agenda-book{display:none}.task-agenda .agenda-summary strong{font-size:33px;letter-spacing:-1px}.task-agenda .agenda-summary span{font-size:10px}.task-agenda .agenda-lessons{gap:10px}.task-agenda .agenda-lessons li{grid-template-columns:1fr;padding:18px 12px 18px 18px;min-height:190px;border-radius:19px;gap:14px}.task-agenda .agenda-period{display:grid;gap:6px}.task-agenda .agenda-period strong{font-size:34px;letter-spacing:-1px}.task-agenda .agenda-period small{font-size:8px}.task-agenda .agenda-lesson{border:0;padding-left:0}.task-agenda .agenda-lesson strong{font-size:20px;padding-right:0}.task-agenda .agenda-lesson>svg{top:-60px;right:0;padding:5px;width:14px;height:14px}.task-agenda .agenda-lesson div>span{font-size:12px}.task-agenda .agenda-lesson div>.agenda-time{font-size:12px;margin-top:4px;gap:4px}.task-agenda .relief-agenda{padding:19px 17px;border-radius:21px}.task-agenda .relief-agenda .agenda-heading h3{font-size:27px;letter-spacing:-.8px}.task-agenda .relief-agenda .agenda-heading p{font-size:12px}.task-agenda .relief-agenda .agenda-book{display:grid;width:44px;height:44px;border-radius:14px}.task-agenda .relief-agenda .agenda-book svg{width:25px;height:25px}.task-agenda .relief-agenda-content>p{font-size:13px}.task-agenda .booking-workspace-disclosure>summary{padding:17px 13px;gap:11px;min-height:90px}.task-agenda .booking-disclosure-title strong{font-size:16px}.task-agenda .booking-disclosure-title small{font-size:11px}.task-agenda .booking-disclosure-icon{width:41px;height:41px;border-radius:13px}.task-agenda .booking-disclosure-count{font-size:21px;min-width:20px}.task-agenda .my-task-list{margin-inline:12px}.task-agenda .my-tasks-body>div>.workspace-section-heading{margin-inline:14px}.task-agenda .my-task-row .my-task-copy b{font-size:22px}.task-agenda .my-task-row .my-task-open{padding:23px 20px 15px 28px}}/* Size the inner layout to the workspace, including the narrower bell dialog. */
+.task-agenda .my-tasks-body{container-type:inline-size;container-name:workspace}
+.task-agenda .my-tasks-body>div{min-width:0}
+.task-agenda .agenda-period{display:grid;gap:6px;min-width:0}
+.task-agenda .agenda-lesson,.task-agenda .agenda-lesson>div{min-width:0}
+.task-agenda .agenda-lesson strong,.task-agenda .agenda-lesson div>span{overflow-wrap:anywhere}
+.task-agenda .agenda-time{flex-wrap:wrap}
+.task-agenda .relief-agenda .my-task-list{margin-inline:0}
+.task-agenda .special-rooms[hidden]{display:none}
+.task-agenda .workspace-booking-error{padding:12px;color:#ffd0d8;font-size:.875rem;line-height:1.5}
+.task-agenda .workspace-booking-error button,.task-agenda .profile-portfolio-error button{color:#b7f7e8;background:transparent;border:1px solid #8ecfc552;border-radius:8px;padding:8px 12px;margin:4px 0;cursor:pointer}
+.task-agenda .personal-welcome{position:relative;display:flex!important;align-items:center;justify-content:space-between;gap:24px;margin:0 24px 24px;padding:20px 18px!important;border:0;border-top:1px solid #a9dde81c;border-bottom:1px solid #a9dde81c;border-radius:0;background:radial-gradient(ellipse at 100% 0,#56daca10,transparent 65%);box-shadow:none;min-width:0}
+.task-agenda .compact-profile-copy{flex:1;min-width:0}
+.task-agenda .personal-greeting{display:block;font-family:"Geeza Pro","Noto Naskh Arabic","Traditional Arabic",serif;font-size:1.375rem;line-height:1.9;text-align:left;color:#b9e9df;margin:0 0 10px;letter-spacing:0}
+.task-agenda .personal-name{margin:0!important;font-size:2.25rem!important;font-weight:750!important;line-height:1.2!important;letter-spacing:-.04em!important;color:#f0fbff;overflow-wrap:anywhere}
+.task-agenda .personal-name span{background:linear-gradient(100deg,#b0ffe6,#6fd2f2);background-clip:text;-webkit-background-clip:text;color:transparent}
+.task-agenda .personal-avatar{display:grid;place-items:center;flex-shrink:0;width:88px;height:88px;box-sizing:border-box;padding:4px;border-radius:24px;overflow:hidden;border:1px solid #d2fff3;background:linear-gradient(140deg,#c2fff0,#5b9bb3);box-shadow:0 0 0 5px #9ae4da0b,0 12px 24px #0003;color:#12434e;font-size:1.75rem;font-weight:750}
+.task-agenda .personal-avatar img{display:block;width:100%;height:100%;min-height:0;max-height:100%;object-fit:cover;object-position:center 25%;border-radius:19px}
+.task-agenda .profile-role{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:10px;color:#bcd8e1;font-size:.875rem;line-height:1.5;overflow-wrap:anywhere}
+.task-agenda .profile-grade{display:inline-flex;align-items:center;flex-shrink:0;padding:2px 7px;border:1px solid #a0ece04a;border-radius:6px;color:#bcf7e7;background:#69c5b814;font-weight:650;font-size:.75rem}
+.task-agenda .portfolio-compact{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:9px;font-size:.75rem;color:#c4bedf;line-height:1.5;overflow-wrap:anywhere}
+.task-agenda .portfolio-compact>span+span:before{content:"·";margin-right:10px;color:#87a8b2}
+.task-agenda .portfolio-compact small{font-size:.75rem;color:#a9c1cd}
+.task-agenda .profile-portfolio-error{font-size:.8125rem;color:#c4cfdc;line-height:1.5}
+@container workspace (max-width:1000px){
+ .task-agenda .agenda-lessons li{grid-template-columns:1fr;gap:16px;padding:22px 22px 22px 26px}
+ .task-agenda .agenda-period{display:grid;gap:6px}
+ .task-agenda .agenda-period strong{font-size:38px}
+ .task-agenda .agenda-lesson{border:0;padding-left:0}
+ .task-agenda .agenda-lesson>svg{top:-72px;right:0}
+ .task-agenda .agenda-lesson strong{font-size:26px}
+ .task-agenda .agenda-lesson div>.agenda-time{font-size:14px}
+}
+@container workspace (max-width:650px){
+ .task-agenda .personal-welcome{display:grid!important;grid-template-columns:minmax(0,1fr)58px;gap:0 12px;margin:0 14px 20px;padding:12px 4px 18px!important}
+ .task-agenda .compact-profile-copy{display:contents}
+ .task-agenda .personal-greeting{grid-column:1/-1;grid-row:1;font-size:1.125rem;line-height:1.9;margin-bottom:8px}
+ .task-agenda .personal-name{grid-column:1;grid-row:2;font-size:1.875rem!important;letter-spacing:-.035em!important}
+ .task-agenda .personal-avatar{grid-column:2;grid-row:2;width:58px;height:58px;border-radius:18px;padding:3px;align-self:center}
+ .task-agenda .personal-avatar img{border-radius:14px}
+ .task-agenda .profile-role{grid-column:1/-1;grid-row:3;font-size:.75rem;gap:5px 8px;margin-top:10px}
+ .task-agenda .profile-grade{font-size:.6875rem;padding:1px 6px}
+ .task-agenda .portfolio-compact{grid-column:1/-1;grid-row:4;font-size:.6875rem;gap:3px 8px;margin-top:8px}
+ .task-agenda .portfolio-compact>span+span:before{margin-right:8px}
+ .task-agenda .profile-portfolio-error{grid-column:1/-1;grid-row:5}
+ .task-agenda .agenda-lessons li{padding:18px 12px 18px 18px;gap:14px}
+ .task-agenda .agenda-period strong{font-size:34px}
+ .task-agenda .agenda-lesson strong{font-size:20px}
+ .task-agenda .agenda-lesson>svg{top:-60px}
+ .task-agenda .agenda-lesson div>.agenda-time{font-size:12px}
+}
+@container workspace (max-width:320px){
+ .task-agenda .agenda-lessons{grid-template-columns:1fr}
+ .task-agenda .agenda-heading{flex-wrap:wrap}
+ .task-agenda .special-rooms .booking-workspace-disclosure>summary{gap:7px}
+}
+.task-agenda .special-rooms{margin:0 24px 28px;padding:24px 26px;border:1px solid #74d4d13d;border-radius:23px;background:radial-gradient(ellipse at 100% 0%,#26878324,transparent 65%),linear-gradient(115deg,#112d37,#102435);box-shadow:inset 0 1px #b3fff01e,0 10px 30px #0002}
+.task-agenda .special-rooms-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}
+.task-agenda .special-rooms-heading h3{font-weight:750;font-size:30px;line-height:1.15;letter-spacing:-1px;margin:9px 0 7px;color:#f0faff}
+.task-agenda .special-rooms-heading p{font-size:13px;color:#afc9d3;margin:0}
+.task-agenda .special-room-symbol{display:grid;place-items:center;flex-shrink:0;width:62px;height:62px;border-radius:19px;color:#acede1;border:1px solid #88dfd54f;background:linear-gradient(140deg,#438f8f55,#24495a33);box-shadow:inset 0 2px #c2ffef24,0 8px 20px #0002}
+.task-agenda .special-room-symbol svg{width:31px;height:31px}
+.task-agenda .special-rooms .personal-bookings{margin:0 0 12px}
+.task-agenda .special-rooms .personal-bookings:last-child{margin-bottom:0}
+.task-agenda .special-rooms .booking-workspace-disclosure{box-shadow:none;border-color:#8bced526;background:#081b295c}
+.task-agenda .special-rooms .coordinator-bookings .booking-workspace-disclosure{border-color:#a69de933;background:#1b243855}
+@container workspace (max-width:650px){
+ .task-agenda .special-rooms{margin:0 12px 24px;padding:19px 13px;border-radius:21px}
+ .task-agenda .special-rooms-heading{padding:0 3px;gap:10px;margin-bottom:17px}
+ .task-agenda .special-rooms-heading h3{font-size:27px;letter-spacing:-.8px}
+ .task-agenda .special-rooms-heading p{font-size:12px;max-width:220px}
+ .task-agenda .special-room-symbol{width:44px;height:44px;border-radius:14px}
+ .task-agenda .special-room-symbol svg{width:25px;height:25px}
+ .task-agenda .special-rooms .booking-workspace-disclosure>summary{padding:15px 10px;gap:9px}
+ .task-agenda .special-rooms .booking-disclosure-title strong{font-size:14px}
+ .task-agenda .special-rooms .booking-disclosure-icon{width:35px;height:35px;border-radius:11px}
+}
+@media(max-width:650px){.my-tasks.task-agenda{border-radius:23px}.task-agenda .my-tasks-head{padding:20px 16px}.task-agenda .my-tasks-title strong{font-size:24px}}

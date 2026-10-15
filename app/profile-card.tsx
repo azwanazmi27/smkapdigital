@@ -14,7 +14,7 @@ export function ProfileCard({user,close,save,updatePhoto,logout,notify,pushState
  const [photo,setPhoto]=useState<HTMLImageElement|null>(null),[zoom,setZoom]=useState(1),[panX,setPanX]=useState(0),[panY,setPanY]=useState(0),[avatarError,setAvatarError]=useState(false);
  const canvas=useRef<HTMLCanvasElement>(null),fileInput=useRef<HTMLInputElement>(null),photoInput=useRef<HTMLInputElement>(null);
  const [form,setForm]=useState({id:crypto.randomUUID(),title:'',issuer:'',awardDate:''}),[file,setFile]=useState<File|null>(null);
- const load=async()=>{try{const data=await responseData(await fetch('/api/portfolio',{cache:'no-store'}));setItems(data.items);}catch(e){setError(e instanceof Error?e.message:'Portfolio tidak dapat dibaca.');}};
+ const load=async()=>{try{const data=await responseData(await fetch('/api/portfolio',{cache:'no-store'}));setItems(data.items);window.dispatchEvent(new Event('portfolio-changed'));}catch(e){setError(e instanceof Error?e.message:'Portfolio tidak dapat dibaca.');}};
  useEffect(()=>{void load();},[]);
  useEffect(()=>setAvatarError(false),[user.avatarDataUrl]);
  useEffect(()=>{const handler=(event:KeyboardEvent)=>{if(event.key==='Escape'&&!busy&&!deleteTarget&&!deletedTitle)close();};document.addEventListener('keydown',handler);return()=>document.removeEventListener('keydown',handler);},[busy,close,deleteTarget,deletedTitle]);
