@@ -1,3 +1,5 @@
+import {morningBookingSnapshot} from './morning-bookings';
+import {personalMorningBookings,morningBookingsBody} from '../morning-bookings-model';
 import {notificationContext,type NotificationContext} from './notification-context';
 import {selectRetryNotices,type RetryTarget} from '../notification-retry-model';
 import {reminderNameCache} from '../reminder-name-cache';
@@ -14,6 +16,7 @@ export async function announceRelief(date:string){
  await sendTaskNotices(users.results.map(u=>({userId:u.id,taskId:`relief-ready:${date}`,title:'Jadual relief telah disediakan',body:reliefReadyBody(date),url:TASKS_URL,ttl:3600})));
 }
 export async function sendMorningSummaries(now=new Date(),budget?:PushBudget,manual=false,target?:RetryTarget,context?:NotificationContext){
+ if(budget&&budget.remaining<=0)return;
  const settings=context?.settings??await notificationSettings();
  if(!settings.morningEnabled||(!manual&&!morningDue(now,settings.morningTime)))return;
  const today=malaysiaDay(now);
@@ -25,16 +28,20 @@ export async function sendMorningSummaries(now=new Date(),budget?:PushBudget,man
  // Successful devices never need the same summary recomputed or retried.
  const pending=await env.DB.prepare("SELECT DISTINCT s.user_id FROM push_subscriptions s LEFT JOIN staff_task_push_deliveries d ON d.subscription_id=s.id AND d.task_id='morning-summary:'||?||':'||s.user_id WHERE d.status IS NULL OR d.status<>'sent'").bind(today).all<{user_id:string}>();
  const ids=new Set(pending.results.map(u=>u.user_id)),notices:TaskNotice[]=[];
- for(const actor of users.results.filter(u=>ids.has(u.id)&&(!target||u.id===target.userId))){
+ const recipients=users.results.filter(u=>ids.has(u.id)&&(!target||u.id===target.userId));
+ if(!recipients.length)return;
+ const bookingSnapshot=await morningBookingSnapshot(today);
+ for(const actor of recipients){
+ const bookings=bookingSnapshot?personalMorningBookings(bookingSnapshot,actor,today,now.getTime()):null,bookingText=morningBookingsBody(bookings);
  const ownAbsences=personalAbsenceTasks(absences.results,actor,users.results,mappings,now);
- if(ownAbsences.length){const reasons=absences.results.filter(a=>ownAbsences.some(t=>t.id===`absence:${a.id}`)).map(a=>a.reason);notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:settings.morningTitle,body:absenceMorningBody(actor.name,reasons),url:TASKS_URL,ttl:3600});continue;}
+ if(ownAbsences.length){const reasons=absences.results.filter(a=>ownAbsences.some(t=>t.id===`absence:${a.id}`)).map(a=>a.reason);notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:settings.morningTitle,body:absenceMorningBody(actor.name,reasons)+'\n\n'+bookingText,url:TASKS_URL,ttl:3600});continue;}
  let day=teachingDay(teachers,actor,users.results,now,mappings);if(times)day=applyMainstreamTimes(day,times);const sixth=form6?form6Lessons(form6,actor.id,day.day):null;if(sixth)day={...day,state:'ready',lessons:sixth};
  const teacherId=matchReliefTeacherId(relief,actor,users.results,mappings),reliefs=teacherId?relief.filter(r=>r&&!r.cancelled&&r.reliefId===teacherId).length:0,own=assignments.results.filter(a=>a.user_id===actor.id);
  const duty=own.filter(a=>a.kind==='duty').length,other=own.filter(a=>a.kind!=='duty').length;
  // A merged lesson may span multiple teaching periods; count each period once.
  const periods=new Set(day.lessons.flatMap(l=>Array.from({length:Math.max(0,l.end-l.start+1)},(_,i)=>l.start+i)));
- if(day.state!=='ready'&&!reliefs&&!duty&&!other)continue;
- notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:settings.morningTitle,body:settings.morningGreeting.replaceAll('{nama}',actor.name)+'\n\n'+morningBody(actor.name,day.state==='ready'?periods.size:null,plan?reliefs:null,duty,other).split('\n\n')[1]+'\n\n'+settings.morningClosing.replaceAll('{nama}',actor.name),url:TASKS_URL,ttl:3600});
+ if(day.state!=='ready'&&!reliefs&&!duty&&!other&&!bookings?.own.length&&!bookings?.supervised.length)continue;
+ notices.push({userId:actor.id,taskId:`morning-summary:${today}:${actor.id}`,title:settings.morningTitle,body:settings.morningGreeting.replaceAll('{nama}',actor.name)+'\n\n'+morningBody(actor.name,day.state==='ready'?periods.size:null,plan?reliefs:null,duty,other).split('\n\n')[1]+'\n\n'+bookingText+'\n\n'+settings.morningClosing.replaceAll('{nama}',actor.name),url:TASKS_URL,ttl:3600});
  }
  await sendTaskNotices(selectRetryNotices(notices,target),budget);
 }

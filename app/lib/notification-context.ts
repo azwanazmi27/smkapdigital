@@ -6,7 +6,7 @@ import {defaultNotificationSettings,type NotificationSettings} from '../notifica
 export async function notificationContext(now:Date){
  const today=malaysiaDay(now);
  const rows=await env.DB.batch([
-  env.DB.prepare("SELECT id,name FROM portal_users WHERE status='active' AND deleted_at IS NULL"),
+  env.DB.prepare("SELECT id,name,email FROM portal_users WHERE status='active' AND deleted_at IS NULL"),
   env.DB.prepare("SELECT teachers_json FROM relief_schedules WHERE is_active='1' ORDER BY created_at DESC,rowid DESC LIMIT 1"),
   env.DB.prepare("SELECT data_json FROM mainstream_times WHERE id='active'"),
   env.DB.prepare("SELECT data_json FROM form6_timetable WHERE id='active'"),
@@ -17,7 +17,7 @@ export async function notificationContext(now:Date){
   env.DB.prepare("SELECT data_json FROM notification_settings WHERE id='automated'")
  ]);
  return {
-  users:{results:rows[0].results as {id:string;name:string}[]},
+  users:{results:rows[0].results as {id:string;name:string;email:string}[]},
   schedule:(rows[1].results[0]??null) as {teachers_json:string}|null,
   timing:(rows[2].results[0]??null) as {data_json:string}|null,
   form6:(rows[3].results[0]??null) as {data_json:string}|null,

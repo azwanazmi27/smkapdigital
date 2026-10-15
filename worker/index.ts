@@ -1,3 +1,4 @@
+import {readMorningBookings} from '../app/lib/morning-bookings-source';
 import {WorkerEntrypoint} from 'cloudflare:workers';
 import {sendTaskNotices,type TaskNotice} from '../app/lib/task-push';
 /** Cloudflare Worker entry point for the vinext-starter template. */
@@ -54,5 +55,6 @@ export default worker;
 
 // Only accessible through an account-owned Service Binding, never a public route.
 export class NotificationPushService extends WorkerEntrypoint {
+ async morningBookings(date:string){return readMorningBookings(date);}
  async send(notices:TaskNotice[],remaining:number){const budget={remaining:Math.min(35,Math.max(0,remaining))};await sendTaskNotices(notices,budget);return budget.remaining;}
 }
