@@ -1904,3 +1904,9 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 .glass-module-card .glass-module-eyebrow{font-size:9px;letter-spacing:.16em;font-weight:750;color:#9fdfd3;margin-bottom:10px}.glass-module-reform .glass-module-eyebrow{color:#c7bff1}.glass-module-card>strong{font-size:27px;letter-spacing:-.035em;line-height:1.2;margin-bottom:14px;color:#f0f8ff}.glass-module-card .glass-module-description{font-size:14px;line-height:1.7;color:#bccedb;max-width:38ch}.glass-module-card .glass-module-tags{font-size:11px;color:#9fb7c7;margin:20px 0 24px}.glass-module-card .glass-module-footer{display:flex;align-items:center;justify-content:space-between;align-self:stretch;margin-top:auto;border-top:1px solid #ffffff17;padding-top:19px}.glass-module-footer>span{font-size:13px;font-weight:650;color:#d4eee9}.glass-module-card .glass-module-footer svg{width:20px;height:20px;color:#a1e6d6}.glass-module-reform .glass-module-footer svg{color:#c3baf7}.glass-module-card:focus-visible{outline:3px solid #b2f3e2;outline-offset:5px}
 @media(hover:hover){.glass-module-card:hover{border-color:#abeee09c;box-shadow:inset 0 1px #ffffff36,0 18px 44px #0004}.glass-module-reform:hover{border-color:#c9bfff9c}}
 @media(max-width:600px){.reform-module-grid>.glass-module-card{padding:24px}.glass-module-top{margin-bottom:22px}.glass-module-card>strong{font-size:25px}.glass-module-card .glass-module-icon{width:54px;height:54px;border-radius:16px}}
+
+/* Explicit multipage preview, including browsers without a full native PDF viewer. */
+.reform-pdf-pages { width:100%; min-width:0; }
+.reform-pdf-pages figure { margin:0 0 20px; }
+.reform-pdf-pages figcaption { color:#b7d5df; font-size:14px; padding:10px 0; }
+.reform-pdf-pages canvas { display:block; width:100%; height:auto; background:white; border-radius:4px; }
