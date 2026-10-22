@@ -1,4 +1,6 @@
 "use client";
+import {MonitoringModuleCards} from "./monitoring-module-cards";
+import {ImmediateReform} from "./immediate-reform";
 import {BookingFeedback,BookingRoomSettings,useBookingRooms} from "./booking-workspace";
 import {formatWeeklySummary,formatDailyNotes} from './duty-summary';
 import {WeeklySummaryPreview} from './weekly-summary-preview';
@@ -555,7 +557,11 @@ const monitoringClasses: Record<string, string[]> = {
 };
 const monitoringFacilities = ["Pusat Sumber Sekolah", "Pusat Akses", "Bilik Gerakan", "Bilik KKQ", "Bilik Media", "Bilik Seni", "Bengkel RBT", "Makmal Sibaweh", "Makmal Komputer 1", "Makmal Komputer 2", "Makmal Sains", "Dewan Al Farabi", "Surau As-Syafie", "Kantin", "Dewan Makan", "Aspura", "Aspuri"];
 
-function MonitoringCentre({ notify, user }: { notify: (message:string)=>void; user:PortalIdentity|null }) {
+function MonitoringCentre({notify,user}:{notify:(message:string)=>void;user:PortalIdentity|null}) {
+ const [module,setModule]=useState<'legacy'|'reform'|null>(null);
+ return <>{module&&<button className="reform-back" onClick={()=>setModule(null)}>← Pilihan e-Pemantauan</button>}{module==='legacy'?<LegacyMonitoringCentre notify={notify} user={user}/>:module==='reform'?<ImmediateReform user={user} notify={notify} loadReports={fetchOprIndex} remember={rememberOprReport} PdfPreview={DrivePdfPreview}/>:<div className="monitoring-shell"><header className="monitoring-head"><div><span className="modal-overline">PEMANTAUAN SEKOLAH</span><h2 id="folder-title">e-Pemantauan</h2><p>Pilih jenis pemantauan untuk melihat dashboard dan menyediakan laporan.</p></div></header><MonitoringModuleCards onSelect={setModule}/></div>}</>;
+}
+function LegacyMonitoringCentre({ notify, user }: { notify: (message:string)=>void; user:PortalIdentity|null }) {
   const today=new Date().toISOString().slice(0,10);
   const [tab,setTab]=useState<"dashboard"|"form"|"preview">("dashboard");
   const [reports,setReports]=useState<OprReport[]>(()=>oprMemoryCache?.filter(item=>item.category===monitoringCategory)||[]);

@@ -1,3 +1,4 @@
+import {reformItems} from "../../immediate-reform-model";
 import {prepareDutyDeletions,deletedDutyIdentity} from "../../lib/duty-deletions";
 import { env } from "cloudflare:workers";
 import { legacyOprCategories, oprCategoryValues } from "../../opr-categories";
@@ -14,6 +15,7 @@ type OprIntakeMetadata = {
   achievementLevel: string;
   achievementResult: string;
   achievementUnit: string;
+  immediateReform: Record<string, unknown> | null;
   monitoringFocus: string;
   monitoringNotes: string;
   monitoringAction: string;
@@ -61,6 +63,13 @@ function clean(value: unknown, max = 160) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+function normalizeReformMetadata(value:unknown):Record<string,unknown>|null {
+ if(!value||typeof value!=='object')return null;
+ const data=value as Record<string,unknown>,answers=data.answers as Record<string,{status?:unknown;note?:unknown}>|undefined;
+ if(!answers||!reformItems.every(({id})=>answers[id]&&['Ada','Tiada'].includes(String(answers[id].status))))return null;
+ return {date:clean(data.date,10),name:clean(data.name,180),position:clean(data.position,180),followUp:clean(data.followUp,4000),answers:Object.fromEntries(reformItems.map(({id})=>[id,{status:answers[id].status,note:clean(answers[id].note,1500)}]))};
+}
+
 function normalizeOprMetadata(value: unknown): OprIntakeMetadata | null {
   if (!value || typeof value !== "object") return null;
   const input = value as Record<string, unknown>;
@@ -78,6 +87,7 @@ function normalizeOprMetadata(value: unknown): OprIntakeMetadata | null {
     achievementLevel: clean(input.achievementLevel,40),
     achievementResult: clean(input.achievementResult,160),
     achievementUnit: clean(input.achievementUnit,240),
+    immediateReform: normalizeReformMetadata(input.immediateReform),
     monitoringFocus: clean(input.monitoringFocus,40),
     monitoringNotes: clean(input.monitoringNotes,8000),
     monitoringAction: clean(input.monitoringAction,4000),
