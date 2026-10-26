@@ -1,0 +1,181 @@
+/* Shared layout rules for the embedded attendance and relief apps.
+   Keep wide schedules readable inside their own scroll containers. */
+@media screen {
+ html,body { max-width:100%; overflow-x:visible; }
+ #relief-root .attendance-portal { overflow-x:visible; }
+ #relief-root { min-width:0; width:100%; overflow-x:visible; }
+ #relief-root > main { min-width:0; max-width:100%; }
+ #relief-root :is(.topbar,.topbar-primary,.topbar-secondary,.school-brand,.brand-copy,.brandcopy,.hero-copy,.hub-heading>div,.main-column,.workspace>aside,.card,.card-heading>div,.form-grid,.field,.summary-head>div,.absence-main,.inbox-item>div,.selected-absence-list>div>div,.history-tile>div,.admin-form,.teacher-admin-panel) { min-width:0; }
+ #relief-root :is(.hub-grid,.history-grid,.entry-grid,.date-fields,.public-form-grid,.form-grid,.admin-layout) > * { min-width:0; }
+ #relief-root :is(.brand,.school-brand) { flex-shrink:1; }
+ #relief-root .school-logo { width:190px; height:auto; aspect-ratio:694/191; object-fit:contain; flex:none; }
+ #relief-root .brand-logo { width:44px; height:52px; flex:none; }
+ #relief-root .brand-logo img { width:100%; height:100%; object-fit:contain; }
+ #relief-root :is(.avatar,#portal-identity-avatar) { flex-shrink:0; overflow:hidden; }
+ #relief-root .avatar img { display:block; width:100%; height:100%; object-fit:cover; }
+ #relief-root :is(.mini-icon,.metric-icon,.step,.sidebar-icon,.calendar-icon,.privacy-note>span) { flex-shrink:0; }
+ #relief-root :is(.topbar,.card-heading,.schedule-title,.panel-toolbar) svg { width:20px; height:20px; flex:none; }
+ #relief-root :is(.table-wrap,.original-scroll,.weekly-scroll,.overlay-scroll) { min-width:0; max-width:100%; width:100%; overflow:auto; overscroll-behavior-x:contain; }
+ #relief-root :is(.table-wrap,.original-scroll,.weekly-scroll,.overlay-scroll):focus-visible { outline:3px solid #188276; outline-offset:3px; }
+ #relief-root :is(.table-wrap table,.schedule-grid,.weekly-grid,.original-grid) { max-width:none; }
+ #relief-root :is(input,select,textarea) { min-width:0; max-width:100%; box-sizing:border-box; }
+ #relief-root input:is([type=date],[type=time]) { width:100%; min-width:0; }
+ #relief-root input::-webkit-date-and-time-value { min-width:0; text-align:start; }
+ #relief-root input::file-selector-button { max-width:100%; white-space:normal; }
+ #relief-root :is(.name-line h3,.inbox-item strong,.selected-absence-list strong,.history-tile h3,.teacher-name-list strong,.record-note,.page-notice,.schedule-notice,.hub-notice) { overflow-wrap:anywhere; }
+ #relief-root :is(.access-modal,.pin-backdrop,.schedule-viewer-backdrop) { overflow-y:auto; overscroll-behavior:contain; padding-block:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-bottom)); }
+ #relief-root :is(.access-card,.pin-modal) { max-height:calc(100dvh - 40px); overflow-y:auto; }
+ #relief-root :is(.access-close,.pin-close,.viewer-close) { display:grid; place-items:center; flex:none; width:44px!important; height:44px!important; min-height:44px!important; padding:0; line-height:1; }
+ #relief-root .access-card>img { width:190px; height:auto; aspect-ratio:694/191; object-fit:contain; margin-inline:auto; }
+ #relief-root footer img { width:160px; height:auto; aspect-ratio:694/191; object-fit:contain; margin-inline:auto; }
+}
+
+/* Reflow before tablet headers and sidebars run out of usable space. */
+@media screen and (max-width:1100px) {
+ #relief-root > main:not(.attendance-portal) .topbar-primary { flex-wrap:wrap; }
+ #relief-root > main:not(.attendance-portal) .topbar-actions { margin-left:auto; flex-wrap:wrap; }
+ #relief-root .attendance-portal .topbar { height:auto; flex-wrap:wrap; padding:16px 20px; gap:14px; }
+ #relief-root .attendance-portal .nav-tabs { max-width:100%; flex-wrap:wrap; }
+ #relief-root .workspace { grid-template-columns:minmax(0,1fr); }
+ #relief-root .workspace>aside { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #relief-root .workspace>aside>.card:last-child:nth-child(odd) { grid-column:1/-1; }
+}
+@media screen and (max-width:760px) {
+ #relief-root :is(.hero,.report-page,.public-shell,.hub-grid,.admin-layout) { grid-template-columns:minmax(0,1fr); }
+ #relief-root .hero { display:grid; gap:20px; padding:28px 20px 24px; }
+ #relief-root .date-card { width:100%; min-width:0; }
+ #relief-root :is(.hub-heading,.summary-head,.overlay-heading,.audit-heading,.original-preview-heading) { flex-direction:column; align-items:stretch; gap:14px; }
+ #relief-root .hub-date { min-width:0; width:100%; }
+ #relief-root .workspace { padding-inline:20px; }
+ #relief-root :is(.attendance-hub,.history-page,.public-shell,.summary-page) { width:calc(100% - 40px); }
+ #relief-root .schedule-viewer { width:100%; height:100%; max-height:100dvh; border-radius:0; padding:20px; }
+ #relief-root .schedule-viewer-backdrop { padding:0; }
+ #relief-root .schedule-viewer-controls { grid-template-columns:minmax(0,1fr); }
+ #relief-root .schedule-viewer-controls label { max-width:none; }
+ #relief-root .attendance-portal .form-footer { flex-wrap:wrap; }
+}
+@media screen and (max-width:620px) {
+ /* Header: logo and title get their own row, actions and tabs never squeeze them. */
+ #relief-root .topbar { padding:16px; gap:14px; height:auto; min-height:0; }
+ #relief-root .topbar-primary { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; }
+ #relief-root .school-brand { gap:12px; align-items:center; flex-wrap:wrap; }
+ #relief-root .school-logo { width:156px; height:auto; aspect-ratio:694/191; object-fit:contain; }
+ #relief-root .brandcopy { flex:1 1 120px; }
+ #relief-root .topbar h1 { margin:0; font-size:17px; line-height:1.3; }
+ #relief-root .topbar-actions { width:100%; margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+ #relief-root :is(.return-attendance,.viewer-launch) { display:flex; justify-content:center; width:100%; min-width:0; min-height:44px; height:auto; padding:9px 10px; gap:7px; font-size:12px; line-height:1.35; white-space:normal; }
+ #relief-root .return-attendance strong { font-size:12px; }
+ #relief-root :is(.viewer-launch,.return-attendance)>span { font-size:18px; flex:none; }
+ #relief-root .topbar-secondary { gap:12px; padding-top:12px; }
+ #relief-root .topbar .system-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; margin:0; padding:5px; gap:5px; overflow:visible; }
+ #relief-root .topbar .system-tabs button { display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:5px; min-width:0; min-height:48px; height:auto; padding:8px 6px; font-size:12px; line-height:1.3; white-space:normal; }
+ #relief-root .topbar .system-tabs button span { font-size:18px; }
+ #relief-root .topbar-status { width:100%; max-width:none; padding:10px 12px; }
+ #relief-root .topbar-status div { display:block; min-width:0; }
+ #relief-root .topbar-status b { font-size:12px; line-height:1.4; white-space:normal; }
+ #relief-root .topbar-status small { font-size:11px; line-height:1.4; white-space:normal; }
+ #relief-root .attendance-portal .topbar { align-items:stretch; }
+ #relief-root .attendance-portal .brand { gap:12px; align-self:flex-start; }
+ #relief-root .attendance-portal .brand-copy strong { font-size:18px; line-height:1.2; }
+ #relief-root .attendance-portal .brand-copy small { font-size:12px; line-height:1.4; }
+ #relief-root .attendance-portal .nav-tabs { display:flex; width:100%; gap:6px; flex-wrap:nowrap; overflow-x:auto; padding:5px; scroll-padding-inline:5px; }
+ #relief-root .attendance-portal .nav-tabs button { min-height:44px; min-width:max-content; flex:none; padding:8px 13px; font-size:13px; line-height:1.3; }
+ /* Comfortable text and controls without scaling the whole screen. */
+ #relief-root :is(.hero,.workspace) { padding-inline:16px; }
+ #relief-root :is(.report-page,.summary-page,.attendance-hub,.history-page,.public-shell) { width:calc(100% - 32px); max-width:560px; margin-inline:auto; padding-top:24px; }
+ #relief-root .workspace>aside { grid-template-columns:minmax(0,1fr); }
+ #relief-root .hero h2 { font-size:32px; line-height:1.12; }
+ #relief-root :is(.hub-heading h2,.summary-head h1) { font-size:28px; line-height:1.2; }
+ #relief-root :is(.card-heading h3,.schedule-card h3,.card-head h2) { font-size:18px; line-height:1.3; }
+ #relief-root :is(.entry-card,.result-card,.rules-card,.history-card,.selection-card,.schedule-card,.inbox-card,.date-card) { padding:16px; }
+ #relief-root :is(.card-heading,.date-card-heading) { flex-wrap:wrap; gap:10px; }
+ #relief-root :is(.card-heading p,.schedule-card>p,.hub-heading>div>p:last-child,.hero-copy>p) { font-size:14px; line-height:1.6; }
+ #relief-root :is(.creator-field,.hub-coordinator,.quick-add label,.date-fields label,.entry-grid label) { font-size:13px; line-height:1.4; }
+ #relief-root :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=password]),select,textarea) { font-size:16px; min-width:0; min-height:48px; }
+ #relief-root :is(input[type=checkbox],input[type=radio]) { flex:none; width:20px; height:20px; min-height:0; }
+ #relief-root :is(.primary,.secondary,.generate-now,.quick-add button,.history-tile button,.history-tile a,.settings-save,.record-controls button,.teacher-name-list button) { min-height:44px; font-size:14px; line-height:1.35; white-space:normal; }
+ #relief-root :is(.date-fields,.entry-grid,.quick-add) { grid-template-columns:minmax(0,1fr); }
+ #relief-root .date-helper { font-size:12px!important; line-height:1.5; }
+ #relief-root .creator-field small { font-size:11px; }
+ #relief-root :is(.step,.sidebar-icon,.calendar-icon,.mini-icon) { width:36px; height:36px; flex:none; font-size:18px; }
+ #relief-root :is(.inbox-item,.selected-absence-list>div) { grid-template-columns:40px minmax(0,1fr); align-items:start; gap:10px; padding:12px; }
+ #relief-root :is(.inbox-item,.selected-absence-list) .avatar { width:40px; height:40px; }
+ #relief-root :is(.inbox-item strong,.selected-absence-list strong) { font-size:14px; line-height:1.4; }
+ #relief-root :is(.inbox-item small,.selected-absence-list small) { font-size:12px; line-height:1.5; }
+ #relief-root .inbox-count { font-size:11px; white-space:normal; margin-left:0; }
+ #relief-root .inbox-actions { grid-column:1/-1; display:grid; grid-template-columns:minmax(0,1fr) auto; width:100%; gap:8px; }
+ #relief-root :is(.inbox-actions button,.selected-absence-list button) { min-height:44px; padding:9px 12px; font-size:13px; }
+ #relief-root .absence-row-actions { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; }
+ #relief-root .selected-absence-list { max-height:420px; padding:2px; }
+ #relief-root .scope-toggle { width:100%; display:flex; flex-wrap:wrap; }
+ #relief-root .scope-toggle button { flex:1; min-width:0; min-height:44px; padding:10px 8px; font-size:13px; }
+ #relief-root .period-picker { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ #relief-root .mini-period-picker { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #relief-root .mini-period-picker button>small { font-size:11px; }
+ #relief-root .mini-period-picker button>em { font-size:12px; }
+ #relief-root .mini-period-picker button>em span,#relief-root .mini-period-picker button>i { font-size:11px; }
+ #relief-root .summary-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ #relief-root .summary-row div { min-width:0; padding:12px 9px; }
+ #relief-root .summary-row span { font-size:11px; letter-spacing:0; overflow-wrap:anywhere; }
+ #relief-root :is(.result-tabs,.result-actions) { width:100%; max-width:100%; display:flex; flex-wrap:wrap; gap:8px; }
+ #relief-root .result-tabs button { flex:1; min-width:0; min-height:44px; padding:9px; font-size:13px; }
+ #relief-root :is(.validation-banner,.hub-notice,.schedule-notice,.viewer-note,.overlay-status,.audit-confirmation) { font-size:13px; line-height:1.5; }
+ #relief-root .validation-banner>div { flex-wrap:wrap; }
+ #relief-root .table-wrap .relief-table { min-width:760px; }
+ #relief-root .table-wrap .audit-table { min-width:620px; }
+ #relief-root .relief-editor select { min-width:220px; }
+ #relief-root .history-tile { grid-template-columns:44px minmax(0,1fr); gap:12px; padding:16px; min-height:0; }
+ #relief-root .history-tile .history-date { width:44px; height:44px; font-size:12px; }
+ #relief-root .history-tile p { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+ #relief-root .history-tile>div:last-child { grid-column:1/-1; flex-wrap:wrap; }
+ #relief-root .history-tile :is(button,a) { display:inline-flex; align-items:center; padding:10px 12px; }
+ #relief-root .history-empty { padding:32px 16px; }
+ #relief-root .schedule-viewer-head h2 { font-size:23px; line-height:1.3; }
+ #relief-root .schedule-viewer-head { gap:12px; }
+ #relief-root .version-item { flex-wrap:wrap; }
+ #relief-root .version-item button { min-height:44px; font-size:13px; }
+ #relief-root .teacher-checklist label { min-height:44px; align-items:center; }
+ #relief-root .teacher-checklist label span { font-size:13px; }
+ /* Attendance dashboard and management stay readable with long teacher names. */
+ #relief-root .attendance-portal .metric-grid { grid-template-columns:minmax(0,1fr); gap:10px; }
+ #relief-root .attendance-portal .metric-grid article { min-height:88px; padding:16px; gap:14px; }
+ #relief-root .attendance-portal .metric-icon { width:40px; height:40px; flex:0 0 40px; font-size:20px; }
+ #relief-root .attendance-portal .metric-grid strong { font-size:28px; }
+ #relief-root .attendance-portal .metric-grid p { font-size:12px; }
+ #relief-root .attendance-portal .form-grid { grid-template-columns:minmax(0,1fr); }
+ #relief-root .attendance-portal .time-row { grid-template-columns:minmax(0,1fr); }
+ #relief-root .attendance-portal .time-row>span { padding:0; }
+ #relief-root .attendance-portal .segmented.three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ #relief-root .attendance-portal .segmented label { min-height:64px; }
+ #relief-root .attendance-portal .privacy-note { align-items:flex-start; }
+ #relief-root .attendance-portal .privacy-note p { font-size:13px; line-height:1.5; }
+ #relief-root .attendance-portal .form-button-row { display:flex; width:100%; flex-wrap:wrap; gap:10px; }
+ #relief-root .attendance-portal .form-button-row button { flex:1 1 140px; }
+ #relief-root .attendance-portal .teacher-name-list>div { grid-template-columns:38px minmax(0,1fr); gap:10px; padding:14px; }
+ #relief-root .attendance-portal .teacher-name-list>div>div { grid-column:1/-1; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+ #relief-root .attendance-portal .teacher-name-list strong { font-size:14px; line-height:1.4; }
+ #relief-root .attendance-portal .teacher-name-list button { padding:9px 14px; }
+ #relief-root .attendance-portal .panel-toolbar { align-items:stretch; flex-direction:column; }
+ #relief-root .attendance-portal .search-box { width:100%; }
+ #relief-root .attendance-portal .detail-row { grid-template-columns:minmax(0,1fr); }
+ #relief-root .attendance-portal .detail-row b { font-size:13px; }
+ #relief-root .attendance-portal .detail-row small { font-size:10px; }
+ #relief-root .attendance-portal .absence-card { grid-template-columns:38px minmax(0,1fr); padding:14px; }
+ #relief-root .attendance-portal .relief-link { white-space:normal; line-height:1.4; min-height:48px; padding:12px; }
+ #relief-root .attendance-portal .pin-modal { padding:62px 20px 24px; }
+ #relief-root .access-card { padding:62px 20px 24px; }
+ #relief-root .toast { inset:auto 16px max(16px,env(safe-area-inset-bottom)); max-width:none; display:flex; align-items:center; gap:12px; }
+ #relief-root .toast button { min-width:44px; min-height:44px; margin-left:auto; }
+ #relief-root footer { padding:24px 16px; gap:14px; }
+ #relief-root .attendance-portal footer { flex-direction:column; align-items:flex-start; }
+ #relief-root .attendance-portal footer img { width:140px; margin:0; }
+}
+@media screen and (max-width:359px) {
+ #relief-root .topbar-actions { grid-template-columns:minmax(0,1fr); }
+ #relief-root .school-brand { align-items:flex-start; flex-direction:column; }
+ #relief-root .brandcopy { flex:auto; }
+}
+/* Touch devices should not retain the desktop card lift after tapping. */
+@media screen and (hover:none) {
+ #relief-root .card:hover,#relief-root :is(.primary,.viewer-launch,.return-attendance,.schedule-view-button,.inbox-item button):hover { transform:none; }
+}

@@ -93,6 +93,19 @@ const enhanceSummary = () => {
   }, true);
 };
 
+// Wide timetables scroll within the panel, including with a keyboard on Safari.
+const enhanceScrollRegions = () => {
+  root.querySelectorAll('.table-wrap,.original-scroll,.weekly-scroll,.overlay-scroll').forEach(panel => {
+    if (panel.hasAttribute('data-scroll-region')) return;
+    panel.setAttribute('data-scroll-region', '');
+    panel.setAttribute('tabindex', '0');
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'Jadual — leret ke kiri atau kanan untuk melihat semua maklumat');
+  });
+};
+const scrollRegionObserver = new MutationObserver(enhanceScrollRegions);
+scrollRegionObserver.observe(root, {childList:true, subtree:true});
+
 const summaryObserver = new MutationObserver(enhanceSummary);
 summaryObserver.observe(root, { childList: true, subtree: true });
 
@@ -175,7 +188,7 @@ void loadCoordinators();
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=absence-duplicate-1"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=responsive-20261027-1"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();
