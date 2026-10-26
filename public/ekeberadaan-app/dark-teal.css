@@ -100,3 +100,16 @@
 @media screen and (max-width:359px) {
  #relief-root .school-brand { flex-direction:row; align-items:center; }
 }
+@media screen {
+ #relief-root :is(.teacher-checklist,.viewer-summary,.period-picker button) { color:var(--dt-text); background:var(--dt-input); border-color:var(--dt-line); }
+ #relief-root .period-picker button.selected { color:var(--dt-on-accent); background:var(--dt-accent); border-color:var(--dt-accent); }
+ #relief-root .period-picker button.selected :is(b,small) { color:inherit; }
+ #relief-root :is(.selected-absence-list button,.absence-item-actions button) { color:var(--dt-danger); background:var(--dt-danger-bg); }
+ #relief-root :is(.absence-row-actions button.edit,.absence-item-actions button.edit,.public-header>button) { color:var(--dt-accent); background:var(--dt-raised); border-color:var(--dt-line); }
+ #relief-root .system-tabs button:not(.active):hover { color:var(--dt-text); background:var(--dt-raised); }
+ /* The legacy period picker sets important colours; override only that control. */
+ #relief-root .mini-period-picker button { color:var(--dt-text)!important; background:var(--dt-input)!important; border-color:var(--dt-line)!important; }
+ #relief-root .mini-period-picker button :is(small,em,em span,i) { color:var(--dt-muted); }
+ #relief-root .mini-period-picker button.selected { color:var(--dt-on-accent)!important; background:var(--dt-accent)!important; border-color:var(--dt-accent)!important; }
+ #relief-root .mini-period-picker button.selected :is(b,small,em,em span,i) { color:var(--dt-on-accent)!important; }
+}
