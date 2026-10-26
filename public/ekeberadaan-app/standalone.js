@@ -188,7 +188,7 @@ void loadCoordinators();
 
 try {
   const [{ default: App }, framework] = await Promise.all([
-    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=responsive-20261027-1"),
+    import("/ekeberadaan-app/assets/page-MSybSbxR.js?v=dark-teal-20261027-1"),
     import("/ekeberadaan-app/assets/framework-CXnKph_e.js"),
   ]);
   const React = framework.i();

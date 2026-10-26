@@ -1,0 +1,102 @@
+/* Portal-aligned dark teal. Screen only: printed reports keep their paper theme. */
+@media screen {
+ :root {
+  color-scheme:dark;
+  --dt-bg:#061d28; --dt-panel:#0b2c39; --dt-raised:#123b48;
+  --dt-input:#07232f; --dt-line:#31545e; --dt-text:#edf7f6;
+  --dt-muted:#adc5ca; --dt-accent:#83dcd0; --dt-on-accent:#062b33;
+  --dt-danger:#ffb3aa; --dt-danger-bg:#462d37; --dt-warn:#ffda83; --dt-warn-bg:#3b3828;
+ }
+ body { background:var(--dt-bg); color:var(--dt-text); }
+ #relief-root,#relief-root .attendance-portal {
+  --ink:var(--dt-text); --muted:var(--dt-muted); --paper:var(--dt-panel); --card:var(--dt-panel);
+  --line:var(--dt-line); --green:var(--dt-accent); --green-dark:#97e5db; --mint:#164b4e;
+  --navy:var(--dt-text); --navy-2:var(--dt-raised); --blue:#a3ceff; --blue-soft:#1c3b56;
+  --coral:var(--dt-danger); --coral-soft:var(--dt-danger-bg); --red:var(--dt-danger); --bg:var(--dt-bg);
+  color:var(--dt-text); background:radial-gradient(ellipse at 5% 0%,#17475580,transparent 48%),var(--dt-bg);
+ }
+ #relief-root :is(h1,h2,h3,h4,strong,b) { color:var(--dt-text); }
+ #relief-root :is(p,small,label,legend) { color:var(--dt-muted); }
+ #relief-root :is(.hero-copy h1 em,.hero h2 em,.eyebrow,.kicker,.hero-kicker,.public-intro h2 em) { color:var(--dt-accent); }
+ #relief-root :is(.topbar,.public-header) { background:linear-gradient(135deg,#113644f5,#082733f5); border-color:var(--dt-line); box-shadow:0 8px 24px #00131c40; }
+ #relief-root .topbar-secondary { border-color:var(--dt-line); }
+ /* Crest images are transparent portrait marks, never cropped into a landscape slot. */
+ #relief-root :is(.school-logo,.brand-logo,.access-card>img,footer img),
+ #relief-root .attendance-portal footer img { width:48px; height:54px; aspect-ratio:1199/1312; object-fit:contain; object-position:center; flex:none; background:transparent; border:0; border-radius:0; filter:none; }
+ #relief-root .brand-logo img { object-fit:contain; background:transparent; }
+ #relief-root .access-card>img { width:68px; height:76px; margin:0 auto 18px; }
+ #relief-root footer img,#relief-root .attendance-portal footer img { width:40px; height:45px; }
+ #relief-root :is(.school-brand,.brand) { gap:12px; }
+ #relief-root :is(.brand-copy small,.brandcopy .eyebrow) { color:var(--dt-muted); }
+ #relief-root :is(.topbar .system-tabs,.nav-tabs,.scope-toggle,.result-tabs,.admin-category-tabs) { background:var(--dt-input); border-color:var(--dt-line); }
+ #relief-root :is(.system-tabs button,.nav-tabs button,.scope-toggle button,.result-tabs button,.admin-category-tabs button) { color:var(--dt-muted); }
+ #relief-root :is(.system-tabs button.active,.nav-tabs button.active,.scope-toggle button.active,.result-tabs button.active,.admin-category-tabs button.active) { background:linear-gradient(135deg,#83dcd0,#8cc9df); color:var(--dt-on-accent); box-shadow:0 3px 12px #00141e40; }
+ #relief-root :is(.system-tabs button.active,.nav-tabs button.active,.admin-category-tabs button.active) b { color:var(--dt-on-accent); background:#e2fffa; }
+ #relief-root :is(.card,.date-card,.report-card,.success-card,.absence-panel,.admin-form,.teacher-admin-panel,.history-tile,.hub-date,.public-form,.schedule-viewer,.selection-card,.inbox-card) { background:linear-gradient(145deg,#143b49ed,#0a2b38f5); border-color:var(--dt-line); box-shadow:0 12px 34px #00121b38,inset 0 1px #c4ffff09; }
+ #relief-root :is(.card-heading,.card-head,.form-footer,.panel-toolbar,.duration-field,.audit-section,.version-list,.version-item,.absence-list,.absence-item,.topbar-secondary) { border-color:var(--dt-line); }
+ #relief-root :is(.form-footer,.panel-toolbar,.admin-category-tabs) { background:#0c303d; }
+ #relief-root :is(.topbar-status,.live-pill,.feature-pills span,.creator-badge,.public-points span,.history-selection,.summary-row,.privacy-note,.load-protection,.original-preview,.time-row,.date-range,.schedule-health.ok,.page-notice,.public-notice,.settings-notice) { color:var(--dt-muted); background:#103b46; border-color:var(--dt-line); }
+ #relief-root :is(.topbar-status b,.live-pill,.page-notice,.schedule-health.ok b,.privacy-note strong,.load-protection b) { color:var(--dt-accent); }
+ #relief-root :is(.topbar-status small,.schedule-health small,.schedule-view-button small,.card-heading p,.date-card-heading small,.history-tile p,.detail-row b,.record-note,.original-note,.viewer-note,.schedule-card>p,.hub-heading>div>p:last-child,.hero-copy>p,.summary-head>div>p:last-child) { color:var(--dt-muted); }
+ #relief-root :is(input,select,textarea),#relief-root .field :is(input,select,textarea),#relief-root .history-tools .history-date input { color:var(--dt-text); background:var(--dt-input); border-color:#50747c; caret-color:var(--dt-accent); }
+ #relief-root input[type=range] { background:transparent; accent-color:var(--dt-accent); }
+ #relief-root input:is([type=radio],[type=checkbox]) { accent-color:var(--dt-accent); }
+ #relief-root input::placeholder,#relief-root textarea::placeholder { color:#a4bfc5; opacity:1; }
+ #relief-root select option { color:var(--dt-text); background:var(--dt-input); }
+ #relief-root :is(input,select,textarea):focus { border-color:var(--dt-accent); box-shadow:0 0 0 3px #83dcd025; }
+ #relief-root :is(button,a,input,select,textarea):focus-visible { outline:3px solid var(--dt-accent); outline-offset:3px; }
+ #relief-root :is(.primary,.primary-button,.generate-now,.public-submit,.quick-add button,.return-attendance,.relief-link,.smk-popup-primary) { color:var(--dt-on-accent); background:linear-gradient(135deg,#83dcd0,#8cc9df); border-color:#a1ece1; box-shadow:0 6px 18px #00151e40; }
+ #relief-root :is(.primary,.primary-button,.generate-now,.public-submit,.return-attendance,.relief-link,.quick-add button) :is(strong,span) { color:inherit; }
+ #relief-root :is(.secondary,.viewer-launch,.cancel-button,.lock-admin,.clear-history,.pdf-button,.schedule-view-button,.history-tile button,.history-tile a,.record-controls button,.teacher-name-list button,.smk-popup-secondary,.smk-picker-done) { color:var(--dt-accent); background:var(--dt-raised); border-color:#4e747a; }
+ #relief-root button:disabled { opacity:.5; }
+ #relief-root :is(.metric-icon,.mini-icon,.step,.sidebar-icon,.avatar,.calendar-icon,.privacy-note>span,.segment-icon,.history-tile .history-date,.schedule-view-button>span) { color:var(--dt-accent); background:#194651; border-color:var(--dt-line); }
+ #relief-root .metric-icon.coral { color:var(--dt-danger); background:var(--dt-danger-bg); }
+ #relief-root .metric-icon.blue { color:#b8d8ff; background:#203d55; }
+ #relief-root :is(.segmented label,.segmented label:hover,.segmented label.selected) { color:var(--dt-text); background:var(--dt-input); border-color:var(--dt-line); }
+ #relief-root .segmented label.selected { background:#16484b; border-color:var(--dt-accent); box-shadow:inset 0 0 0 1px var(--dt-accent); }
+ #relief-root .segmented label.selected i { border-color:var(--dt-accent); }
+ #relief-root .segmented label.selected i:after { background:var(--dt-accent); }
+ #relief-root :is(.smk-picker-results,.smk-picker-results button,.teacher-review-row,.selected-absence-list>div,.inbox-item,.absence-card,.teacher-name-list>div,.history-tools,.history-selection,.detail-row>span,.search-box) { color:var(--dt-text); background:var(--dt-input); border-color:var(--dt-line); }
+ #relief-root :is(.smk-selected-teacher,.smk-picker-results p,.inbox-empty,.history-empty,.empty-state,.detail-row small) { color:var(--dt-muted); }
+ #relief-root :is(.smk-picker-results button:hover,.smk-picker-results button.is-active,.teacher-name-list>div:hover) { background:var(--dt-raised); }
+ #relief-root :is(.smk-reason-admin,.smk-coordinator-admin,.smk-relief-pin-admin,.teacher-review-panel) { color:var(--dt-text); background:var(--dt-panel); border-color:var(--dt-line); }
+ #relief-root :is(.smk-reason-admin button,.smk-coordinator-save,.smk-coordinator-add button,.smk-relief-pin-admin button,.teacher-review-panel button,.inbox-item button) { color:var(--dt-on-accent); background:var(--dt-accent); border-color:var(--dt-accent); }
+ #relief-root :is(.teacher-review-row select,.smk-coordinator-row input,.smk-coordinator-add input,.smk-relief-pin-admin input,.smk-reason-add input) { color:var(--dt-text); background:var(--dt-input); border-color:#50747c; }
+ #relief-root :is(.smk-reason-admin li,.teacher-name-list>div,.absence-card,.smk-picker-results button) { border-color:var(--dt-line); }
+ #relief-root :is(.inbox-empty,.history-empty,.upload-zone,.success-meta,.schedule-notice,.record-note,.detail-row>span,.smk-reason-confirm) { background:#0d303d; border-color:var(--dt-line); }
+ #relief-root :is(.success-orbit,.pin-lock,.access-icon,.smk-floating-dialog .smk-popup-icon) { color:var(--dt-accent); background:#194c50; box-shadow:0 0 0 6px #83dcd00c; }
+ #relief-root :is(.success-orbit span,.pin-lock span,.access-icon span) { color:var(--dt-on-accent); background:var(--dt-accent); }
+ #relief-root :is(.access-card,.pin-modal,.smk-floating-dialog) { color:var(--dt-text); background:linear-gradient(145deg,#17404d,#092b38); border-color:#50747c; box-shadow:0 24px 80px #00101880; }
+ #relief-root :is(.access-modal,.pin-backdrop,.schedule-viewer-backdrop),#relief-root .smk-floating-dialog::backdrop { background:#00141dcc; }
+ #relief-root :is(.viewer-close,.pin-close,.access-close) { color:var(--dt-text)!important; background:var(--dt-raised)!important; border-color:var(--dt-line); }
+ #relief-root :is(.access-error,.pin-error,.smk-popup-error,.smk-coordinator-message,.smk-relief-pin-message) { color:var(--dt-danger); }
+ #relief-root :is(.smk-coordinator-message.ok,.smk-relief-pin-message.ok,.sent-label,.status-clear,.audit-ok) { color:var(--dt-accent); }
+ #relief-root :is(.absence-card.late,.absent-badge,.late-badge,.late-status,.inbox-delete,.record-controls button.danger,.teacher-name-list button.danger,.smk-coordinator-row button,.smk-reason-admin li button) { color:var(--dt-danger); background:var(--dt-danger-bg); border-color:#8c5960; }
+ #relief-root :is(.delete-confirm,.smk-popup-danger) { color:#fff6f3; background:#9a3c41; border-color:#d4888a; }
+ #relief-root :is(.hub-notice,.validation-banner.fail,.schedule-health.warn,.overlay-draft,.overlay-status.bad,.audit-alert,.unfilled td) { color:var(--dt-warn); background:var(--dt-warn-bg); border-color:#8c784b; }
+ #relief-root :is(.validation-banner.pass,.overlay-status.good,.audit-confirmation,.sent-label,.audit-ok) { background:#164345; border-color:#3f7571; }
+ /* Tables retain distinct original/relief/clash states and readable contrast. */
+ #relief-root :is(.original-scroll,.weekly-scroll,.overlay-scroll,.table-wrap) { background:var(--dt-input); border-color:var(--dt-line); }
+ #relief-root th,#relief-root :is(.schedule-header,.weekly-header,.schedule-grid .teacher-cell,.weekly-day,.relief-table .absent-name) { color:var(--dt-text); background:#153b48; border-color:var(--dt-line); }
+ #relief-root :is(td,.schedule-grid>div,.weekly-grid>div,.original-grid>div) { border-color:var(--dt-line); }
+ #relief-root :is(.original-grid .free,.weekly-cell.is-free,.schedule-cell.free) { color:#98b5bd; background:var(--dt-input); }
+ #relief-root :is(.original-grid .busy,.weekly-cell.has-lesson,.schedule-cell.original) { color:var(--dt-text); background:#1c494e; }
+ #relief-root .schedule-cell.relief { color:#ffedb3; background:#554a22; box-shadow:inset 0 0 0 1px #a39146; }
+ #relief-root .schedule-cell.clash { color:#ffcdc4; background:#62373d; box-shadow:inset 0 0 0 2px #c58180; }
+ #relief-root :is(.schedule-cell.relief,.schedule-cell.clash) :is(b,small) { color:inherit; }
+ #relief-root :is(.original-grid small,.weekly-cell small,.teacher-cell small,.relief-table small,.audit-table small,.history-list small,.history-card p:last-of-type) { color:var(--dt-muted); }
+ #relief-root .cancelled td { color:var(--dt-muted); background:#203b45; }
+ #relief-root :is(.history-card,.history-item,.toast) { color:var(--dt-text); background:#103943; border-color:var(--dt-line); }
+ #relief-root footer,#relief-root .attendance-portal footer { color:var(--dt-muted); background:#061e29; border-color:var(--dt-line); }
+ #relief-root footer span,#relief-root footer p { color:var(--dt-muted); }
+ #portal-identity-strip { background:linear-gradient(135deg,#113b49,#082733); }
+}
+@media screen and (max-width:620px) {
+ #relief-root .school-logo,#relief-root .brand-logo { width:42px; height:48px; }
+ #relief-root .school-brand { flex-wrap:nowrap; align-items:center; }
+ #relief-root .brandcopy { flex:1; }
+ #relief-root .topbar,#relief-root .attendance-portal .topbar { background:linear-gradient(135deg,#113644,#082733); }
+}
+@media screen and (max-width:359px) {
+ #relief-root .school-brand { flex-direction:row; align-items:center; }
+}
