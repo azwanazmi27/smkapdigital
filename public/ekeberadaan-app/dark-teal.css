@@ -113,3 +113,15 @@
  #relief-root .mini-period-picker button.selected { color:var(--dt-on-accent)!important; background:var(--dt-accent)!important; border-color:var(--dt-accent)!important; }
  #relief-root .mini-period-picker button.selected :is(b,small,em,em span,i) { color:var(--dt-on-accent)!important; }
 }
+
+/* Explicit semantic colours take precedence over the legacy badge and hint rules. */
+@media screen {
+ #relief-root .hub-date>span { color:var(--dt-accent); font-size:13px; line-height:1.5; }
+ #relief-root .inbox-count { color:#ffd0c7; background:#4a303b; border:1px solid #93636b; }
+ #relief-root .attendance-portal .panel-toolbar>div>span { color:var(--dt-text); background:var(--dt-raised); border:1px solid var(--dt-line); }
+ #relief-root .attendance-portal .panel-toolbar .search-box,
+ #relief-root .attendance-portal .panel-toolbar .search-box input { color:var(--dt-text); }
+ #relief-root .attendance-portal .panel-toolbar .search-box input { -webkit-text-fill-color:var(--dt-text); }
+ #relief-root input:is([type=date],[type=time]) { color:var(--dt-text); -webkit-text-fill-color:var(--dt-text); color-scheme:dark; }
+ #relief-root .attendance-portal .panel-toolbar .search-box input::placeholder { color:var(--dt-muted); -webkit-text-fill-color:var(--dt-muted); opacity:1; }
+}

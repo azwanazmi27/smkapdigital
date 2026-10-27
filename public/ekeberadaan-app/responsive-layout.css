@@ -179,3 +179,38 @@
 @media screen and (hover:none) {
  #relief-root .card:hover,#relief-root :is(.primary,.viewer-launch,.return-attendance,.schedule-view-button,.inbox-item button):hover { transform:none; }
 }
+
+/* Native iOS date controls must shrink inside their label's grid track. */
+@media screen {
+ #relief-root .hub-date,
+ #relief-root .attendance-portal .history-tools .history-date { min-width:0; max-width:100%; box-sizing:border-box; }
+ #relief-root .hub-date>label,
+ #relief-root .attendance-portal .history-tools .history-date>div { display:grid; grid-template-columns:minmax(0,1fr); width:100%; min-width:0; max-width:100%; }
+ #relief-root input:is([type=date],[type=time]),
+ #relief-root .attendance-portal .history-tools .history-date input {
+  display:block; box-sizing:border-box; width:100%; inline-size:100%; min-width:0; min-inline-size:0;
+  max-width:100%; max-inline-size:100%; height:48px; min-height:48px; margin-inline:0;
+  padding:10px 12px; line-height:26px; appearance:none; -webkit-appearance:none;
+  overflow:hidden; text-overflow:ellipsis; text-align:start;
+ }
+ #relief-root input:is([type=date],[type=time])::-webkit-datetime-edit { display:block; min-width:0; padding:0; }
+ #relief-root input:is([type=date],[type=time])::-webkit-date-and-time-value { display:block; min-width:0; min-height:26px; text-align:start; }
+ /* A search label inherits column layout from the legacy generic label rule. */
+ #relief-root .attendance-portal .panel-toolbar .search-box {
+  display:flex; flex-direction:row; align-items:center; gap:8px; box-sizing:border-box;
+  width:min(310px,100%); max-width:100%; min-width:0; height:auto; min-height:48px;
+  padding:0 12px; margin:0;
+ }
+ #relief-root .attendance-portal .panel-toolbar .search-box>input {
+  flex:1 1 0%; width:0; min-width:0; max-width:100%; height:46px; min-height:46px;
+  padding:0; margin:0; border:0; border-radius:0; box-shadow:none; background:transparent; line-height:1.4;
+ }
+ #relief-root .attendance-portal .panel-toolbar .search-box>span,
+ #relief-root .attendance-portal .panel-toolbar .search-box>svg { flex:none; width:20px; height:20px; display:grid; place-items:center; line-height:1; }
+ #relief-root .attendance-portal .panel-toolbar .search-box:focus-within { outline:2px solid #83dcd0; outline-offset:2px; }
+}
+@media screen and (max-width:760px) {
+ #relief-root .attendance-portal .panel-toolbar .search-box { width:100%; }
+ #relief-root .attendance-portal .history-tools .history-date { grid-template-columns:32px minmax(0,1fr); gap:10px; padding:12px; }
+ #relief-root .attendance-portal .history-tools .history-date>span { width:32px; height:32px; font-size:20px; }
+}
