@@ -1915,3 +1915,8 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 .reform-pdf-pages figure { margin:0 0 20px; }
 .reform-pdf-pages figcaption { color:#b7d5df; font-size:14px; padding:10px 0; }
 .reform-pdf-pages canvas { display:block; width:100%; height:auto; background:white; border-radius:4px; }
+
+/* Short teaching menus open at the same height as the other mobile work modules. */
+@media (max-width:700px) {
+ .folder-modal.generator-modal.teaching-modal { height:92vh; height:92svh; max-height:92vh; max-height:92svh; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+}
