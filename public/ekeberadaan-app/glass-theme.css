@@ -1,0 +1,108 @@
+/* iOS-inspired glass surfaces, scoped to these two modules and screen output. */
+@media screen {
+ :root {
+  --glass-panel:linear-gradient(145deg,rgba(42,84,98,.76),rgba(8,38,51,.92));
+  --glass-border:rgba(186,229,230,.23);
+  --glass-shadow:0 12px 30px rgba(0,13,22,.24),inset 0 1px 0 rgba(225,255,251,.12);
+ }
+ body { background:radial-gradient(ellipse at 6% 0%,#184c5b 0,transparent 44%),radial-gradient(ellipse at 100% 72%,#123b50 0,transparent 46%),#061d28; }
+ #relief-root,#relief-root .attendance-portal { background:transparent; }
+ #relief-root :is(.card,.report-card,.success-card,.date-card,.hub-date,.history-tile,.public-form,.admin-form,.teacher-admin-panel,.metric-grid article,.smk-reason-admin,.smk-coordinator-admin,.smk-relief-pin-admin,.teacher-review-panel) {
+  background:var(--glass-panel); border:1px solid var(--glass-border); border-radius:22px;
+  box-shadow:var(--glass-shadow);
+ }
+ /* Limit live blur to outer surfaces; list rows use lightweight gradients. */
+ #relief-root :is(.report-card,.date-card,.hub-date,.history-tile,.admin-form,.teacher-admin-panel) { -webkit-backdrop-filter:blur(10px) saturate(120%); backdrop-filter:blur(10px) saturate(120%); }
+ #relief-root .topbar,#relief-root .attendance-portal .topbar,#portal-identity-strip {
+  background:linear-gradient(140deg,rgba(32,73,88,.88),rgba(7,32,44,.93));
+  border-color:var(--glass-border); box-shadow:0 8px 26px #00131c28,inset 0 1px #e1fffb0d;
+  -webkit-backdrop-filter:blur(12px) saturate(120%); backdrop-filter:blur(12px) saturate(120%);
+ }
+ #relief-root :is(.card-head,.card-heading,.form-footer,.panel-toolbar,.admin-category-tabs) { background:transparent; border-color:rgba(186,229,230,.14); }
+ #relief-root .topbar .system-tabs,#relief-root :is(.system-tabs,.nav-tabs,.scope-toggle,.result-tabs,.history-tools,.topbar-status,.history-selection) {
+  background:linear-gradient(150deg,#6ba3ae15,#031c2866); border:1px solid rgba(186,229,230,.16);
+  box-shadow:inset 0 1px #e1fffb0c; border-radius:16px;
+ }
+ #relief-root :is(.system-tabs button.active,.nav-tabs button.active,.scope-toggle button.active,.result-tabs button.active,.admin-category-tabs button.active) {
+  background:linear-gradient(145deg,#b7f1e8,#7ed5cf 58%,#8ac7df); color:#062b33;
+  box-shadow:inset 0 1px #ffffff96,0 3px 10px #001a2338;
+ }
+ #relief-root :is(.primary,.primary-button,.generate-now,.public-submit,.quick-add button,.return-attendance,.relief-link) {
+  background:linear-gradient(145deg,#b7f1e8,#83dcd0 58%,#8cc9df); border-color:#c5fff34d;
+  box-shadow:inset 0 1px #ffffff80,0 5px 16px #001a2340; color:#062b33;
+ }
+ #relief-root :is(.secondary,.viewer-launch,.cancel-button,.lock-admin,.clear-history,.pdf-button,.schedule-view-button,.record-controls button,.teacher-name-list button) {
+  background:linear-gradient(145deg,#80c4ce18,#123b48b3); border:1px solid rgba(172,223,224,.22);
+  box-shadow:inset 0 1px #e1fffb10; border-radius:12px;
+ }
+ #relief-root :is(.field input,.field select,.field textarea,.history-tools .history-date input,.hub-date input,.search-box,.creator-field select,.hub-coordinator select) {
+  background:linear-gradient(160deg,#041b26b3,#092d3bc7); border-color:rgba(172,223,224,.3); box-shadow:inset 0 1px 4px #00141c45;
+ }
+ #relief-root :is(.mini-icon,.step,.sidebar-icon,.metric-icon,.calendar-icon,.avatar,.segment-icon,.privacy-note>span,.schedule-view-button>span) {
+  background:linear-gradient(145deg,#8ad7cf28,#2a687629); border:1px solid rgba(172,223,224,.18); box-shadow:inset 0 1px #e1fffb1a;
+ }
+ #relief-root :is(.inbox-item,.selected-absence-list>div,.teacher-review-row,.teacher-name-list>div) { background:linear-gradient(140deg,#2f657029,#082c3abc); border-color:rgba(172,223,224,.18); }
+ #relief-root :is(.access-card,.pin-modal,.smk-floating-dialog,.schedule-viewer) {
+  background:linear-gradient(145deg,rgba(35,76,91,.97),rgba(7,33,46,.98));
+  border:1px solid rgba(196,236,235,.3); box-shadow:0 28px 70px #00101d80,inset 0 1px #e1fffb1f;
+ }
+ /* Late records keep their dark surface; red is a restrained, static signal. */
+ #relief-root .attendance-portal .absence-card {
+  background:linear-gradient(145deg,#234e5a8c,#082a37ed); border:1px solid rgba(172,223,224,.2);
+  border-radius:20px; box-shadow:0 8px 22px #00101b24,inset 0 1px #e1fffb0f;
+ }
+ #relief-root .attendance-portal .absence-card.late {
+  background:radial-gradient(ellipse at 100% 0%,rgba(226,91,105,.08),transparent 58%),linear-gradient(145deg,#234e5a8c,#082a37f2);
+  border-color:rgba(246,141,149,.5);
+  box-shadow:0 0 0 1px rgba(239,104,121,.05),0 0 18px rgba(233,90,111,.12),0 8px 22px #00101b26,inset 0 1px #ffced11c;
+ }
+ #relief-root .attendance-portal .late-badge {
+  display:inline-flex; align-items:center; min-height:26px; padding:4px 9px; border-radius:8px;
+  background:rgba(115,48,63,.33); border:1px solid rgba(246,141,149,.35);
+  color:#ffc0ba; font-size:11px; font-weight:700; line-height:1.35; letter-spacing:.01em;
+ }
+ #relief-root .attendance-portal .absent-badge {
+  background:transparent; border:0; padding:0; color:#ffc0ba; font-size:10px; letter-spacing:.035em;
+ }
+ #relief-root .attendance-portal .absence-card.late:has(.late-badge) .relief-action>.late-status { display:none; }
+ #relief-root .attendance-portal .detail-row {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 18px;
+  margin-top:14px; padding-top:14px; border-top:1px solid rgba(186,229,230,.13);
+ }
+ #relief-root .attendance-portal .detail-row>span {
+  min-width:0; padding:0; border:0; border-radius:0; background:transparent;
+ }
+ #relief-root .attendance-portal .detail-row small { color:#adc5ca; font-size:10px; line-height:1.4; letter-spacing:.06em; }
+ #relief-root .attendance-portal .detail-row b { color:#edf7f6; font-size:13px; font-weight:600; line-height:1.5; margin-top:4px; }
+ #relief-root .attendance-portal .detail-row .submitted-at { grid-column:1/-1; padding:10px 0 0; border:0; border-top:1px solid rgba(186,229,230,.1); background:transparent; }
+ #relief-root .attendance-portal .detail-row .submitted-at b { color:#adc5ca; font-size:12px; font-weight:400; }
+ #relief-root .attendance-portal .record-note { margin-top:12px; padding:10px 12px; border:1px solid rgba(186,229,230,.1); border-radius:10px; background:#76b7c00a; font-size:13px; line-height:1.55; }
+ #relief-root .attendance-portal .relief-action { border-color:rgba(186,229,230,.13); }
+ #relief-root .attendance-portal .record-controls { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; width:100%; }
+ #relief-root .attendance-portal .record-controls button { min-height:44px; padding:10px 12px; line-height:1.3; font-size:13px; }
+ #relief-root .attendance-portal .record-controls button.danger {
+  color:#ffc0ba; background:linear-gradient(145deg,#a54d5a20,#602c3a38); border:1px solid rgba(246,141,149,.3); box-shadow:inset 0 1px #ffced10d;
+ }
+}
+@media screen and (max-width:620px) {
+ #relief-root .attendance-portal .absence-card { grid-template-columns:38px minmax(0,1fr); align-items:start; gap:12px; padding:16px; }
+ #relief-root .attendance-portal .absence-main { display:contents; }
+ #relief-root .attendance-portal .name-line { grid-column:2; align-items:flex-start; gap:8px; }
+ #relief-root .attendance-portal .name-line h3 { flex-basis:100%; font-size:14px; font-weight:700; line-height:1.45; }
+ #relief-root .attendance-portal .detail-row { grid-column:1/-1; grid-template-columns:repeat(2,minmax(0,1fr)); margin:0; padding-top:12px; gap:14px 12px; }
+ #relief-root .attendance-portal .detail-row>span:first-child { grid-column:1/-1; }
+ #relief-root .attendance-portal .record-note { grid-column:1/-1; margin:0; }
+ #relief-root .attendance-portal .relief-action { grid-column:1/-1; padding-top:12px; margin:0; gap:8px; }
+ #relief-root .attendance-portal .record-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #relief-root .attendance-portal .record-controls button { min-height:44px; font-size:14px; }
+ #relief-root .attendance-portal .record-controls button:only-child { grid-column:1/-1; }
+ #relief-root :is(.card,.report-card,.date-card,.hub-date,.history-tile,.metric-grid article) { border-radius:20px; }
+ #relief-root :is(.report-card,.date-card,.hub-date,.history-tile) { -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+}
+/* Keep opaque readable surfaces when the device asks for reduced transparency. */
+@media screen and (prefers-reduced-transparency:reduce) {
+ #relief-root :is(.card,.report-card,.date-card,.hub-date,.history-tile,.admin-form,.teacher-admin-panel,.metric-grid article,.topbar,.attendance-portal .topbar,.absence-card,.attendance-portal .absence-card.late,.access-card,.pin-modal,.smk-floating-dialog,.schedule-viewer) {
+  background:#0c303d; -webkit-backdrop-filter:none; backdrop-filter:none;
+ }
+ #portal-identity-strip { background:#0c303d; -webkit-backdrop-filter:none; backdrop-filter:none; }
+}
