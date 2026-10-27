@@ -455,7 +455,7 @@ export function LandingPortal() {
     {staffAnnouncementOpen&&staffAnnouncements.length>0&&<StaffAnnouncementPopup items={staffAnnouncements} close={closeStaffAnnouncement}/>} 
     {pushNotice&&<PushNoticePopup item={pushNotice} close={()=>{setPushNotice(null);const url=new URL(window.location.href);url.searchParams.delete("notification");history.replaceState({},"",`${url.pathname}${url.search}${url.hash}`);}}/>}
     {profileOpen&&identity&&<ProfileCard user={identity} close={()=>setProfileOpen(false)} save={updateProfile} updatePhoto={updatePhoto} logout={logout} notify={notify} pushState={pushState} enableNotifications={enableNotifications}/>} 
-    {attendanceSplash&&<div className="attendance-splash" role="status" aria-live="polite"><img src="/ekeberadaan-loading.jpg" alt="SMKAP Digital e-Keberadaan"/><div className="attendance-splash-shade" aria-hidden="true"/><div className="attendance-splash-status"><i aria-hidden="true"/><span>Memuatkan e-Keberadaan…</span></div></div>}
+    {attendanceSplash&&<div className="attendance-splash" role="status" aria-live="polite"><img src="/ekeberadaan-loading.jpg" alt="SMKAP Digital e-Keberadaan"/><div className="attendance-splash-status"><i aria-hidden="true"/><span>Memuatkan e-Keberadaan…</span></div></div>}
     {opening&&<div className="portal-opening" role="status" aria-live="polite"><div><i aria-hidden="true"/><span><strong>Membuka {opening}</strong><small>Sila tunggu sebentar…</small></span></div></div>}
     <BookingFeedback account={`${identity?.email||""}|${identity?.role||""}`} openTasks={()=>{sessionStorage.setItem('smkap_tasks_expanded','1');setOpen('warga');}}/>
     {toast && <div className="landing-toast" role="status"><span>✓</span>{toast}</div>}
