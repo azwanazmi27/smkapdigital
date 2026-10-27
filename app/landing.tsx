@@ -35,12 +35,12 @@ import { EPanitiaCentre } from "./epanitia-centre";
 type PdfDocument = InstanceType<(typeof import("jspdf"))["jsPDF"]>;
 
 
-type Folder = "uploads" | "upload-paper" | "upload-duty" | "ibubapa" | "warga" | "assessment" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
+type Folder = "uploads" | "upload-paper" | "upload-duty" | "ibubapa" | "warga" | "assessment" | "pdp" | "tentang" | "schoolprofile" | "orgchart" | "announcements" | "calendar" | "directory" | "pengunjung" | "ekunjung" | "ekeberadaan" | "etempahan" | "achievement" | "epemantauan" | "skas" | "pengurusan" | "epanitia" | "oprhub" | "oprgenerator" | "oprduty" | "admin" | null;
 type SubItem = { icon: LucideIcon; title: string; text: string; badge?: string; href?: string; folder?: Folder };
 type OprReport = { id: string; name: string; category: string; createdAt: string; updatedAt: string; viewUrl: string; previewUrl: string; downloadUrl: string };
 
 const portalHistoryFolders = new Set<Exclude<Folder, null>>([
-  "uploads", "upload-paper", "upload-duty", "ibubapa", "warga", "assessment", "tentang", "schoolprofile", "orgchart", "announcements", "calendar", "directory", "pengunjung", "ekunjung", "ekeberadaan", "etempahan", "achievement", "epemantauan", "skas", "pengurusan", "epanitia", "oprhub", "oprgenerator", "oprduty", "admin",
+  "uploads", "upload-paper", "upload-duty", "ibubapa", "warga", "assessment", "pdp", "tentang", "schoolprofile", "orgchart", "announcements", "calendar", "directory", "pengunjung", "ekunjung", "ekeberadaan", "etempahan", "achievement", "epemantauan", "skas", "pengurusan", "epanitia", "oprhub", "oprgenerator", "oprduty", "admin",
 ]);
 
 function historyFolder(value: unknown): Folder {
@@ -133,8 +133,16 @@ const folderContent: Record<Exclude<Folder, null | "uploads" | "upload-paper" | 
       { icon: CircleCheck, title: "e-Keberadaan & Relief", text: "Lapor tidak hadir, kemudian urus relief", folder: "ekeberadaan" },
       { icon: CalendarRange, title: "e-Tempahan", text: "Tempahan bilik dan kemudahan sekolah", folder: "etempahan" },
       { icon: Search, title: "e-Pemantauan", text: "Rekod pemerhatian dan hasilkan OPR", folder: "epemantauan" },
+      { icon: BookOpenText, title: "Pengajaran & Pembelajaran", text: "Penilaian kendiri dan urusan PdP guru", folder: "pdp" },
       { icon: Trophy, title: "Arkib Kejayaan", text: "Simpan sijil dan rekod pencapaian", folder: "achievement" },
       { icon: GraduationCap, title: "Pentaksiran dan Peperiksaan", text: "Arus Perdana dan Tingkatan Enam", folder: "assessment" },
+    ],
+  },
+  pdp: {
+    title: "Pengajaran & Pembelajaran",
+    intro: "Akses penilaian kendiri dan urusan pengajaran guru.",
+    items: [
+      { icon: ClipboardList, title: "e-SKPM Standard 4 Penilaian Kendiri", text: "Buka penilaian kendiri guru menggunakan akaun DELIMa", href: "https://script.google.com/a/macros/moe-dl.edu.my/s/AKfycbz3q1NTYZpOK_L9ra2UTefn2EdJdNvcGHoC1a946B1V-NcUkzPTg3eHnaV2W2Umwoj_/exec" },
     ],
   },
   assessment: {
@@ -214,7 +222,7 @@ export function LandingPortal() {
   const restoringHistory=useRef(false);
   const replaceNextHistory=useRef(false);
   const overlayActive=Boolean(open||authOpen||welcome||profileOpen||staffAnnouncementOpen||pushNotice);
-  const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["uploads","upload-paper","upload-duty","warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan","skas","pengurusan","epanitia"];return allowed.includes(value as Folder)?value as Folder:null;};
+  const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["pdp","uploads","upload-paper","upload-duty","warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan","skas","pengurusan","epanitia"];return allowed.includes(value as Folder)?value as Folder:null;};
   const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
   const openRequestedNotification=async()=>{const id=requestedNotificationId();if(!id)return;const response=await fetch(`/api/push?view=notification&id=${encodeURIComponent(id)}`,{cache:"no-store"}),data=await response.json();if(response.ok&&data.notification)setPushNotice(data.notification);};
   const loadStaffAnnouncements=async()=>{try{const response=await fetch("/api/portal-content?view=staff",{cache:"no-store"}),data=await response.json();if(response.ok)setStaffAnnouncements(data.announcements||[]);}catch{}}
@@ -359,7 +367,7 @@ export function LandingPortal() {
   const closeCurrentView = () => {
     if (open === "oprgenerator" || open === "oprduty") return returnTo("oprhub");
     if (open === "upload-paper" || open === "upload-duty") return returnTo("uploads");
-    if (open === "uploads" || open === "oprhub" || open === "assessment") return returnTo("warga");
+    if (open === "uploads" || open === "oprhub" || open === "assessment" || open === "pdp") return returnTo("warga");
     if (open === "ekunjung") return returnTo("pengunjung");
     if (open === "etempahan") return returnTo("warga");
     if (open === "ekeberadaan") return returnTo("warga");
@@ -376,7 +384,7 @@ export function LandingPortal() {
     ? "Kembali ke Pusat OPR"
     : open === "upload-paper" || open === "upload-duty"
       ? "Kembali ke pilihan Muat Naik"
-      : open === "uploads" || open === "oprhub" || open === "assessment" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia")
+      : open === "uploads" || open === "oprhub" || open === "assessment" || open === "pdp" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia")
       ? "Kembali ke Guru & Staf"
       : open === "ekunjung"
         ? "Kembali ke Pelawat"
