@@ -17,3 +17,8 @@ Applied a screen-only glass layer to attendance and relief, using dark teal tran
 
 ## Responsive opening splash
 Replaced the full-bleed cover image with a contained portrait image and an independent loading indicator. Safe-area padding and viewport-height limits preserve the original 1046:1394 aspect ratio. Laptop/tablet images cap at 520px wide; short landscape screens use a side-by-side layout. Width/height budgeting was checked for 320×568, 393×852, 430×932, 768×1024, 1024×1366, 1366×768, 1440×900 and 844×390; this is a calculation, not a browser visual test. Removed the image shade overlay that previously covered the artwork.
+
+## Laptop summary toolbar and requested full-screen splash
+The laptop screenshot exposed the summary date label still inheriting the relief history badge's 54px width. Explicit field width/height and a four-track desktop grid now isolate modes, date field, selection and PDF action. Tablet uses two tracks and phone uses one; the duplicate Today reset is hidden only when the injected equivalent is present.
+
+User clarified that the opening photograph must fill the screen. A clean background derivative was made using ImageGen to remove the large overlaid title, then encoded as a ~120 KB WebP. It now covers the viewport; responsive HTML brand/title and loading indicator remain independently constrained. This supersedes the previous contained-photo treatment. Production build and CSS parsing pass. Browser-level visual testing remains unavailable.
