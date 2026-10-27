@@ -31,7 +31,7 @@ add('kurikulum-3-1',['Bahasa Melayu','Bahasa Inggeris','Bahasa Arab']);
 add('kurikulum-3-2',['Sains','Matematik','Matematik Tambahan','Fizik','Kimia','Biologi']);
 add('kurikulum-3-3',['Pendidikan Islam','Pendidikan Al-Quran dan As-Sunnah','Pendidikan Syariah Islamiah','KKQ']);
 add('kurikulum-3-4',['Sejarah','Geografi','Pendidikan Seni Visual','Pendidikan Jasmani dan Kesihatan']);
-add('kurikulum-3-5',['RBT','Sains Komputer']);
+add('kurikulum-3-5',['RBT','Sains Komputer','Ekonomi']);
 add('koko-2',['Badan Beruniform','Kelab dan Persatuan','Sukan dan Permainan','Pasukan Sekolah yang Tiada Kelab']);
 const kokoUnits=skasDomains.find(d=>d.name==='Kokurikulum')!.units;
 ['Badan Beruniform','Kelab dan Persatuan','Sukan dan Permainan','Pasukan Sekolah'].forEach((prefix,i)=>add('koko-2-'+(i+1),kokoUnits.filter(u=>u.startsWith(prefix+' · ')).map(u=>u.split(' · ')[1])));

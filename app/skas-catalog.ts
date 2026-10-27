@@ -63,7 +63,7 @@ const baseSkasDomains = [
   {
     name: "Kurikulum",
     standard: "3.1",
-    units: ["Pengurusan Kurikulum", "Panitia · Bahasa Melayu", "Panitia · Bahasa Inggeris", "Panitia · Bahasa Arab", "Panitia · Matematik", "Panitia · Matematik Tambahan", "Panitia · Sains", "Panitia · Fizik", "Panitia · Kimia", "Panitia · Biologi", "Panitia · Sejarah", "Panitia · Geografi", "Panitia · Pendidikan Islam", "Panitia · Pendidikan Seni", "Panitia · RBT dan Sains Komputer", "Pentaksiran dan Peperiksaan", "Jadual Waktu", "Pusat Sumber Sekolah", "PLC dan LDP", "Intervensi Akademik", "Teknologi Maklumat"],
+    units: ["Pengurusan Kurikulum", "Panitia · Bahasa Melayu", "Panitia · Bahasa Inggeris", "Panitia · Bahasa Arab", "Panitia · Matematik", "Panitia · Matematik Tambahan", "Panitia · Sains", "Panitia · Fizik", "Panitia · Kimia", "Panitia · Biologi", "Panitia · Sejarah", "Panitia · Geografi", "Panitia · Pendidikan Islam", "Panitia · Pendidikan Seni", "Panitia · RBT dan Sains Komputer", "Panitia · Ekonomi", "Pentaksiran dan Peperiksaan", "Jadual Waktu", "Pusat Sumber Sekolah", "PLC dan LDP", "Intervensi Akademik", "Teknologi Maklumat"],
   },
   {
     name: "Hal Ehwal Murid",
