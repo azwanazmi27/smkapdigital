@@ -1,4 +1,5 @@
 "use client";
+import {CampusHome} from "./campus-home";
 import {MonitoringModuleCards} from "./monitoring-module-cards";
 import {ImmediateReform} from "./immediate-reform";
 import {BookingFeedback,BookingRoomSettings,useBookingRooms} from "./booking-workspace";
@@ -332,6 +333,7 @@ export function LandingPortal() {
     };
   }, []);
   useEffect(()=>{if(!authOpen)return;let cancelled=false;const start=async()=>{try{setAuthError("");const config=await fetch("/api/admin-users?resource=config").then(r=>r.json());if(!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')){const script=document.createElement("script");script.src="https://accounts.google.com/gsi/client";script.async=true;document.head.appendChild(script);}for(let i=0;i<50&&!window.google;i++)await new Promise(r=>setTimeout(r,100));if(cancelled||!window.google)throw new Error();window.google.accounts.id.initialize({client_id:config.clientId,callback:({credential})=>{void establishSession(credential).catch(error=>setAuthError(error instanceof Error?error.message:"Log masuk tidak berjaya."));}});const element=document.getElementById("google-staff-signin");if(element){element.innerHTML="";window.google.accounts.id.renderButton(element,{theme:"outline",size:"large",text:"continue_with",shape:"pill",width:300});}}catch{setAuthError("Butang Google tidak dapat disediakan sekarang.");}};void start();return()=>{cancelled=true};},[authOpen]);
+  useEffect(()=>{if(!identity||!open||!["etempahan","oprhub","ekeberadaan","epemantauan","pdp","achievement","assessment","pengurusan","epanitia","skas","uploads"].includes(open))return;void fetch('/api/quick-access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({module:open})}).catch(()=>{});},[open,identity?.id]);
   const unreadStaffAnnouncements=()=>staffAnnouncements.filter(item=>localStorage.getItem(`smkap_announcement_read_${item.id}`)!=="1");
   const finishOpening=()=>window.setTimeout(()=>setOpening(""),360);
   const openFolder=(folder:typeof folders[number])=>{
@@ -408,36 +410,7 @@ export function LandingPortal() {
   useEffect(()=>{if(deviceNotifications.error)notify(deviceNotifications.error);},[deviceNotifications.error]);
 
   return <main className="landing-shell">
-    <div className="landing-noise" aria-hidden="true"></div>
-    <header className="landing-header">
-      <div className="official-logo portal-brand"><span className="school-crest"><img src="/school-crest-official.png" alt="Logo rasmi SMK Agama Pahang" /></span><i className="brand-divider" aria-hidden="true"/><img className="digital-mark" src="/smkap-digital.png" alt="Ikon SMKAP Digital"/><div className="digital-copy"><strong><span>SMKAP</span> <em>Digital</em></strong><small>SMK Agama Pahang</small><b>Berilmu • Bertakwa</b></div></div>
-      <div className="portal-label"><i></i><span>PORTAL RASMI</span><b>2026</b></div>
-      {identity&&<button className="signed-user-chip" onClick={()=>setProfileOpen(true)} aria-label={`Buka profil ${identity.name}`}><IdentityAvatar user={identity}/><span><small>PROFIL SAYA</small><strong>{identity.name}</strong></span></button>}
-      <NotificationBell user={identity} state={pushState} login={()=>setAuthOpen(true)} openAction={action=>{setTaskEntry(action.module==="etempahan"?"form":action.tab||null);if(action.module==="oprgenerator"){setOprCategoryGroup("");setOprInitialCategory("");}setOpen(action.module==="uploads"?"upload-paper":action.module);}}/>
-      <button className="admin-entry admin-gear-entry" onClick={() => setOpen("admin")} aria-label="Buka pusat pentadbir" title="Pusat pentadbir"><span><Settings aria-hidden="true" /></span></button>
-    </header>
-
-    <section className="landing-main">
-      <div className="landing-intro">
-        <div className="intro-label"><i></i> PORTAL SEHENTI WARGA SMKAP</div>
-        <h1>Urusan sekolah,<br/><em>lebih mudah.</em></h1>
-        <p>Semua urusan sekolah dalam satu tempat.</p>
-      </div>
-
-      <div className="folder-area">
-        <div className="folder-heading"><span><i></i> PILIH URUSAN</span><strong>Apa urusan anda hari ini?</strong></div>
-        <div className="folder-grid">
-          {folders.map((folder) => { const FolderIcon = folder.icon; return <button key={folder.id} className="folder-card" onClick={() => openFolder(folder)} aria-label={`${folder.title}: ${folder.text}`}>
-            <div className="folder-icon"><FolderIcon aria-hidden="true" /></div>
-            <div className="folder-copy"><span className="folder-no">{folder.no}</span><h2>{folder.title}</h2><p>{folder.text}</p></div>
-            <ChevronRight className="folder-chevron" aria-hidden="true" />
-          </button>; })}
-        </div>
-        <p className="safe-note"><ShieldCheck aria-hidden="true" /> Selamat digunakan · Gunakan akaun sekolah apabila diminta.</p>
-      </div>
-    </section>
-
-    <footer className="landing-footer"><p>Portal ini disediakan untuk urusan rasmi warga SMK Agama Pahang.</p><span>© 2026 SMK Agama Pahang · Dibangunkan oleh BangWan</span><nav aria-label="Dasar dan hubungan sekolah"><button onClick={() => notify("Penafian: Maklumat dalam portal ini disediakan untuk rujukan dan urusan rasmi sekolah.")}>Penafian</button><button onClick={() => notify("Privasi: Data peribadi digunakan hanya bagi urusan sekolah, keselamatan dan perkhidmatan yang dibenarkan.")}>Privasi</button><a href="tel:+6094523901" aria-label="Hubungi sekolah di 09-4523901">Hubungi Sekolah: 09-4523901</a></nav></footer>
+    <CampusHome user={identity} avatar={identity?<IdentityAvatar user={identity}/>:null} profile={()=>setProfileOpen(true)} login={()=>setAuthOpen(true)} open={(id,title)=>{const folder=historyFolder(id);if(!folder)return;if(folder==="warga"){openFolder(folders.find(f=>f.id==="warga")!);return;}if(!identity&&!["tentang","schoolprofile","orgchart","ekunjung","pengunjung","ibubapa"].includes(id)){setAuthOpen(true);return;}openSubmodule(folder,title);}} bell={<NotificationBell user={identity} state={pushState} login={()=>setAuthOpen(true)} openAction={action=>{setTaskEntry(action.module==="etempahan"?"form":action.tab||null);if(action.module==="oprgenerator"){setOprCategoryGroup("");setOprInitialCategory("");}setOpen(action.module==="uploads"?"upload-paper":action.module);}}/>}/>
 
     {open && <div className="folder-backdrop" onMouseDown={(e) => e.target === e.currentTarget && closeCurrentView()}>
       <section ref={folderModalRef} className={`folder-modal ${open === "pdp" ? "teaching-modal" : ""} ${open === "pdp" || open === "oprgenerator" || open === "oprduty" || open === "oprhub" || open === "etempahan" || open === "ekeberadaan" || open === "achievement" || open === "epemantauan" || (open === "skas" || open === "pengurusan" || open === "epanitia") ? "generator-modal" : ""} ${open === "etempahan" ? "booking-modal" : ""} ${open === "oprhub" ? "opr-hub-modal" : ""} ${open === "orgchart" ? "org-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby="folder-title">

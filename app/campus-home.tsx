@@ -1,0 +1,38 @@
+'use client';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {Search,X,Sun,Moon,UserRound,ChevronRight,School,Users,HeartHandshake,MapPin,CalendarDays,BookOpen,ClipboardCheck,ShieldCheck,Settings} from 'lucide-react';
+const entries=[
+{id:'schoolprofile',title:'Profil Sekolah',terms:'sejarah visi misi',public:true,icon:School},
+{id:'orgchart',title:'Carta Organisasi',terms:'organisasi pentadbir',public:true,icon:Users},
+{id:'ekunjung',title:'e-Kunjung',terms:'pelawat lawatan',public:true,icon:MapPin},
+{id:'pengunjung',title:'Panduan Pelawat',terms:'kunjungan',public:true,icon:ShieldCheck},
+{id:'etempahan',title:'e-Tempahan',terms:'tempah bilik makmal',icon:CalendarDays},
+{id:'oprhub',title:'Pusat OPR',terms:'laporan program',icon:BookOpen},
+{id:'ekeberadaan',title:'e-Keberadaan & Relief',terms:'relief ganti tidak hadir cuti',icon:ClipboardCheck},
+{id:'epemantauan',title:'e-Pemantauan',terms:'immediate reform skas',icon:Search},
+{id:'pdp',title:'Pengajaran & Pembelajaran',terms:'skpm standard 4 kendiri',icon:BookOpen},
+{id:'achievement',title:'Arkib Kejayaan',terms:'sijil pencapaian',icon:ShieldCheck},
+{id:'assessment',title:'Pentaksiran dan Peperiksaan',terms:'ujian',icon:BookOpen},
+{id:'pengurusan',title:'Pengurusan Sekolah',terms:'kurikulum hem kokurikulum',icon:School},
+{id:'epanitia',title:'e-Panitia',terms:'panitia ekonomi',icon:BookOpen},
+{id:'skas',title:'Pusat SK@S',terms:'evidens pematuhan',icon:ClipboardCheck},
+{id:'uploads',title:'Muat Naik',terms:'kertas kerja guru bertugas',icon:BookOpen},
+];
+export function CampusHome({user,avatar,bell,open,profile,login}:{user:{id:string;name:string;role:string}|null;avatar:ReactNode;bell:ReactNode;open:(id:string,title:string)=>void;profile:()=>void;login:()=>void}){
+const [light,setLight]=useState(false),[menu,setMenu]=useState(false),[query,setQuery]=useState(''),[focused,setFocused]=useState(false),[usage,setUsage]=useState<string[]>([]);const input=useRef<HTMLInputElement>(null),search=useRef<HTMLDivElement>(null),account=useRef<HTMLDivElement>(null);
+useEffect(()=>{try{setLight(localStorage.getItem('smkap_home_theme')==='light')}catch{}},[]);
+useEffect(()=>{setUsage([]);if(!user)return;let active=true;fetch('/api/quick-access').then(r=>r.ok?r.json():null).then(d=>{if(active&&d?.items)setUsage(d.items.map((x:{module:string})=>x.module))}).catch(()=>{});return()=>{active=false}},[user?.id]);
+useEffect(()=>{const handler=(e:MouseEvent)=>{if(!search.current?.contains(e.target as Node))setFocused(false);if(!account.current?.contains(e.target as Node))setMenu(false)};document.addEventListener('mousedown',handler);return()=>document.removeEventListener('mousedown',handler)},[]);
+const go=(id:string,title:string)=>{setFocused(false);setMenu(false);open(id,title)};
+const visible=entries.filter(e=>e.public||!!user),quick=user?[...usage,...['etempahan','oprhub','ekeberadaan','epemantauan']].filter((id,i,a)=>a.indexOf(id)===i).map(id=>visible.find(e=>e.id===id)).filter(Boolean).slice(0,4):entries.filter(e=>e.public);
+return <div className={`campus-home ${light?'campus-light':''}`}>
+<header className="campus-header"><div className="campus-brand"><img src="/school-crest-official.png" alt="Logo SMK Agama Pahang"/><i/><img className="campus-digital" src="/digital-transparent.png" alt="Logo SMKAP Digital"/><div><strong>SMKAP <em>Digital</em></strong><small>SMK Agama Pahang</small></div></div><div className="campus-actions"><button aria-label={light?'Tukar ke tema gelap':'Tukar ke tema cerah'} onClick={()=>{setLight(!light);try{localStorage.setItem('smkap_home_theme',!light?'light':'dark')}catch{}}}>{light?<Moon/>:<Sun/>}</button><div ref={account} className="campus-account"><button aria-label="Profil dan menu akaun" aria-expanded={menu} onClick={()=>setMenu(!menu)}>{user?avatar:<UserRound/>}</button>{menu&&<div className="campus-account-menu"><strong>{user?.name||'Selamat datang'}</strong>{user?<><button onClick={()=>{setMenu(false);profile()}}><UserRound/>Lihat profil</button><div className="campus-notifications">{bell}<span onClick={e=>e.currentTarget.parentElement?.querySelector<HTMLButtonElement>('.portal-notification-bell')?.click()}>Notifikasi & Tugasan Saya</span></div>{['admin','super_admin'].includes(user.role)&&<button onClick={()=>go('admin','Tetapan pentadbir')}><Settings/>Tetapan pentadbir</button>}</>:<button onClick={()=>{setMenu(false);login()}}>Log masuk dengan ID DELIMa</button>}</div>}</div></div></header>
+<div className="campus-content"><div className="campus-search-zone"><span className="campus-building"/><div className="campus-search-wrap" ref={search}><div className="campus-search"><Search/><input ref={input} value={query} aria-label="Cari urusan" aria-expanded={focused} aria-controls="campus-results" placeholder="Nak urus apa hari ini?" onFocus={()=>setFocused(true)} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Escape')setFocused(false);if(e.key==='ArrowDown'){e.preventDefault();search.current?.querySelector<HTMLButtonElement>('.campus-results button')?.focus()}}}/>{query&&<button aria-label="Kosongkan carian" onClick={()=>{setQuery('');input.current?.focus();setFocused(false)}}><X/></button>}</div><p>Cari modul, maklumat sekolah atau perkhidmatan.</p>{focused&&<div id="campus-results" className="campus-results">{visible.filter(e=>(e.title+' '+e.terms).toLowerCase().includes(query.toLowerCase().trim())).map(e=><button key={e.id} onClick={()=>go(e.id,e.title)}><e.icon/><span>{e.title}</span><ChevronRight/></button>)}{!visible.some(e=>(e.title+' '+e.terms).toLowerCase().includes(query.toLowerCase().trim()))&&<p>Tiada urusan ditemui. Cuba kata kunci lain.</p>}</div>}</div></div>
+<div className="campus-section-title"><h2>Akses pantas</h2><small>{user?'Pilihan untuk cikgu':'Untuk semua pengunjung'}</small></div><div className="campus-quick">{quick.map(e=>e&&<button key={e.id} onClick={()=>go(e.id,e.title)}><e.icon/><span>{e.title}</span><ChevronRight/></button>)}</div>
+<div className="campus-section-title"><h2>Apa urusan anda hari ini?</h2><small>Terokai SMKAP</small></div><div className="campus-grid">
+<button className="campus-tile campus-school" onClick={()=>go('tentang','Tentang Sekolah')}><small>WARISAN & ASPIRASI</small><h2>Tentang sekolah.</h2><p>Kenali warga dan perjalanan<br/>SMK Agama Pahang.</p><span className="campus-building"/><span className="campus-school-link">Kenali SMKAP <ChevronRight/></span></button>
+<button className="campus-tile campus-staff" onClick={()=>go('warga','Guru & Staf')}><span className="campus-tile-icon"><BookOpen/></span><div><small>RUANG KERJA DIGITAL</small><h2>Guru & Staf</h2><p>Jadual, tugasan dan urusan kerja cikgu.</p></div><ChevronRight/></button>
+<button className="campus-tile" onClick={()=>go('ibubapa','Ibu Bapa / Penjaga')}><span className="campus-tile-icon"><HeartHandshake/></span><h2>Ibu Bapa</h2><p>Maklumat dan panduan penjaga.</p></button>
+<button className="campus-tile" onClick={()=>go('pengunjung','Pelawat')}><span className="campus-tile-icon"><MapPin/></span><h2>Pelawat</h2><p>Rancang kunjungan ke sekolah.</p></button></div>
+<footer className="campus-footer"><p>Portal ini disediakan untuk urusan rasmi warga SMK Agama Pahang.</p><p>© 2026 SMK Agama Pahang · Dibangunkan oleh BangWan</p><div><button onClick={()=>alert('Maklumat dalam portal ini disediakan untuk rujukan dan urusan rasmi sekolah.')}>Penafian</button><span>·</span><button onClick={()=>alert('Data peribadi digunakan hanya bagi urusan sekolah, keselamatan dan perkhidmatan yang dibenarkan.')}>Privasi</button><span>·</span><a href="tel:+6094523901">Hubungi Sekolah: 09-4523901</a></div></footer></div></div>
+}
