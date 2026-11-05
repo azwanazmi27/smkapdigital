@@ -49,7 +49,8 @@ export async function GET(request:Request){try{
   const row=await env.DB.prepare("SELECT data_json FROM form6_timetable WHERE id='active'").first<{data_json:string}>();
   if(row){const data=JSON.parse(row.data_json) as Form6Data,lessons=form6Lessons(data,actor.id,timetable.day);if(lessons){timetable={...timetable,state:'ready',lessons};}}
  }catch(error){console.error('Form6 timetable unavailable',error);}
- return reply({tasks,counts,hasUnseen:tasks.some(t=>t.unseen),today:malaysiaDay(),timetable,reliefToday,canManageNames:admin(actor.role)});
+ const currentDuty=(await env.DB.prepare("SELECT DISTINCT a.user_id AS userId,u.name,a.role,a.start_date AS startDate,a.end_date AS endDate FROM staff_work_assignments a JOIN staff_work_documents d ON d.id=a.document_id JOIN portal_users u ON u.id=a.user_id WHERE d.kind='duty' AND d.published=1 AND a.start_date<=? AND a.end_date>=? AND u.deleted_at IS NULL ORDER BY u.name").bind(malaysiaDay(),malaysiaDay()).all()).results;
+ return reply({currentDuty,tasks,counts,hasUnseen:tasks.some(t=>t.unseen),today:malaysiaDay(),timetable,reliefToday,canManageNames:admin(actor.role)});
  }catch{return reply({error:'Tugasan tidak dapat dimuatkan. Cuba lagi.'},503);}}
 export async function POST(request:Request){let stage="authentication";try{
  const actor=await portalActor(request) as Actor|null;if(!actor)return reply({error:'Sila log masuk.'},401);
