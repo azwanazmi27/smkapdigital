@@ -107,6 +107,34 @@ export async function POST(request:Request){let stage="authentication";try{
  if(action==='dismiss'||action==='seen'){const tasks=await loadTasks(actor),owned=new Set(tasks.map(t=>t.id)),taskIds=action==='dismiss'?[id]:(Array.isArray(body.taskIds)?body.taskIds.map(v=>clean(v)):[]);for(const taskId of taskIds.filter(value=>owned.has(value)))await env.DB.prepare("INSERT INTO staff_task_state(user_id,task_id,dismissed,seen_at,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(user_id,task_id) DO UPDATE SET dismissed=CASE WHEN excluded.dismissed=1 THEN 1 ELSE staff_task_state.dismissed END,seen_at=CASE WHEN excluded.seen_at!='' THEN excluded.seen_at ELSE staff_task_state.seen_at END,updated_at=excluded.updated_at").bind(actor.id,taskId,action==='dismiss'?1:0,action==='seen'?now:'',now).run();return reply({ok:true});}
  if(action==='coordinator'){if(!admin(actor.role))return reply({error:'Hanya pentadbir boleh menetapkan penyelaras.'},403);const userId=clean(body.userId),user=await env.DB.prepare("SELECT id FROM portal_users WHERE id=? AND status='active' AND deleted_at IS NULL").bind(userId).first();if(!user)return reply({error:'Pilih guru yang sah.'},400);await env.DB.prepare("INSERT INTO admin_module_permissions(user_id,module_key,enabled,updated_at) VALUES(?,'staff_work',?,?) ON CONFLICT(user_id,module_key) DO UPDATE SET enabled=excluded.enabled,updated_at=excluded.updated_at").bind(userId,body.enabled?1:0,now).run();return reply({ok:true});}
  const doc=await env.DB.prepare('SELECT owner_id,kind FROM staff_work_documents WHERE id=?').bind(id).first<{owner_id:string;kind:string}>();if(!doc)return reply({error:'Dokumen tidak ditemui.'},404);if(doc.owner_id!==actor.id&&!(doc.kind==='duty'&&await coordinator(actor)))return reply({error:'Tiada kebenaran mengubah dokumen ini.'},403);
+ if(action==='add_duty_teacher'||action==='remove_duty_teacher'){
+  if(doc.kind!=='duty'||!await coordinator(actor))return reply({error:'Hanya pentadbir atau penyelaras boleh mengurus guru bertugas.'},403);
+  const startDate=clean(body.startDate,10),endDate=clean(body.endDate,10),userId=clean(body.userId);
+  if(!validDate(startDate)||!validDate(endDate)||endDate<startDate||!userId)return reply({error:'Pilih guru dan tempoh yang sah.'},400);
+  const period=await env.DB.prepare("SELECT a.role FROM staff_work_assignments a JOIN staff_work_documents d ON d.id=a.document_id WHERE a.document_id=? AND a.start_date=? AND a.end_date=? AND d.published=1 LIMIT 1").bind(id,startDate,endDate).first<{role:string}>();
+  if(!period)return reply({error:'Jadual ini telah berubah. Segarkan senarai dan cuba lagi.'},409);
+  if(action==='add_duty_teacher'){
+   const teacher=await env.DB.prepare("SELECT name FROM portal_users WHERE id=? AND status='active' AND deleted_at IS NULL").bind(userId).first<{name:string}>();
+   if(!teacher)return reply({error:'Guru ini tidak lagi tersedia dalam direktori.'},400);
+   const existing=await env.DB.prepare('SELECT id FROM staff_work_assignments WHERE user_id=? AND start_date=? AND end_date=? AND document_id=?').bind(userId,startDate,endDate,id).first();
+   if(existing)return reply({error:'Guru ini sudah tersenarai untuk tempoh tersebut.'},409);
+   const assignmentId=crypto.randomUUID(),role=period.role,key=await stableTaskKey(['duty',userId,role,startDate,endDate]);
+   const row={userId,name:teacher.name,role,startDate,endDate};
+   await env.DB.batch([
+    env.DB.prepare('INSERT INTO staff_work_assignments(id,document_id,user_id,task_key,role,start_date,end_date,completed) VALUES(?,?,?,?,?,?,?,0)').bind(assignmentId,id,userId,key,role,startDate,endDate),
+    env.DB.prepare("UPDATE staff_work_documents SET assignments_json=json_insert(assignments_json,'$[#]',json(?)) WHERE id=?").bind(JSON.stringify(row),id)
+   ]);
+   if(endDate>=malaysiaDay())waitUntil(sendTaskNotices([{userId,taskId:`assignment:${assignmentId}`,title:'Tugasan guru bertugas baharu',body:`${role} · ${startDate} hingga ${endDate}`,url:'/?module=warga&tasks=1'}]).catch(error=>console.error('Duty addition notification failed',error)));
+  }else{
+   await env.DB.batch([
+    env.DB.prepare("DELETE FROM staff_task_state WHERE task_id IN (SELECT 'assignment:' || id FROM staff_work_assignments WHERE document_id=? AND user_id=? AND start_date=? AND end_date=?)").bind(id,userId,startDate,endDate),
+    env.DB.prepare('DELETE FROM staff_work_assignments WHERE document_id=? AND user_id=? AND start_date=? AND end_date=?').bind(id,userId,startDate,endDate),
+    env.DB.prepare("UPDATE staff_work_documents SET assignments_json=(SELECT COALESCE(json_group_array(json(value)),'[]') FROM json_each(assignments_json) WHERE NOT (COALESCE(json_extract(value,'$.userId'),'')=? AND COALESCE(json_extract(value,'$.startDate'),'')=? AND COALESCE(json_extract(value,'$.endDate'),'')=?)) WHERE id=?").bind(userId,startDate,endDate,id)
+   ]);
+  }
+  const updated=await env.DB.prepare('SELECT assignments_json AS assignmentsJson FROM staff_work_documents WHERE id=?').bind(id).first();
+  return reply({ok:true,...updated});
+ }
  if(action==='publish'){
   if(!Array.isArray(body.assignments)||!body.assignments.length||body.assignments.length>300)return reply({error:'Semak senarai tugasan.'},400);
   const users=await env.DB.prepare("SELECT id FROM portal_users WHERE status='active' AND deleted_at IS NULL").all<{id:string}>(),ids=new Set(users.results.map(u=>u.id));

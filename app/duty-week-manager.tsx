@@ -1,0 +1,16 @@
+import {useState} from 'react';
+import {Plus,Trash2,Search,X} from 'lucide-react';
+import {DutyWeekView,type DutyMember} from './duty-week-view';
+export function DutyWeekManager({documentId,members,users,active,onSaved}:{documentId:string;members:DutyMember[];users:{id:string;name:string}[];active:boolean;onSaved:(json:string)=>void}){
+ const [adding,setAdding]=useState(false),[search,setSearch]=useState(''),[chosen,setChosen]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const first=members[0],available=users.filter(u=>!members.some(m=>m.userId===u.id)),filtered=available.filter(u=>u.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+ async function save(action:'add_duty_teacher'|'remove_duty_teacher',userId:string){
+  if(busy||!first)return;setBusy(true);setMessage('');
+  try{const response=await fetch('/api/staff-work',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,id:documentId,userId,startDate:first.startDate,endDate:first.endDate})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Perubahan belum dapat disimpan. Cuba lagi.');onSaved(result.assignmentsJson);setAdding(false);setChosen('');setSearch('');setMessage(action==='add_duty_teacher'?'Guru berjaya ditambah.':'Guru telah dibuang daripada minggu ini.');window.dispatchEvent(new Event('focus'));}catch(error){setMessage((error as Error).message);}finally{setBusy(false);}
+ }
+ return <DutyWeekView members={members} active={active} memberAction={member=><button type="button" className="duty-remove-teacher" disabled={busy} aria-label={`Buang ${member.name} daripada minggu ini`} onClick={()=>{if(window.confirm(`Buang ${member.name} daripada jadual ${first.startDate} hingga ${first.endDate}?`))void save('remove_duty_teacher',member.userId);}}><Trash2 aria-hidden="true"/><span>Buang</span></button>}>
+ {active&&<span className="duty-active-label">Minggu aktif</span>}
+ {!adding?<button type="button" className="duty-add-teacher" disabled={busy} onClick={()=>{setAdding(true);setMessage('');}}><Plus aria-hidden="true"/>Tambah guru</button>:<section className="duty-name-picker" aria-label="Pilih guru untuk ditambah"><header><strong>Pilih guru</strong><button type="button" disabled={busy} aria-label="Tutup pilihan guru" onClick={()=>setAdding(false)}><X/></button></header><label className="duty-name-search"><Search aria-hidden="true"/><input autoFocus type="search" placeholder="Cari nama guru…" aria-label="Cari nama guru" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="duty-name-options" role="group" aria-label="Senarai guru">{filtered.map(u=><button type="button" key={u.id} disabled={busy} aria-pressed={chosen===u.id} onClick={()=>setChosen(u.id)}>{u.name}<span aria-hidden="true">{chosen===u.id?'✓':'+'}</span></button>)}{!filtered.length&&<p>{available.length?'Tiada nama ditemui.':'Semua guru sudah tersenarai.'}</p>}</div><footer><button type="button" disabled={busy} onClick={()=>setAdding(false)}>Batal</button><button type="button" disabled={busy||!chosen} onClick={()=>void save('add_duty_teacher',chosen)}>{busy?'Menyimpan…':'Tambah guru'}</button></footer></section>}
+ {message&&<p role="status" className="duty-edit-message">{message}</p>}
+ </DutyWeekView>;
+}
