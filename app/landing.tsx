@@ -1,4 +1,5 @@
 "use client";
+import { usePortalUpdate } from "./use-portal-update";
 import {CampusHome} from "./campus-home";
 import {MonitoringModuleCards} from "./monitoring-module-cards";
 import {ImmediateReform} from "./immediate-reform";
@@ -224,6 +225,7 @@ export function LandingPortal() {
   const restoringHistory=useRef(false);
   const replaceNextHistory=useRef(false);
   const overlayActive=Boolean(open||authOpen||welcome||profileOpen||staffAnnouncementOpen||pushNotice);
+  usePortalUpdate(!overlayActive && !opening && !attendanceSplash && !pendingStaffOpen);
   const requestedModule=()=>{const value=new URLSearchParams(window.location.search).get("module");const allowed:Folder[]=["pdp","uploads","upload-paper","upload-duty","warga","oprhub","oprgenerator","oprduty","ekeberadaan","etempahan","achievement","epemantauan","skas","pengurusan","epanitia"];return allowed.includes(value as Folder)?value as Folder:null;};
   const requestedNotificationId=()=>new URLSearchParams(window.location.search).get("notification")||"";
   const openRequestedNotification=async()=>{const id=requestedNotificationId();if(!id)return;const response=await fetch(`/api/push?view=notification&id=${encodeURIComponent(id)}`,{cache:"no-store"}),data=await response.json();if(response.ok&&data.notification)setPushNotice(data.notification);};

@@ -43,11 +43,22 @@ export default defineConfig(async () => {
   // Wrangler snapshots its log path while the Cloudflare plugin is imported.
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
+  const release = crypto.randomUUID();
   return {
+    define: { __PORTAL_RELEASE__: JSON.stringify(release) },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
     plugins: [
+      {
+        name: "portal-release-marker",
+        apply: "build",
+        generateBundle() {
+          if (this.environment.name === "client") {
+            this.emitFile({ type: "asset", fileName: "portal-release.json", source: JSON.stringify({ release }) });
+          }
+        },
+      },
       vinext(),
       sites(),
       cloudflare({
