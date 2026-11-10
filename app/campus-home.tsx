@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {Search,X,Sun,Moon,UserRound,ChevronRight,School,Users,HeartHandshake,MapPin,CalendarDays,BookOpen,ClipboardCheck,ShieldCheck,Settings} from 'lucide-react';
+import {Search,X,Sun,Moon,UserRound,ChevronRight,School,Users,HeartHandshake,MapPin,CalendarDays,BookOpen,ClipboardCheck,ShieldCheck,Settings,ChartColumnBig} from 'lucide-react';
 const entries=[
 {id:'schoolprofile',title:'Profil Sekolah',terms:'sejarah visi misi',public:true,icon:School},
 {id:'orgchart',title:'Carta Organisasi',terms:'organisasi pentadbir',public:true,icon:Users},
@@ -13,6 +13,7 @@ const entries=[
 {id:'pdp',title:'Pengajaran & Pembelajaran',terms:'skpm standard 4 kendiri',icon:BookOpen},
 {id:'achievement',title:'Arkib Kejayaan',terms:'sijil pencapaian',icon:ShieldCheck},
 {id:'assessment',title:'Pentaksiran dan Peperiksaan',terms:'ujian',icon:BookOpen},
+{id:'dashboardspm',title:'Dashboard SPM',terms:'spm arus perdana peperiksaan analisis gps gpmp gred calon keputusan',icon:ChartColumnBig},
 {id:'pengurusan',title:'Pengurusan Sekolah',terms:'kurikulum hem kokurikulum',icon:School},
 {id:'epanitia',title:'e-Panitia',terms:'panitia ekonomi',icon:BookOpen},
 {id:'skas',title:'Pusat SK@S',terms:'evidens pematuhan',icon:ClipboardCheck},
