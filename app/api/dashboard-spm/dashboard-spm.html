@@ -268,6 +268,20 @@ td.num,th.num{text-align:center}
 .warga-akses.urus{color:#f3dc9a;background:rgba(232,194,90,.13);border-color:rgba(232,194,90,.3)}
 :root[data-theme="light"] .warga-akses{color:#0e5f63;background:rgba(14,124,128,.1)}:root[data-theme="light"] .warga-akses.view{color:#2c62c9;background:rgba(50,110,230,.1)}:root[data-theme="light"] .warga-akses.urus{color:#8a6400;background:rgba(212,170,50,.16)}
 @media(max-width:620px){.warga{grid-template-columns:40px minmax(0,1fr) auto;padding:11px 14px}.warga-av{width:40px;height:40px}.warga-gred{display:none}.warga-isi strong{font-size:13px}.warga-isi span{font-size:10px}}
+/* Dalam bingkai portal (iframe) di telefon: position:fixed dalam iframe ikut bergerak semasa skrol pada sesetengah pelayar.
+   Kandungan menatal dalam .main, dan bar menu menjadi baris biasa di bawah susun atur (bukan fixed), jadi ia tidak bergerak. */
+@media (max-width:860px){
+  html.terbenam,html.terbenam body,html.terbenam #root{height:100%;overflow:hidden}
+  html.terbenam .app{display:flex;flex-direction:column;height:100%;min-height:0;padding:8px;gap:8px}
+  html.terbenam .main{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  html.terbenam .main>*{flex-shrink:0}
+  html.terbenam .side{position:relative;left:auto;right:auto;bottom:auto;top:auto;order:2;flex:none}
+}
+@media print{
+  html.terbenam,html.terbenam body,html.terbenam #root{height:auto;overflow:visible}
+  html.terbenam .app{display:block;height:auto}
+  html.terbenam .main{overflow:visible}
+}
 /* edisi portal: status simpanan dan skrin memuatkan data */
 .awan-baris{margin-top:7px}
 .awan-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;line-height:1.3;color:var(--muted);background:var(--glass);border:1px solid var(--glass-border)}
@@ -807,6 +821,15 @@ function muatWarga() {
 }
 // Salinan untuk dikongsi: fail HTML yang membawa data sendiri (window.SNAPSHOT). Tiada apa disimpan dalam pelayar penerima.
 const SALINAN = !DEMO && window.SNAPSHOT && window.SNAPSHOT.db ? window.SNAPSHOT : null;
+
+/* ---------- skrol dalam bingkai portal ---------- */
+// Dalam iframe (portal) di telefon, elemen position:fixed ikut bergerak semasa skrol pada sesetengah pelayar. Jadi kandungan
+// menatal dalam .main dan bar menu bawah menjadi baris biasa di luar kawasan skrol (lihat html.terbenam dalam style.css).
+const TERBENAM = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+if (TERBENAM) document.documentElement.classList.add('terbenam');
+function penatal() { if (!TERBENAM) return null; const m = document.querySelector('.main'); return m && /(auto|scroll)/.test(getComputedStyle(m).overflowY) ? m : null; }
+const skrolY = () => { const m = penatal(); return m ? m.scrollTop : window.scrollY; };
+const skrolKe = y => { const m = penatal(); if (m) m.scrollTop = y; else window.scrollTo(0, y); };
 
 /* ---------- data dalam portal (edisi portal) ---------- */
 // Satu set data sekolah disimpan dalam portal SMKAP Digital (/api/dashboard-spm/data) dan dikongsi oleh semua warga yang dibenarkan.
@@ -1449,6 +1472,7 @@ function render() {
   CH.forEach(c => c.destroy()); CH = []; V = {};
   ensureFilter();
   const active = document.activeElement, focusId = active && active.id, caret = active && active.selectionStart;
+  const yAsal = penatal() ? skrolY() : null; // .main dibina semula: kekalkan kedudukan skrol (navigasi menetapkan 0 selepas render)
   const has = DB.rek.length > 0;
   if (lihatSahaja() && (ST.view === 'import' || ST.view === 'tetapan')) ST.view = has ? 'ringkasan' : 'panduan';
   const view = !has && !BEBAS.includes(ST.view) ? 'kosong' : ST.view;
@@ -1489,6 +1513,7 @@ function render() {
   ${!lesenSah() && !DEMO ? '<div class="watermark">VERSI PERCUBAAN</div>' : ''}`;
   (AFTER[view] || (() => {}))();
   kunciLihat($('#root'));
+  if (yAsal != null) skrolKe(yAsal);
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { el.setSelectionRange(caret, caret); } catch (e) {} } }
 }
 
@@ -1713,7 +1738,7 @@ AFTER.kelas = () => {
   const r = rows.find(x => x.k === k); if (!r) return;
   const el = document.getElementById('cKelasKat');
   chart('cKelasKat', { type: 'doughnut', data: { labels: KAT.map(x => x[0]), datasets: [{ data: KAT.map(x => r.rk.kat[x[0]] || 0), backgroundColor: KAT.map(x => getComputedStyle(el).getPropertyValue(x[2].slice(4, -1)).trim()), borderWidth: 0 }] },
-    options: { cutout: '62%', plugins: { legend: { position: 'right' } }, onClick: (e, a) => { if (a.length) { ST.katF = KAT[a[0].index][0]; ST.f.kelas = k; ST.view = 'kategori'; render(); window.scrollTo(0, 0); } } } });
+    options: { cutout: '62%', plugins: { legend: { position: 'right' } }, onClick: (e, a) => { if (a.length) { ST.katF = KAT[a[0].index][0]; ST.f.kelas = k; ST.view = 'kategori'; render(); skrolKe(0); } } } });
 };
 
 function senaraiCalon() {
@@ -2307,9 +2332,9 @@ function jadualSejarah(o, hist, slip) {
 }
 // Mod Bentang dan muat turun PowerPoint: lihat src/bentang.js (digabungkan selepas fail ini semasa build).
 // Bawa guru terus ke analisis subjek yang dipilih, bukan ke atas halaman.
-function keAnalisisSubjek() { const d = $('#sjDetail'); if (d) d.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); }
+function keAnalisisSubjek() { const d = $('#sjDetail'); if (d) d.scrollIntoView({ block: 'start' }); else skrolKe(0); }
 // Profil calon: halaman penuh. profil(key) membuka halaman itu dari mana-mana senarai.
-function profil(key) { ST.profilKey = key; ST.view = 'profil'; closeModal(); render(); window.scrollTo(0, 0); }
+function profil(key) { ST.profilKey = key; ST.view = 'profil'; closeModal(); render(); skrolKe(0); }
 // Maklumat tambahan calon (ETR, catatan, penjaga) disimpan ikut kunci yang sama seperti gambar.
 function infoCalon(o, cipta) {
   const k = kunciFoto(o), alt = 'N:' + norm(o.nama);
@@ -3257,7 +3282,7 @@ function mulaTour() {
 function tamatTour() { TUR = null; const t = $('#tour'); if (t) t.remove(); closeModal(); }
 function paparTour() {
   const s = TUR.L[TUR.i]; closeModal();
-  if (s[0] && ST.view !== s[0]) { ST.view = s[0]; render(); window.scrollTo(0, 0); }
+  if (s[0] && ST.view !== s[0]) { ST.view = s[0]; render(); skrolKe(0); }
   if (s[4]) s[4]();
   let t = $('#tour');
   if (!t) { t = document.createElement('div'); t.id = 'tour'; t.innerHTML = '<div class="tour-hole"></div><div class="tour-box" role="dialog"></div>'; document.body.appendChild(t); }
@@ -3466,7 +3491,7 @@ const ACT = {
   kongsi: () => simpanSalinan(),
   bentang: () => bukaBentang(),
   pptBentang: b => DEMO ? hadDemo('Muat turun PowerPoint') : pptBentang(b),
-  balikProfil: () => { const d = ST.dari && ST.dari.view !== 'profil' ? ST.dari : { view: 'calon', y: 0 }; ST.view = d.view; render(); window.scrollTo(0, d.y || 0); },
+  balikProfil: () => { const d = ST.dari && ST.dari.view !== 'profil' ? ST.dari : { view: 'calon', y: 0 }; ST.view = d.view; render(); skrolKe(d.y || 0); },
   modalGPI: () => modalGPI(),
   tetapanGPI: () => { closeModal(); ST.view = 'tetapan'; render(); const k = $('#kadGPI'); if (k) k.scrollIntoView({ block: 'start' }); },
   cetakGPI: el => { const o = indeks(ST.f.tahun, ST.f.pep).byKey[el.dataset.key]; if (o) cetakGPI([o]); },
@@ -3536,13 +3561,13 @@ document.addEventListener('click', e => {
   const bt = e.target.closest('[data-bt]'); if (bt) { klikBentang(bt); return; }
   if (e.target.closest('#tour')) return;
   const go = e.target.closest('[data-go]');
-  if (go) { ST.view = go.dataset.go; closeModal(); render(); window.scrollTo(0, 0); return; }
+  if (go) { ST.view = go.dataset.go; closeModal(); render(); skrolKe(0); return; }
   const a = e.target.closest('[data-act]');
   if (a && ACT[a.dataset.act]) { ACT[a.dataset.act](a, e); return; }
-  const jl = e.target.closest('[data-jalur]'); if (jl) { const y = window.scrollY; ST.jalurSub = jl.dataset.jalur; render(); window.scrollTo(0, y); return; }
+  const jl = e.target.closest('[data-jalur]'); if (jl) { const y = skrolY(); ST.jalurSub = jl.dataset.jalur; render(); skrolKe(y); return; }
   const kg = e.target.closest('[data-katgo]'); if (kg) { ST.katF = ST.view === 'kategori' && ST.katF === kg.dataset.katgo ? '' : kg.dataset.katgo; ST.view = 'kategori'; render(); return; }
   const sub = e.target.closest('[data-sub]'); if (sub) { ST.subjek = sub.dataset.sub; ST.view = 'subjek'; closeModal(); render(); keAnalisisSubjek(); return; }
-  const kls = e.target.closest('[data-kls]'); if (kls) { ST.kelas = ST.f.kelas = kls.dataset.kls; ST.view = 'kelas'; render(); window.scrollTo(0, 0); return; }
+  const kls = e.target.closest('[data-kls]'); if (kls) { ST.kelas = ST.f.kelas = kls.dataset.kls; ST.view = 'kelas'; render(); skrolKe(0); return; }
   const sl = e.target.closest('[data-slip]'); if (sl) { const o = indeks(ST.f.tahun, ST.f.pep).byKey[sl.dataset.slip]; if (o) cetakSlip([o]); return; }
   const iv = e.target.closest('[data-intv]'); if (iv) { modalIntv(iv.dataset.intv); return; }
   const ivd = e.target.closest('[data-intvdel]');
@@ -3553,7 +3578,7 @@ document.addEventListener('click', e => {
     if (ST.view !== 'profil') {
       const c = ca.closest('.card') || $('#view'), keys = uniq([...c.querySelectorAll('[data-calon]')].map(b => b.dataset.calon)), h = c.querySelector('h3');
       ST.senaraiProfil = keys.length > 1 ? { keys, tajuk: h ? h.textContent.replace(/[·|].*$/, '').trim() : '' } : null;
-      ST.dari = { view: ST.view, y: window.scrollY };
+      ST.dari = { view: ST.view, y: skrolY() };
     }
     profil(ca.dataset.calon); return;
   }
