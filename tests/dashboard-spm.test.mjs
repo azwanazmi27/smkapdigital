@@ -4,15 +4,17 @@ import ts from 'typescript';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const html=readFileSync('app/api/dashboard-spm/dashboard-spm.html','utf8');
-const source=readFileSync('app/api/dashboard-spm/route.ts','utf8').replace('import { portalActor } from "../../server-auth";','').replace('import html from "./dashboard-spm.html?raw";','');
+const source=readFileSync('app/api/dashboard-spm/route.ts','utf8').replace('import { env } from "cloudflare:workers";','').replace('import { portalActor } from "../../server-auth";','').replace('import { aksesWarga } from "../../dashboard-spm-store";','').replace('import html from "./dashboard-spm.html?raw";','');
 const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
-function route(actor){const context={exports:{},crypto,TextEncoder,btoa,Response,Request,html,portalActor:async()=>actor};vm.runInNewContext(compiled,context);return context.exports.GET;}
+function route(actor,tahap='view'){const context={exports:{},crypto,TextEncoder,btoa,Response,Request,html,env:{DB:{}},portalActor:async()=>actor,aksesWarga:async()=>({tahap,urus:false})};vm.runInNewContext(compiled,context);return context.exports.GET;}
 const staff={id:'u1',email:'guru@moe-dl.edu.my',name:'Guru Ujian',position:'Guru',grade:'DG44',role:'teacher',status:'active'};
 const url='https://portal.test/api/dashboard-spm';
-test('Dashboard SPM is served only to signed-in staff and only inside the portal',async()=>{
+test('Dashboard SPM is served only to signed-in staff with access and only inside the portal',async()=>{
  const anon=await route(null)(new Request(url));
  assert.equal(anon.status,401);assert.equal(anon.headers.get('cache-control'),'no-store');
  const text=await anon.text();assert.match(text,/log masuk/i);assert.doesNotMatch(text,/PORTAL_MODE|PRESET/);
+ const tiada=await route(staff,'none')(new Request(url));
+ assert.equal(tiada.status,403);const t2=await tiada.text();assert.match(t2,/Tiada akses/);assert.doesNotMatch(t2,/PORTAL_MODE|PRESET/);
  const ok=await route(staff)(new Request(url));
  assert.equal(ok.status,200);assert.match(ok.headers.get('content-type'),/^text\/html/);
  assert.equal(ok.headers.get('x-frame-options'),'SAMEORIGIN');assert.match(ok.headers.get('content-security-policy'),/frame-ancestors 'self'/);
@@ -40,4 +42,10 @@ test('Arus Perdana opens Dashboard SPM and every module list knows it',()=>{
  assert.match(landing,/src="\/api\/dashboard-spm"/);
  assert.match(landing.match(/\["etempahan","oprhub",[^\]]*\]\.includes\(open\)/)[0],/"dashboardspm"/);
  assert.match(quick,/'dashboardspm'/);assert.match(home,/id:'dashboardspm'/);
+});
+test('Super Admin can delegate Dashboard SPM management to an Admin in the Akses Admin tab',()=>{
+ const landing=readFileSync('app/landing.tsx','utf8'),admin=readFileSync('app/api/admin-users/route.ts','utf8');
+ assert.match(landing.match(/accessModules=\[[^;]*\];/)[0],/\["dashboardspm","Dashboard SPM"\]/);
+ assert.match(admin.match(/modules=\[[^\]]*\]/)[0],/"dashboardspm"/);
+ assert.match(readFileSync('app/dashboard-spm-store.ts','utf8'),/module_key='dashboardspm' AND enabled=1/);
 });

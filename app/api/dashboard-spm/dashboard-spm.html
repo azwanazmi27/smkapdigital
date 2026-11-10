@@ -262,7 +262,19 @@ td.num,th.num{text-align:center}
 .warga-gred{padding:6px 9px;border-radius:9px;color:#b7e4df;background:rgba(86,188,175,.14);font-size:10px;font-weight:700;white-space:nowrap}
 :root[data-theme="light"] .warga{color:#10272b;background:linear-gradient(145deg,#d9eeee,#c6e3e4);border-bottom-color:rgba(14,124,128,.18)}
 :root[data-theme="light"] .warga-isi small{color:#0e7c80}:root[data-theme="light"] .warga-isi strong{color:#10272b}:root[data-theme="light"] .warga-isi span{color:#4f6b6e}:root[data-theme="light"] .warga-gred{color:#0e5f63;background:rgba(14,124,128,.12)}
-@media(max-width:620px){.warga{grid-template-columns:40px minmax(0,1fr);padding:11px 14px}.warga-av{width:40px;height:40px}.warga-gred{display:none}.warga-isi strong{font-size:13px}.warga-isi span{font-size:10px}}
+.warga-kanan{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.warga-akses{padding:6px 9px;border-radius:9px;font-size:10px;font-weight:700;white-space:nowrap;color:#b7e4df;background:rgba(86,188,175,.14);border:1px solid rgba(120,215,205,.25)}
+.warga-akses.view{color:#bcd7ff;background:rgba(140,190,255,.12);border-color:rgba(140,190,255,.25)}
+.warga-akses.urus{color:#f3dc9a;background:rgba(232,194,90,.13);border-color:rgba(232,194,90,.3)}
+:root[data-theme="light"] .warga-akses{color:#0e5f63;background:rgba(14,124,128,.1)}:root[data-theme="light"] .warga-akses.view{color:#2c62c9;background:rgba(50,110,230,.1)}:root[data-theme="light"] .warga-akses.urus{color:#8a6400;background:rgba(212,170,50,.16)}
+@media(max-width:620px){.warga{grid-template-columns:40px minmax(0,1fr) auto;padding:11px 14px}.warga-av{width:40px;height:40px}.warga-gred{display:none}.warga-isi strong{font-size:13px}.warga-isi span{font-size:10px}}
+/* edisi portal: status simpanan dan skrin memuatkan data */
+.awan-baris{margin-top:7px}
+.awan-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;line-height:1.3;color:var(--muted);background:var(--glass);border:1px solid var(--glass-border)}
+.awan-chip.ok{color:var(--ok);background:var(--ok-bg)}.awan-chip.bad{color:var(--bad);background:var(--bad-bg)}.awan-chip.lihat{color:var(--info);background:var(--info-bg)}
+.awan-muat{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:10px;text-align:center;padding:24px;color:var(--text)}.awan-muat small{color:var(--muted);max-width:420px}
+.awan-pusing{width:34px;height:34px;border:3px solid rgba(120,215,205,.2);border-top-color:#78d7cd;border-radius:50%;animation:awanPusing .8s linear infinite}
+@keyframes awanPusing{to{transform:rotate(360deg)}}
 /* gambar calon */
 .ava{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--glass-2);border:1px solid var(--glass-border);font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.5px}
 .ava.xs{width:28px;height:28px;font-size:10.5px}
@@ -784,17 +796,133 @@ function stripWarga() {
   if (!PORTAL || SALINAN || !WARGA || !WARGA.name) return '';
   const inisial = String(WARGA.name).split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('');
   const gambar = /^(https:\/\/|data:image\/)/.test(WARGA.avatarDataUrl || '') ? `<img src="${esc(WARGA.avatarDataUrl)}" alt="">` : esc(inisial);
-  return `<section class="warga no-print" aria-label="Profil warga sekolah"><span class="warga-av">${gambar}</span><div class="warga-isi"><small>WARGA SEKOLAH</small><strong>${esc(WARGA.name)}</strong><span>${esc([WARGA.email, WARGA.position || 'Warga SMKAP'].filter(Boolean).join(' · '))}</span></div>${WARGA.grade ? `<b class="warga-gred">${esc(WARGA.grade)}</b>` : ''}</section>`;
+  return `<section class="warga no-print" aria-label="Profil warga sekolah"><span class="warga-av">${gambar}</span><div class="warga-isi"><small>WARGA SEKOLAH</small><strong>${esc(WARGA.name)}</strong><span>${esc([WARGA.email, WARGA.position || 'Warga SMKAP'].filter(Boolean).join(' · '))}</span></div><div class="warga-kanan">${WARGA.grade ? `<b class="warga-gred">${esc(WARGA.grade)}</b>` : ''}${AWAN && AWAN_SEDIA ? `<b class="warga-akses ${AKSES.urus ? 'urus' : AKSES.tahap}">${AKSES.urus ? 'Pentadbir' : AKSES.tahap === 'edit' ? 'Boleh edit' : 'Lihat sahaja'}</b>` : ''}</div></section>`;
 }
 // Portal menghantar profil melalui postMessage selepas bingkai dimuatkan. Jika halaman dibuka terus, profil dibaca daripada API portal.
 function muatWarga() {
   if (!PORTAL || SALINAN || location.protocol === 'file:') return;
-  const pakai = u => { if (!u || !u.name || (WARGA && WARGA.id === u.id && WARGA.avatarDataUrl === u.avatarDataUrl)) return; WARGA = u; render(); };
+  const pakai = u => { if (!u || !u.name || (WARGA && WARGA.id === u.id && WARGA.avatarDataUrl === u.avatarDataUrl)) return; WARGA = u; if (!AWAN || AWAN_SEDIA) render(); };
   window.addEventListener('message', e => { if (e.origin === location.origin && e.data && e.data.type === 'SMKAP_IDENTITY') pakai(e.data.user); });
   fetch('/api/admin-users?resource=me', { cache: 'no-store', credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(d => { if (d && d.me && !WARGA) pakai(d.me); }).catch(() => {});
 }
 // Salinan untuk dikongsi: fail HTML yang membawa data sendiri (window.SNAPSHOT). Tiada apa disimpan dalam pelayar penerima.
 const SALINAN = !DEMO && window.SNAPSHOT && window.SNAPSHOT.db ? window.SNAPSHOT : null;
+
+/* ---------- data dalam portal (edisi portal) ---------- */
+// Satu set data sekolah disimpan dalam portal SMKAP Digital (/api/dashboard-spm/data) dan dikongsi oleh semua warga yang dibenarkan.
+// Tahap akses ditetapkan pentadbir: edit, lihat sahaja atau tiada akses. Setiap simpanan membawa versi asas; jika orang lain
+// menyimpan dahulu, portal menolak simpanan itu (konflik) dan pengguna memilih untuk muat data terkini atau menyimpan juga.
+// Tema, mod cerah/gelap dan aluan ialah pilihan peribadi dalam pelayar. Nama dan logo sekolah sentiasa daripada PRESET.
+const AWAN = PORTAL && !SALINAN && /^https?:$/.test(location.protocol);
+let AKSES = { tahap: 'view', urus: false, versi: 0, oleh: '', pada: '' };
+let AWAN_ASAL = 'null', AWAN_SEDIA = false, KONFLIK = null;
+let awanStatus = 'disimpan', awanTunda = null, awanHantar = false, awanLagi = false, awanCuba = 0;
+const lihatSahaja = () => AWAN && AKSES.tahap !== 'edit';
+const KEY_UI = 'dashboardSPM_ui';
+function bacaUI() { try { return JSON.parse(localStorage.getItem(KEY_UI)) || {}; } catch (e) { return {}; } }
+function simpanUI() { try { localStorage.setItem(KEY_UI, JSON.stringify({ tema: DB.settings.tema, gelap: DB.settings.gelap, welcomed: !!DB.welcomed })); } catch (e) {} }
+const simpanPilihan = () => AWAN ? simpanUI() : save();
+// Salinan untuk portal: tanpa pilihan peribadi dan identiti sekolah (dikenakan semula daripada PRESET setiap kali dibuka).
+function dataAwan() {
+  const d = padat(DB);
+  d.settings = Object.assign({}, DB.settings, { tema: '', gelap: '', sekolah: '', logo: '' });
+  ['lesen', 'presetId', 'welcomed', 'lastBackup', 'lastImport'].forEach(k => delete d[k]);
+  return JSON.stringify(d);
+}
+function pasangAwan(teks) {
+  AWAN_ASAL = teks;
+  const ui = bacaUI(), b = blank();
+  let r = null; try { r = bukaPadat(JSON.parse(teks)); } catch (e) {}
+  if (r && Array.isArray(r.rek)) { r.settings = Object.assign(b.settings, r.settings || {}); DB = Object.assign(b, r); } else DB = b;
+  DB.settings.tema = ui.tema && TEMA[ui.tema] ? ui.tema : 'smkap';
+  DB.settings.gelap = ui.gelap === '0' ? '0' : '';
+  DB.welcomed = !!ui.welcomed;
+  terapkanPreset();
+  CACHE = {};
+}
+async function muatAwan() {
+  const r = await fetch('/api/dashboard-spm/data', { credentials: 'same-origin' });
+  if (!r.ok) { const e = new Error((await r.json().catch(() => ({}))).error || 'HTTP ' + r.status); e.status = r.status; throw e; }
+  const teks = await r.text(), h = r.headers;
+  AKSES = { tahap: ['edit', 'view'].includes(h.get('X-DSPM-Tahap')) ? h.get('X-DSPM-Tahap') : 'view', urus: h.get('X-DSPM-Urus') === '1', versi: +h.get('X-DSPM-Versi') || 0, oleh: decodeURIComponent(h.get('X-DSPM-Oleh') || ''), pada: h.get('X-DSPM-Pada') || '' };
+  pasangAwan(teks);
+}
+const masaAwan = s => { const d = new Date(s); return isNaN(d) ? '' : d.toLocaleString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+// Simpan ke portal sebaik sahaja berlaku perubahan (setTimeout 0 menggabungkan beberapa save() dalam satu tindakan).
+function simpanAwan() {
+  if (lihatSahaja()) { pasangAwan(AWAN_ASAL); toast('Lihat sahaja: perubahan tidak disimpan. Minta pentadbir untuk akses edit.', 'err'); setTimeout(render, 0); return false; }
+  clearTimeout(awanTunda); awanTunda = setTimeout(hantarAwan, 0); statusAwan('menunggu'); return true;
+}
+async function hantarAwan() {
+  awanTunda = null;
+  if (awanHantar) { awanLagi = true; return; }
+  awanHantar = true; statusAwan('menyimpan');
+  const teks = dataAwan();
+  let selesai = true;
+  try {
+    const r = await fetch('/api/dashboard-spm/data', { method: 'PUT', credentials: 'same-origin', keepalive: teks.length < 60000, headers: { 'Content-Type': 'application/json', 'X-DSPM-Versi': String(AKSES.versi) }, body: teks });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 409) { KONFLIK = d; awanLagi = false; statusAwan('konflik'); konflikAwan(); return; }
+    if (r.status === 403) { awanLagi = false; statusAwan('gagal'); toast(d.error || 'Akses edit anda telah ditarik balik.', 'err'); await muatAwan(); render(); return; }
+    if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+    AKSES.versi = d.versi; AKSES.oleh = d.oleh || (WARGA && WARGA.name) || ''; AKSES.pada = d.pada || ''; AWAN_ASAL = teks; awanCuba = 0;
+  } catch (e) {
+    selesai = false; awanCuba++; statusAwan('gagal');
+    clearTimeout(awanTunda); awanTunda = setTimeout(hantarAwan, Math.min(30000, 2000 * awanCuba));
+  } finally {
+    awanHantar = false;
+    if (awanLagi) { awanLagi = false; hantarAwan(); }
+    else if (selesai && awanStatus === 'menyimpan') statusAwan('disimpan');
+  }
+}
+function chipAwan() {
+  if (!AWAN || !AWAN_SEDIA) return '';
+  const bila = AKSES.pada ? ` · dikemas kini ${esc(masaAwan(AKSES.pada))}${AKSES.oleh ? ' oleh ' + esc(AKSES.oleh) : ''}` : '';
+  if (lihatSahaja()) return `<span class="awan-chip lihat" id="awanChip">👁️ Lihat sahaja${bila}</span>`;
+  const t = { disimpan: ['ok', '☁️ Disimpan dalam portal' + bila], menunggu: ['', '⏳ Menyimpan…'], menyimpan: ['', '⏳ Menyimpan…'], gagal: ['bad', '⚠️ Belum disimpan · mencuba semula'], konflik: ['bad', '⚠️ Belum disimpan · data dikemas kini orang lain'] }[awanStatus];
+  return `<span class="awan-chip ${t[0]}" id="awanChip">${t[1]}</span>`;
+}
+function statusAwan(s) { awanStatus = s; const el = $('#awanChip'); if (el) el.outerHTML = chipAwan(); }
+function konflikAwan() {
+  const d = KONFLIK || {};
+  modal('⚠️ Data telah dikemas kini oleh orang lain', `<p><b>${esc(d.oleh || 'Pengguna lain')}</b> menyimpan data Dashboard SPM${d.pada ? ' pada ' + esc(masaAwan(d.pada)) : ''}, selepas anda membukanya. Perubahan terakhir anda belum disimpan, supaya data mereka tidak tertimpa.</p>
+    <div class="row mt"><button class="btn pri" data-act="awanMuatSemula">Muat data terkini</button><button class="btn" data-act="awanTimpa">Simpan perubahan saya juga</button></div>
+    <p class="hint mt mb0">"Simpan perubahan saya juga" menggantikan data terkini dengan data pada skrin anda. Versi sebelumnya masih boleh dipulihkan oleh pentadbir di Tetapan → Sejarah data.</p>`);
+}
+// Lihat sahaja: tindakan membaca sahaja dibenarkan. Butang lain disembunyikan, medan dikunci, dan klik atau ubahan lain dihalang.
+const LIHAT_BOLEH = new Set(['print', 'slipSemua', 'theme', 'tutupKat', 'csv', 'salinLaporan', 'wordLaporan', 'tour', 'kongsi', 'bentang', 'pptBentang', 'balikProfil', 'modalGPI', 'cetakGPI', 'excelGPI', 'cetakGPISemua', 'excelGPISemua', 'closeModal', 'awanMuatSemula']); // sasaranModal tidak: sasaran dilihat di menu Sasaran
+const medanLihat = el => !!(el.dataset.f || el.dataset.k || el.type === 'search' || el.closest('#tour'));
+function kunciLihat(akar) {
+  if (!lihatSahaja() || !akar) return;
+  akar.querySelectorAll('[data-act]').forEach(b => { if (!LIHAT_BOLEH.has(b.dataset.act)) b.style.display = 'none'; });
+  akar.querySelectorAll('[data-del],[data-intvdel],[data-tema],.drop').forEach(b => { b.style.display = 'none'; });
+  akar.querySelectorAll('input,select,textarea').forEach(el => { if (!medanLihat(el)) el.disabled = true; });
+}
+function tawarPindah() {
+  let r = null; try { if (localStorage.getItem('dashboardSPM_dipindah') !== '1') r = bukaPadat(JSON.parse(localStorage.getItem(KEY))); } catch (e) {}
+  const n = r && Array.isArray(r.rek) ? r.rek.filter(x => !x.demo).length : 0;
+  if (!n) return false;
+  modal('📤 Pindahkan data pelayar ke portal?', `<p>Pelayar ini ada data Dashboard SPM (<b>${n} kelas × peperiksaan</b>) yang disimpan sebelum data dikongsi dalam portal. Portal pula belum ada data.</p><p>Muat naik supaya semua warga yang dibenarkan boleh melihat data yang sama.</p>
+    <div class="row mt"><button class="btn pri" data-act="awanPindah">Muat naik ke portal</button><button class="btn" data-act="awanAbaikPindah">Tidak perlu</button></div>`);
+  return true;
+}
+async function mulaAwan() {
+  pasangAwan('null');
+  document.title = 'Dashboard SPM · ' + sekolahNama();
+  applyTheme();
+  $('#root').innerHTML = `<div class="awan-muat"><div class="awan-pusing"></div><b>Memuatkan data Dashboard SPM…</b><small>${esc(sekolahNama())} · SMKAP Digital</small></div>`;
+  muatWarga();
+  try { await muatAwan(); }
+  catch (e) {
+    const sebab = e.status === 403 ? 'Akaun anda tiada akses Dashboard SPM. Hubungi pentadbir portal.' : e.status === 401 ? 'Sesi log masuk telah tamat. Muat semula portal dan log masuk.' : 'Data Dashboard SPM tidak dapat dimuatkan. Semak sambungan internet.';
+    $('#root').innerHTML = `<div class="awan-muat"><b>${sebab}</b><small>${esc(e.message)}</small><button class="btn pri" onclick="location.reload()">Cuba semula</button></div>`;
+    return;
+  }
+  AWAN_SEDIA = true;
+  applyTheme(); render();
+  if (!(AKSES.tahap === 'edit' && !AKSES.versi && tawarPindah())) alualuan();
+  muatFoto().then(() => { if (Object.keys(FOTO).length) render(); });
+}
 // Halaman produk Dashboard SPM di kedai BangWan. ID dijana oleh kedai semasa produk dicipta (10/11/2026), jadi ia bukan "dashboard-spm".
 const DEMO_BELI = 'https://bangwan.netlify.app/produk/108df1c7-d4a7-4950-a582-f126a6fd9d59';
 const butangBeli = (kecil) => `<a class="btn ${kecil ? 'sm ' : ''}pri" href="${DEMO_BELI}" target="_blank" rel="noopener">🛒 Beli versi penuh</a>`;
@@ -808,7 +936,7 @@ function blank() {
       sasaranGPS: '', sasaranMod: 'manual', sasaranLulus: '', sasaranSemuaA: '', sasaranSub: {}, sejarah: {}, panitia: {}, hc: {}, petaSubjek: {}, abaiLajur: [], pakaiLajur: [] } };
 }
 function load() {
-  if (DEMO) return blank();
+  if (DEMO || AWAN) return blank(); // AWAN: data dimuatkan daripada portal oleh mulaAwan()
   if (SALINAN) { const b = blank(), r = SALINAN.db; r.settings = Object.assign(b.settings, r.settings || {}); return Object.assign(b, r); }
   try { const r = bukaPadat(JSON.parse(localStorage.getItem(KEY))); if (r && Array.isArray(r.rek)) { const b = blank(); r.settings = Object.assign(b.settings, r.settings || {}); return Object.assign(b, r); } } catch (e) {}
   return blank();
@@ -816,6 +944,7 @@ function load() {
 function save() {
   CACHE = {};
   if (DEMO || SALINAN) return true;
+  if (AWAN) return simpanAwan();
   try { localStorage.setItem(KEY, JSON.stringify(padat(DB))); return true; }
   catch (e) { toast('Storan pelayar penuh. Simpan sandaran, kemudian padam data tahun lama di tab Import Data.', 'err'); return false; }
 }
@@ -1314,13 +1443,14 @@ function ensureFilter() {
   if (!s.some(x => x.tahun === ST.f.tahun && x.pep === ST.f.pep)) { const l = s[s.length - 1]; ST.f.tahun = l.tahun; ST.f.pep = l.pep; }
   if (ST.f.kelas && !indeks(ST.f.tahun, ST.f.pep).kelas.includes(ST.f.kelas)) ST.f.kelas = '';
 }
-function perluSandaran() { return !DEMO && DB.rek.some(r => !r.demo) && !!DB.lastImport && (!DB.lastBackup || DB.lastBackup < DB.lastImport); }
+function perluSandaran() { return !DEMO && !AWAN && DB.rek.some(r => !r.demo) && !!DB.lastImport && (!DB.lastBackup || DB.lastBackup < DB.lastImport); }
 
 function render() {
   CH.forEach(c => c.destroy()); CH = []; V = {};
   ensureFilter();
   const active = document.activeElement, focusId = active && active.id, caret = active && active.selectionStart;
   const has = DB.rek.length > 0;
+  if (lihatSahaja() && (ST.view === 'import' || ST.view === 'tetapan')) ST.view = has ? 'ringkasan' : 'panduan';
   const view = !has && !BEBAS.includes(ST.view) ? 'kosong' : ST.view;
   const v = VIEWS.find(x => x[0] === ST.view) || VIEWS[0];
   const isi = R[view]();
@@ -1332,12 +1462,12 @@ function render() {
       <div class="brand ${DB.settings.logo ? 'has-logo' : ''}" title="${esc(sekolahNama())}">${DB.settings.logo ? `<img src="${DB.settings.logo}" alt="Logo sekolah">` : ICON.logo}</div>
       ${VIEWS.filter(x => !BEBAS.includes(x[0]) && !TERSEMBUNYI.includes(x[0])).map(navBtn).join('')}
       <div class="sp"></div>
-      ${VIEWS.filter(x => BEBAS.includes(x[0])).map(navBtn).join('')}
+      ${VIEWS.filter(x => BEBAS.includes(x[0]) && !(lihatSahaja() && x[0] !== 'panduan')).map(navBtn).join('')}
     </aside>
     <div class="main">
       ${stripWarga()}
       <header class="top">
-        <div><h1>${v[1]}</h1><div class="sub">${esc(sekolahNama())}${has ? ' · ' + esc(ST.f.pep) + ' · SPM ' + esc(ST.f.tahun) : ''}${PORTAL && !SALINAN ? '' : ' · ' + (DEMO ? 'Versi demo' : SALINAN ? 'Salinan paparan' : lesenSah() ? 'Berlesen' : 'Versi percubaan')}</div></div>
+        <div><h1>${v[1]}</h1><div class="sub">${esc(sekolahNama())}${has ? ' · ' + esc(ST.f.pep) + ' · SPM ' + esc(ST.f.tahun) : ''}${PORTAL && !SALINAN ? '' : ' · ' + (DEMO ? 'Versi demo' : SALINAN ? 'Salinan paparan' : lesenSah() ? 'Berlesen' : 'Versi percubaan')}</div>${AWAN_SEDIA ? `<div class="awan-baris no-print">${chipAwan()}</div>` : ''}</div>
         <div class="sp"></div>
         ${has && !BEBAS.includes(ST.view) ? `<button class="btn btn-print" data-act="print" title="Cetak atau simpan sebagai PDF">${ICON.print}<span>Cetak / PDF</span></button>` : ''}
         ${has && !BEBAS.includes(ST.view) ? `<button class="btn btn-print no-print" data-act="bentang" title="Bentang dalam mesyuarat: slaid penuh skrin tanpa menu">▶<span>Bentang</span></button>` : ''}
@@ -1358,6 +1488,7 @@ function render() {
   </div>
   ${!lesenSah() && !DEMO ? '<div class="watermark">VERSI PERCUBAAN</div>' : ''}`;
   (AFTER[view] || (() => {}))();
+  kunciLihat($('#root'));
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { el.setSelectionRange(caret, caret); } catch (e) {} } }
 }
 
@@ -1392,17 +1523,23 @@ const sasaranGPS = () => DB.settings.sasaranMod === 'subjek' ? gpsDariSubjek().g
 /* ---------- paparan ---------- */
 const R = {}, AFTER = {};
 
-R.kosong = () => `
+R.kosong = () => lihatSahaja() ? `
+  <div class="hero">
+    <div class="ring"></div>
+    <div><div class="eyebrow">Dashboard Analisis Projek SPM</div><h2>Data belum dimuat naik</h2>
+      <p>Penyelaras Dashboard SPM sekolah belum mengimport markah peperiksaan. Sebaik sahaja data dimuat naik, analisis GPS, gred, calon dan laporan dipaparkan di sini untuk semua warga yang dibenarkan.</p>
+      <div class="row mt"><button class="btn" data-go="panduan">Baca panduan</button></div></div>
+  </div>` : `
   <div class="hero">
     <div class="ring"></div>
     <div><div class="eyebrow">Dashboard Analisis Projek SPM</div><h2>Analisis SPM dalam satu paparan</h2>
       <p>Import markah MPP1, MPP2 dan Percubaan. GPS, gred setiap subjek, calon kritikal, calon semua A dan jurang sasaran terhasil serta-merta.</p>
-      <div class="row mt"><button class="btn pri" data-act="demo">Cuba data contoh</button><button class="btn" data-act="pick">${ICON.import}Import fail</button><button class="btn" data-act="templat">⬇️ Templat Excel</button></div></div>
-    <div class="hero-strip"><div><b>GPS</b><span><i class="dot d-yellow"></i>Dikira automatik</span></div><div><b>12</b><span><i class="dot d-blue"></i>Menu analisis & pemantauan</span></div><div><b>0</b><span><i class="dot d-mint"></i>Data dihantar keluar</span></div><div><b>A4</b><span><i class="dot d-pink"></i>Cetak & slip calon</span></div></div>
+      <div class="row mt">${AWAN ? '' : '<button class="btn pri" data-act="demo">Cuba data contoh</button>'}<button class="btn${AWAN ? ' pri' : ''}" data-act="pick">${ICON.import}Import fail</button><button class="btn" data-act="templat">⬇️ Templat Excel</button></div></div>
+    <div class="hero-strip"><div><b>GPS</b><span><i class="dot d-yellow"></i>Dikira automatik</span></div><div><b>12</b><span><i class="dot d-blue"></i>Menu analisis & pemantauan</span></div>${AWAN ? '<div><b>1</b><span><i class="dot d-mint"></i>Data dikongsi dalam portal</span></div>' : '<div><b>0</b><span><i class="dot d-mint"></i>Data dihantar keluar</span></div>'}<div><b>A4</b><span><i class="dot d-pink"></i>Cetak & slip calon</span></div></div>
   </div>
   <div class="grid g2 mt">
     <div class="card"><h3>Import fail Excel</h3><p class="hint">Fail markah peperiksaan: satu fail satu kelas, satu helaian satu kelas, atau satu fail dengan lajur KELAS. Boleh pilih banyak fail sekali gus.</p>${dropZone()}</div>
-    <div class="card"><h3>Privasi terjamin</h3><p class="hint">Semua data diproses dalam pelayar ini sahaja. Tiada fail dihantar ke mana-mana pelayan, dan nombor kad pengenalan tidak dibaca.</p>
+    <div class="card"><h3>${AWAN ? 'Data dikongsi dalam portal' : 'Privasi terjamin'}</h3><p class="hint">${AWAN ? 'Markah yang anda import disimpan dalam portal SMKAP Digital dan dipaparkan kepada warga yang dibenarkan oleh pentadbir. Nombor kad pengenalan tidak dibaca.' : 'Semua data diproses dalam pelayar ini sahaja. Tiada fail dihantar ke mana-mana pelayan, dan nombor kad pengenalan tidak dibaca.'}</p>
       <div class="list-item"><span class="n">1</span>Muat turun templat atau guna fail markah sedia ada</div><div class="list-item"><span class="n">2</span>Seret semua fail ke sini</div><div class="list-item"><span class="n">3</span>Pilih peperiksaan & tahun, kemudian simpan</div></div>
   </div>`;
 
@@ -2664,13 +2801,13 @@ R.import = () => {
   ${ST.pending ? pendingCard(ST.pending) : ''}
   <div class="grid g2 ${ST.pending ? 'mt' : ''}">
     <div class="card"><h3>Import fail markah</h3><p class="hint">Satu fail untuk satu peperiksaan. Boleh satu fail satu kelas, satu helaian satu kelas, atau satu fail dengan lajur KELAS. Boleh pilih banyak fail sekali gus.</p>${dropZone()}
-      <div class="row mt"><button class="btn sm" data-act="templat">⬇️ Muat turun templat Excel</button><button class="btn sm" data-act="demo">✨ Muatkan data contoh</button></div></div>
-    <div class="card"><h3>Sandaran data</h3><p class="hint">Data disimpan dalam pelayar ini sahaja. Simpan sandaran selepas setiap import, dan simpan fail itu di Google Drive atau pendrive.</p>
+      <div class="row mt"><button class="btn sm" data-act="templat">⬇️ Muat turun templat Excel</button>${AWAN ? '' : '<button class="btn sm" data-act="demo">✨ Muatkan data contoh</button>'}</div></div>
+    <div class="card"><h3>Sandaran data</h3><p class="hint">${AWAN ? 'Data disimpan dalam portal SMKAP Digital, dan portal menyimpan 30 versi terakhir. Sandaran .json berguna untuk simpanan sendiri, atau untuk memindahkan data daripada fail Dashboard SPM lama.' : 'Data disimpan dalam pelayar ini sahaja. Simpan sandaran selepas setiap import, dan simpan fail itu di Google Drive atau pendrive.'}</p>
       <div class="row"><button class="btn pri" data-act="backup">💾 Simpan sandaran</button><button class="btn" data-act="restore">📤 Buka sandaran</button></div>
       <p class="hint mt mb0">${DB.lastBackup ? 'Sandaran terakhir: ' + esc(tarikhMs(DB.lastBackup)) : 'Belum pernah buat sandaran.'}</p>
       <div class="kongsi-box mt"><b>📦 Nak buka di laptop lain, contohnya untuk mesyuarat?</b><p class="hint" style="margin:4px 0 8px">Simpan <b>satu fail</b> dashboard berserta semua data dan gambar. Buka terus di laptop lain tanpa import. Dashboard asal tidak terjejas.</p><button class="btn sm" data-act="kongsi">📦 Simpan salinan untuk dikongsi</button></div></div>
   </div>
-  ${!DEMO && !SALINAN ? (() => { const n = gunaStoran(), p = Math.min(100, n / HAD_STORAN * 100); return `<div class="card mt"><div class="sec-title"><h3>Ruang simpanan pelayar</h3><span class="chip ${p >= 80 ? 'bad' : p >= 60 ? 'warn' : 'ok'}">${fx(p, 0)}% digunakan</span></div><div class="meter"><i style="width:${fx(p, 1)}%;background:${p >= 80 ? 'var(--bad)' : p >= 60 ? 'var(--warn)' : 'var(--ok)'}"></i></div><p class="hint mb0 mt">${p >= 80 ? '⚠️ Hampir penuh. Simpan sandaran, kemudian padam data tahun lama di bawah supaya import seterusnya boleh disimpan.' : 'Anggaran. Ruang ini dikongsi dengan fail HTML lain yang dibuka di komputer ini.'}</p></div>`; })() : ''}
+  ${!DEMO && !SALINAN && !AWAN ? (() => { const n = gunaStoran(), p = Math.min(100, n / HAD_STORAN * 100); return `<div class="card mt"><div class="sec-title"><h3>Ruang simpanan pelayar</h3><span class="chip ${p >= 80 ? 'bad' : p >= 60 ? 'warn' : 'ok'}">${fx(p, 0)}% digunakan</span></div><div class="meter"><i style="width:${fx(p, 1)}%;background:${p >= 80 ? 'var(--bad)' : p >= 60 ? 'var(--warn)' : 'var(--ok)'}"></i></div><p class="hint mb0 mt">${p >= 80 ? '⚠️ Hampir penuh. Simpan sandaran, kemudian padam data tahun lama di bawah supaya import seterusnya boleh disimpan.' : 'Anggaran. Ruang ini dikongsi dengan fail HTML lain yang dibuka di komputer ini.'}</p></div>`; })() : ''}
   <div class="card mt"><div class="sec-title"><h3>Data tersimpan · ${recs.length} kelas × peperiksaan</h3><div class="row">${DB.rek.some(r => r.demo) ? '<button class="btn sm" data-act="clearDemo">Padam data contoh</button>' : ''}${DB.rek.length ? '<button class="btn sm danger" data-act="clearAll">Padam semua</button>' : ''}</div></div>
     ${recs.length ? `<div class="table-wrap"><table><thead><tr><th>Peperiksaan</th><th>Kelas</th><th class="num">Calon</th><th class="num">Subjek</th><th>Fail</th><th>Dikemas kini</th><th></th></tr></thead><tbody>
     ${recs.map(r => `<tr><td>${esc(r.pep)} ${esc(r.tahun)}${r.demo ? ' <span class="chip">contoh</span>' : ''}</td><td>${esc(r.kelas)}</td><td class="num">${r.calon.length}</td><td class="num" title="${esc(r.subjek.join(', '))}">${r.subjek.length}</td><td style="max-width:260px;overflow:hidden;text-overflow:ellipsis">${esc(r.fail)}</td><td>${esc(tarikhMs(r.masa))}</td><td><button class="btn sm danger" data-del="${esc(r.id)}">Padam</button></td></tr>`).join('')}
@@ -2680,16 +2817,19 @@ R.import = () => {
 
 const langkah = (n, t, d) => `<div class="list-item" style="align-items:flex-start"><span class="n">${n}</span><div><b style="font-weight:500">${t}</b><div class="muted" style="font-size:13.5px;margin-top:2px">${d}</div></div></div>`;
 R.panduan = () => `
-  <div class="card" style="border-color:var(--bad);background:var(--bad-bg)">
+  ${PORTAL ? `<div class="card">
+    <h3>☁️ Data dikongsi dalam portal</h3>
+    <p class="hint mb0" style="color:var(--text)">Data Dashboard SPM disimpan dalam portal SMKAP Digital, bukan dalam pelayar. Semua warga yang dibenarkan melihat <b>data yang sama</b> di mana-mana peranti. Pentadbir menetapkan siapa <b>boleh edit</b>, siapa <b>lihat sahaja</b> dan siapa <b>tiada akses</b> di Tetapan → Akses warga. Setiap perubahan penyunting disimpan serta-merta, dan portal menyimpan 30 versi terakhir untuk dipulihkan.</p>
+  </div>` : `<div class="card" style="border-color:var(--bad);background:var(--bad-bg)">
     <h3>⚠️ Penting: di mana data anda disimpan</h3>
-    <p class="hint mb0" style="color:var(--text)">${PORTAL ? 'Dashboard ini dibuka melalui portal SMKAP Digital, tetapi markah calon <b>tidak</b> dihantar ke pelayan portal. Semua data disimpan dalam <b>pelayar di peranti ini sahaja</b>, jadi guru lain tidak nampak data yang anda import. Data kekal walaupun pelayar ditutup, tetapi akan hilang jika data pelayar dipadam.' : 'Dashboard ini <b>tidak</b> menghantar data ke internet. Semua data disimpan dalam <b>pelayar (Chrome/Edge) di komputer ini sahaja</b>. Data kekal walaupun Chrome ditutup, tetapi akan hilang jika data pelayar dipadam.'} <b>Simpan sandaran selepas setiap kali import.</b></p>
+    <p class="hint mb0" style="color:var(--text)">Dashboard ini <b>tidak</b> menghantar data ke internet. Semua data disimpan dalam <b>pelayar (Chrome/Edge) di komputer ini sahaja</b>. Data kekal walaupun Chrome ditutup, tetapi akan hilang jika data pelayar dipadam. <b>Simpan sandaran selepas setiap kali import.</b></p>
     <div class="row mt"><button class="btn pri" data-act="backup">💾 Simpan sandaran sekarang</button>${DB.lastBackup ? `<span class="chip ok">Sandaran terakhir: ${esc(tarikhMs(DB.lastBackup))}</span>` : '<span class="chip bad">Belum pernah buat sandaran</span>'}</div>
-  </div>
+  </div>`}
   <div class="grid g2 mt">
     ${PORTAL ? `<div class="card"><h3>🚀 1. Cara buka</h3><p class="hint">Tiada pemasangan. Dashboard SPM ialah modul dalam portal sekolah.</p>
       ${langkah(1, 'Log masuk portal SMKAP Digital', 'Guna akaun DELIMa <b>@moe-dl.edu.my</b> yang didaftarkan oleh sekolah.')}
       ${langkah(2, 'Buka Dashboard SPM', '<b>Guru & Staf → Pentaksiran dan Peperiksaan → Arus Perdana → Dashboard SPM</b>.')}
-      ${langkah(3, 'Guna peranti dan pelayar yang sama', 'Data hanya kelihatan dalam pelayar dan peranti tempat ia diimport. Jangan guna mod Incognito.')}
+      ${langkah(3, 'Akses ikut tetapan pentadbir', 'Penyelaras yang <b>boleh edit</b> mengimport markah dan mengisi pemantauan. Warga <b>lihat sahaja</b> boleh melihat, mencetak, membentang dan memuat turun PowerPoint.')}
     </div>` : `<div class="card"><h3>🚀 1. Cara pasang (sekali sahaja)</h3><p class="hint">Tiada pemasangan perisian. Dashboard ialah satu fail.</p>
       ${langkah(1, 'Simpan fail di tempat tetap', 'Pindahkan fail dashboard dari Downloads/WhatsApp ke folder tetap, contohnya <b>Documents → Dashboard SPM</b>.')}
       ${langkah(2, 'Buka dengan Google Chrome atau Microsoft Edge', 'Klik dua kali pada fail. Jika terbuka dalam pelayar lain: klik kanan → <b>Open with</b> → Google Chrome.')}
@@ -2729,10 +2869,10 @@ R.panduan = () => `
     ${langkah('•', 'Laporan & Rumusan', 'Ayat analisis dipadankan daripada bank analisis mengikut data. Nyahtanda ayat yang tidak perlu, kemudian cetak, salin atau muat turun Word.')}
   </div>
   <div class="card mt"><h3>❓ 6. Soalan lazim</h3>
-    ${langkah('S', 'Data saya hilang. Apa perlu buat?', 'Pergi ke <b>Import → Buka sandaran</b> dan pilih fail .json terakhir. Jika tiada sandaran, import semula fail Excel.')}
-    ${langkah('S', 'Nak buka dashboard di laptop lain untuk mesyuarat?', 'Tekan <b>📦 Kongsi</b> di bahagian atas. Satu fail berserta semua data dan gambar dimuat turun. Buka fail itu di laptop lain; tiada import diperlukan, dan dashboard asal tidak terjejas.')}
+    ${langkah('S', PORTAL ? 'Data tersilap diubah atau dipadam. Apa perlu buat?' : 'Data saya hilang. Apa perlu buat?', PORTAL ? 'Data disimpan dalam portal, jadi tidak hilang walaupun data pelayar dipadam. Pentadbir boleh memulihkan mana-mana 30 versi terakhir di <b>Tetapan → Sejarah data</b>.' : 'Pergi ke <b>Import → Buka sandaran</b> dan pilih fail .json terakhir. Jika tiada sandaran, import semula fail Excel.')}
+    ${langkah('S', 'Nak buka dashboard di laptop lain untuk mesyuarat?', PORTAL ? 'Log masuk portal SMKAP Digital di laptop itu; data yang sama dipaparkan. Jika tiada internet di bilik mesyuarat, tekan <b>📦 Kongsi</b> untuk satu fail salinan yang boleh dibuka tanpa log masuk.' : 'Tekan <b>📦 Kongsi</b> di bahagian atas. Satu fail berserta semua data dan gambar dimuat turun. Buka fail itu di laptop lain; tiada import diperlukan, dan dashboard asal tidak terjejas.')}
     ${langkah('S', 'Bagaimana letak gambar murid?', 'Menu <b>Calon → 📷 Gambar calon</b>. Namakan fail gambar dengan angka giliran atau nama penuh murid, kemudian pilih semua sekali gus.')}
-    ${langkah('S', 'Saya tukar komputer. Bagaimana pindah data?', PORTAL ? 'Di komputer lama: <b>Simpan sandaran</b>. Di komputer baharu, log masuk portal, buka Dashboard SPM, kemudian <b>Import → Buka sandaran</b>.' : 'Di komputer lama: <b>Simpan sandaran</b>. Salin fail dashboard dan fail sandaran ke komputer baharu, buka dashboard, kemudian <b>Buka sandaran</b>.')}
+    ${langkah('S', 'Saya tukar komputer. Bagaimana pindah data?', PORTAL ? 'Tiada apa perlu dipindah. Log masuk portal di komputer baharu dan buka Dashboard SPM; data yang sama dipaparkan. Data daripada fail Dashboard SPM lama: <b>Simpan sandaran</b> dalam fail itu, kemudian <b>Import → Buka sandaran</b> dalam portal.' : 'Di komputer lama: <b>Simpan sandaran</b>. Salin fail dashboard dan fail sandaran ke komputer baharu, buka dashboard, kemudian <b>Buka sandaran</b>.')}
     ${langkah('S', 'Calon sama muncul sebagai dua orang', 'Pastikan ejaan nama sama dalam setiap fail, atau isi lajur <b>ANGKA GILIRAN</b>. Calon dipadankan ikut angka giliran dahulu, kemudian nama.')}
     ${langkah('S', 'Subjek tidak dikesan', 'Pastikan tajuk lajur ialah nama atau singkatan subjek, dan isinya markah 0–100 atau gred. Lajur seperti JUMLAH, PURATA, GPC, TOV dan ETR diabaikan.')}
   </div>
@@ -2769,9 +2909,61 @@ R.tetapan = () => {
         <div class="field mt"><label>Kod lesen</label><input type="text" id="lsKod" placeholder="XXXX-XXXX-XXXX"></div>
         <div class="row mt"><button class="btn pri" data-act="aktifLesen">Aktifkan lesen</button></div><p class="hint mt mb0">${esc(PENJUAL.nama)} · ${esc(PENJUAL.hubungi)}</p>`}
     </div>`}
+    ${AWAN && AKSES.urus ? `<div class="card" style="grid-column:1/-1"><div class="sec-title"><h3>👥 Akses warga</h3><span class="chip">Pentadbir sahaja</span></div>
+      <p class="hint">Tetapkan siapa boleh mengubah data (import, sasaran, intervensi, post-mortem, tetapan) dan siapa lihat sahaja. Super Admin dan Admin yang diberi modul Dashboard SPM (tab Akses Admin portal) sentiasa boleh edit dan mengurus akses.</p>
+      <div id="aksesIsi"><p class="hint mb0">Memuatkan senarai warga…</p></div></div>
+    <div class="card" style="grid-column:1/-1"><h3>🕘 Sejarah data</h3><p class="hint">30 simpanan terakhir. Memulihkan versi lama menyimpannya sebagai versi baharu, jadi pemulihan pun boleh dibatalkan.</p><div id="sejarahIsi"><p class="hint mb0">Memuatkan…</p></div></div>` : ''}
   </div>
-  <p class="hint mt">Semua tetapan disimpan automatik sebaik sahaja diubah.</p>`;
+  <p class="hint mt">${AWAN ? 'Tetapan peperiksaan, skala dan sasaran disimpan dalam portal untuk semua warga. Mod cerah/gelap dan warna tema ialah pilihan anda sendiri.' : 'Semua tetapan disimpan automatik sebaik sahaja diubah.'}</p>`;
 };
+AFTER.tetapan = () => { if (AWAN && AKSES.urus) { isiAkses(); isiSejarah(); } };
+// Pengurus akses (pentadbir): senarai warga daripada portal, tahap setiap orang dan tahap lalai.
+const LBL_AKSES = { edit: 'Boleh edit', view: 'Lihat sahaja', none: 'Tiada akses' };
+let SENARAI_AKSES = null, aksesCari = '';
+async function isiAkses() {
+  try {
+    const r = await fetch('/api/dashboard-spm/akses', { credentials: 'same-origin', cache: 'no-store' }), d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+    SENARAI_AKSES = d; lukisAkses();
+  } catch (e) { const el = $('#aksesIsi'); if (el) el.innerHTML = `<p class="hint mb0" style="color:var(--bad)">Senarai akses tidak dapat dimuatkan: ${esc(e.message)}</p>`; }
+}
+function lukisAkses() {
+  const el = $('#aksesIsi'), d = SENARAI_AKSES; if (!el || !d) return;
+  const bil = t => d.warga.filter(w => !w.urus && (w.tahap || d.lalai) === t).length;
+  el.innerHTML = `<div class="row" style="gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="min-width:210px"><label>Warga lain (lalai)</label><select data-akseslalai="1"><option value="view" ${d.lalai === 'view' ? 'selected' : ''}>Lihat sahaja</option><option value="none" ${d.lalai === 'none' ? 'selected' : ''}>Tiada akses</option></select></div>
+      <div class="field" style="flex:1;min-width:190px"><label>Cari warga</label><input type="search" id="aksesCari" value="${esc(aksesCari)}" placeholder="Nama atau jawatan"></div></div>
+    <p class="hint mt mb0" id="aksesBil">${bil('edit')} boleh edit · ${bil('view')} lihat sahaja · ${bil('none')} tiada akses · ${d.warga.filter(w => w.urus).length} pentadbir</p>
+    <div class="table-wrap mt"><table><thead><tr><th>Nama</th><th>Jawatan</th><th>Akses Dashboard SPM</th></tr></thead><tbody id="aksesJadual"></tbody></table></div>`;
+  lukisJadualAkses();
+}
+function lukisJadualAkses() {
+  const el = $('#aksesJadual'), d = SENARAI_AKSES; if (!el || !d) return;
+  const q = norm(aksesCari), w = d.warga.filter(x => !q || norm(x.nama + ' ' + x.jawatan).includes(q));
+  el.innerHTML = w.map(x => `<tr><td>${esc(x.nama)}</td><td>${esc(x.jawatan)}</td><td>${x.urus ? '<span class="chip ok">Pentadbir · boleh edit</span>' : `<select data-akses="${esc(x.id)}" aria-label="Akses ${esc(x.nama)}"><option value="" ${!x.tahap ? 'selected' : ''}>Ikut lalai (${LBL_AKSES[d.lalai]})</option>${['edit', 'view', 'none'].map(t => `<option value="${t}" ${x.tahap === t ? 'selected' : ''}>${LBL_AKSES[t]}</option>`).join('')}</select>`}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Tiada warga sepadan.</td></tr>';
+}
+async function tukarAkses(badan, mesej) {
+  try {
+    const r = await fetch('/api/dashboard-spm/akses', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(badan) }), d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+    SENARAI_AKSES = d; lukisAkses(); toast(mesej, 'ok');
+  } catch (e) { toast('Akses tidak dapat ditukar: ' + e.message, 'err'); lukisAkses(); }
+}
+async function isiSejarah() {
+  const el = $('#sejarahIsi'); if (!el) return;
+  try {
+    const r = await fetch('/api/dashboard-spm/data?view=sejarah', { credentials: 'same-origin', cache: 'no-store' }), d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+    el.innerHTML = d.sejarah.length ? `<div class="table-wrap"><table><thead><tr><th>Versi</th><th>Masa</th><th>Oleh</th><th class="num">Saiz</th><th></th></tr></thead><tbody>${d.sejarah.map((v, i) => `<tr><td>${v.versi}${i === 0 ? ' <span class="chip ok">semasa</span>' : ''}</td><td>${esc(masaAwan(v.pada))}${v.nota ? `<div class="hint mb0">${esc(v.nota)}</div>` : ''}</td><td>${esc(v.oleh)}</td><td class="num">${fx(v.saiz / 1024, 0)} KB</td><td>${i ? `<button class="btn sm" data-act="pulihVersi" data-v="${v.versi}">Pulihkan</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="hint mb0">Belum ada simpanan.</p>';
+  } catch (e) { el.innerHTML = `<p class="hint mb0" style="color:var(--bad)">Sejarah tidak dapat dimuatkan: ${esc(e.message)}</p>`; }
+}
+// Gambar calon dalam portal: satu objek {kunci: data URL} untuk seluruh sekolah.
+async function hantarFoto() {
+  try {
+    const r = await fetch('/api/dashboard-spm/foto', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(FOTO) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'HTTP ' + r.status);
+  } catch (e) { toast('Gambar tidak dapat disimpan dalam portal: ' + e.message, 'err'); }
+}
 
 function alualuan() {
   if (DEMO) {
@@ -2784,14 +2976,22 @@ function alualuan() {
     return;
   }
   if (DB.welcomed) return;
-  DB.welcomed = true; save();
-  modal('👋 Selamat datang ke Dashboard SPM', `
+  DB.welcomed = true; simpanPilihan();
+  modal('👋 Selamat datang ke Dashboard SPM', PORTAL ? (lihatSahaja() ? `
+    <p class="muted" style="margin-top:0">Dashboard SPM ${esc(sekolahNama())} dalam portal SMKAP Digital:</p>
+    ${langkah(1, 'Data yang sama untuk semua', 'Data disimpan dalam portal. Anda melihat data terkini yang dikemas kini oleh penyelaras Dashboard SPM.')}
+    ${langkah(2, 'Akses anda: lihat sahaja', 'Anda boleh melihat semua analisis, mencetak, membentang dan memuat turun PowerPoint. Untuk mengubah data, minta pentadbir memberi akses edit.')}
+    ${langkah(3, 'Mula di Dashboard Utama', 'Tekan <b>❓ Tunjuk cara</b> untuk lawatan berpandu.')}` : `
     <p class="muted" style="margin-top:0">Sila baca 4 perkara penting ini sebelum mula:</p>
-    ${PORTAL ? `${langkah(1, 'Data disimpan dalam peranti ini sahaja', 'Markah calon tidak dihantar ke pelayan portal, jadi guru lain tidak nampak data yang anda import.')}
-    ${langkah(2, 'Guna peranti dan pelayar yang sama', 'Buka Dashboard SPM daripada portal dengan pelayar yang sama setiap kali. Jangan guna mod Incognito.')}
-    ${langkah(3, 'Jangan padam data pelayar', 'Ini akan memadam data dashboard.')}` : `${langkah(1, 'Simpan fail ini di folder tetap', 'Contohnya Documents → Dashboard SPM. Sentiasa buka dengan Chrome atau Edge.')}
+    ${langkah(1, 'Data dikongsi dengan warga', 'Markah yang anda import dan maklumat yang anda isi disimpan dalam portal, dan dilihat oleh semua warga yang dibenarkan.')}
+    ${langkah(2, 'Setiap perubahan disimpan serta-merta', 'Status simpanan dipaparkan di bawah tajuk halaman (☁️ Disimpan dalam portal).')}
+    ${langkah(3, 'Import markah', 'Tab <b>Import</b>: seret fail Excel atau fail IDME, pilih peperiksaan dan tahun, kemudian simpan.')}
+    ${langkah(4, 'Tersilap ubah?', 'Pentadbir boleh memulihkan 30 versi terakhir di <b>Tetapan → Sejarah data</b>.')}`) + `
+    <div class="row mt"><button class="btn pri" data-act="closeModal">Faham, mula guna</button><button class="btn" data-go="panduan">Baca panduan penuh</button></div>` : `
+    <p class="muted" style="margin-top:0">Sila baca 4 perkara penting ini sebelum mula:</p>
+    ${langkah(1, 'Simpan fail ini di folder tetap', 'Contohnya Documents → Dashboard SPM. Sentiasa buka dengan Chrome atau Edge.')}
     ${langkah(2, 'Data disimpan dalam komputer ini sahaja', 'Tiada data dihantar ke internet.')}
-    ${langkah(3, 'Jangan padam data pelayar / jangan guna Incognito', 'Ini akan memadam data dashboard.')}`}
+    ${langkah(3, 'Jangan padam data pelayar / jangan guna Incognito', 'Ini akan memadam data dashboard.')}
     ${langkah(4, 'Simpan sandaran selepas setiap import', 'Tab Import → Simpan sandaran.')}
     <div class="row mt"><button class="btn pri" data-act="closeModal">Faham, mula guna</button><button class="btn" data-go="panduan">Baca panduan penuh</button></div>`);
 }
@@ -2803,16 +3003,25 @@ function hadDemo(apa) {
 // Disimpan dalam IndexedDB (localStorage terlalu kecil untuk gambar). Kunci: AG:<angka giliran> atau N:<nama>.
 let FOTO = SALINAN && SALINAN.foto ? SALINAN.foto : {};
 function idbFoto() { return new Promise((ok, no) => { const r = indexedDB.open('dashboardSPM_foto', 1); r.onupgradeneeded = () => r.result.createObjectStore('foto'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); }
+async function bacaFotoTempatan() {
+  const out = {};
+  if (!window.indexedDB) return out;
+  const db = await idbFoto();
+  await new Promise(ok => { const q = db.transaction('foto').objectStore('foto').openCursor(); q.onsuccess = () => { const c = q.result; if (c) { out[c.key] = c.value; c.continue(); } else ok(); }; q.onerror = ok; });
+  return out;
+}
 async function muatFoto() {
+  if (AWAN) {
+    try { const r = await fetch('/api/dashboard-spm/foto', { credentials: 'same-origin' }); if (r.ok) { const f = await r.json(); if (f && typeof f === 'object' && !Array.isArray(f)) FOTO = f; } } catch (e) {}
+    return;
+  }
   if (DEMO || SALINAN || !window.indexedDB) return;
-  try {
-    const db = await idbFoto();
-    await new Promise(ok => { const q = db.transaction('foto').objectStore('foto').openCursor(); q.onsuccess = () => { const c = q.result; if (c) { FOTO[c.key] = c.value; FOTO_CONTOH.delete(c.key); c.continue(); } else ok(); }; q.onerror = ok; });
-  } catch (e) {}
+  try { const f = await bacaFotoTempatan(); Object.keys(f).forEach(k => { FOTO[k] = f[k]; FOTO_CONTOH.delete(k); }); } catch (e) {}
 }
 async function simpanFoto(baru, buang) {
   Object.assign(FOTO, baru || {}); (buang || []).forEach(k => delete FOTO[k]);
   Object.keys(baru || {}).concat(buang || []).forEach(k => FOTO_CONTOH.delete(k));
+  if (AWAN) { if (!lihatSahaja()) await hantarFoto(); return; }
   if (DEMO || SALINAN || !window.indexedDB) return;
   try {
     const db = await idbFoto(), tx = db.transaction('foto', 'readwrite'), st = tx.objectStore('foto');
@@ -3087,6 +3296,7 @@ function modal(title, html) {
   el.innerHTML = `<div class="modal"><div class="mh"><h3>${title}</h3><button class="icon-btn" data-act="closeModal">✕</button></div><div class="mb">${html}</div></div>`;
   el.addEventListener('click', e => { if (e.target === el) closeModal(); });
   document.body.appendChild(el);
+  kunciLihat(el);
 }
 function closeModal() { const m = $('#modal'); if (m) m.remove(); }
 
@@ -3158,6 +3368,7 @@ const ACT = {
   templat: () => modalTemplat(),
   janaTemplat: () => janaTemplat(),
   demo: () => {
+    if (AWAN) return toast('Data contoh tidak dimuatkan dalam portal kerana data dikongsi dengan semua warga.', 'err');
     DB.rek = DB.rek.filter(r => !r.demo).concat(dataContoh()); fotoContoh();
     if (!DB.settings.sasaranGPS) DB.settings.sasaranGPS = '3.50';
     save(); ST.f = { tahun: '', pep: '', kelas: '' }; ST.view = 'ringkasan'; toast('✨ Data contoh dimuatkan: 104 calon, 5 kelas, 3 peperiksaan + TOV (PAT tahun lepas).', 'ok'); render();
@@ -3176,7 +3387,35 @@ const ACT = {
     if (DEMO && list.length > DEMO_HAD_SLIP) { toast(`Versi demo: ${DEMO_HAD_SLIP} slip sahaja. Versi penuh boleh cetak sekelas sekali gus.`); list = list.slice(0, DEMO_HAD_SLIP); }
     cetakSlip(list);
   },
-  theme: () => { DB.settings.gelap = document.documentElement.getAttribute('data-theme') === 'dark' ? '0' : '1'; save(); applyTheme(); render(); },
+  theme: () => { DB.settings.gelap = document.documentElement.getAttribute('data-theme') === 'dark' ? '0' : '1'; simpanPilihan(); applyTheme(); render(); },
+  awanMuatSemula: async () => {
+    closeModal();
+    try { await muatAwan(); KONFLIK = null; statusAwan('disimpan'); applyTheme(); render(); toast('Data terkini dimuatkan.', 'ok'); }
+    catch (e) { toast('Data tidak dapat dimuatkan: ' + e.message, 'err'); }
+  },
+  awanTimpa: () => { closeModal(); if (KONFLIK && KONFLIK.versi) AKSES.versi = KONFLIK.versi; KONFLIK = null; hantarAwan(); },
+  awanPindah: async () => {
+    let r = null; try { r = bukaPadat(JSON.parse(localStorage.getItem(KEY))); } catch (e) {}
+    closeModal();
+    if (!r || !Array.isArray(r.rek)) return;
+    const b = blank(), ui = { tema: DB.settings.tema, gelap: DB.settings.gelap };
+    r.settings = Object.assign(b.settings, r.settings || {}); r.rek = r.rek.filter(x => !x.demo);
+    DB = Object.assign(b, r); DB.settings.tema = ui.tema; DB.settings.gelap = ui.gelap; DB.welcomed = true; terapkanPreset(); simpanUI();
+    try { localStorage.setItem('dashboardSPM_dipindah', '1'); } catch (e) {}
+    save(); ST.f = { tahun: '', pep: '', kelas: '' }; ST.view = 'ringkasan'; render();
+    toast('📤 Data pelayar dimuat naik ke portal.', 'ok');
+    try { const f = await bacaFotoTempatan(); if (Object.keys(f).length) { FOTO = Object.assign({}, f, FOTO); await hantarFoto(); render(); } } catch (e) {}
+  },
+  awanAbaikPindah: () => { try { localStorage.setItem('dashboardSPM_dipindah', '1'); } catch (e) {} closeModal(); alualuan(); },
+  pulihVersi: async el => {
+    const v = +el.dataset.v;
+    if (!confirm(`Pulihkan data Dashboard SPM kepada versi ${v}? Data semasa kekal dalam sejarah dan boleh dipulihkan semula.`)) return;
+    try {
+      const r = await fetch('/api/dashboard-spm/data', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pulih: v }) }), d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+      await muatAwan(); statusAwan('disimpan'); applyTheme(); render(); toast(`Data dipulihkan kepada versi ${v} (kini versi ${d.versi}).`, 'ok');
+    } catch (e) { toast('Gagal memulihkan: ' + e.message, 'err'); }
+  },
   closeModal,
   tutupKat: () => { ST.katF = ''; render(); },
   csv: el => DEMO ? hadDemo('Muat turun CSV') : downloadCSV(el.dataset.t, el.dataset.n),
@@ -3184,7 +3423,7 @@ const ACT = {
     if (DEMO) return hadDemo('Sandaran data');
     const blob = new Blob([JSON.stringify({ app: APP.nama, versi: APP.versi, tarikh: new Date().toISOString(), rek: DB.rek, settings: DB.settings, intv: DB.intv, program: DB.program, pm: DB.pm, guru: DB.guru, laporan: DB.laporan, calon: DB.calon, foto: fotoSebenar() })], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sandaran-dashboard-spm-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
-    DB.lastBackup = new Date().toISOString(); save();
+    DB.lastBackup = new Date().toISOString(); if (!AWAN) save();
     toast('💾 Sandaran dimuat turun ke folder Downloads. Simpan fail itu di Google Drive atau pendrive.', 'ok'); render();
   },
   restore: () => DEMO ? hadDemo('Buka sandaran') : $('#backupInput').click(),
@@ -3278,7 +3517,7 @@ const ACT = {
     if (skalaSah) s.skala = skala;
     const pep = $('#setPep').value.split(',').map(x => x.trim()).filter(Boolean); if (pep.length) s.pep = uniq(pep);
     s.wajib = uniq($('#setWajib').value.split(',').map(subjekPenuh).filter(Boolean));
-    save(); applyTheme(); render();
+    save(); if (AWAN) simpanUI(); applyTheme(); render();
     if (skalaSah) toast('Tetapan disimpan.', 'ok'); else toast('Skala gred mesti menurun dari A+ ke G (contoh 90, 80, 70…). Skala tidak ditukar; tetapan lain disimpan.', 'err');
   },
   aktifLesen: () => {
@@ -3320,10 +3559,26 @@ document.addEventListener('click', e => {
   }
   const del = e.target.closest('[data-del]');
   if (del) { const r = DB.rek.find(x => x.id === del.dataset.del); if (!r || !confirm(`Padam data ${r.kelas} (${r.pep} ${r.tahun})?`)) return; DB.rek = DB.rek.filter(x => x !== r); save(); render(); return; }
-  const tm = e.target.closest('[data-tema]'); if (tm) { DB.settings.tema = tm.dataset.tema; save(); applyTheme(); render(); toast(`🎨 Tema ${tm.dataset.tema} dipakai.`, 'ok'); }
+  const tm = e.target.closest('[data-tema]'); if (tm) { DB.settings.tema = tm.dataset.tema; simpanPilihan(); applyTheme(); render(); toast(`🎨 Tema ${tm.dataset.tema} dipakai.`, 'ok'); }
 });
+// Lihat sahaja (portal): halang klik, ubahan dan seret fail yang mengubah data sebelum pengendali biasa berjalan.
+document.addEventListener('click', e => {
+  if (!lihatSahaja()) return;
+  const a = e.target.closest('[data-act]');
+  if ((a && !LIHAT_BOLEH.has(a.dataset.act)) || e.target.closest('[data-del],[data-intvdel]')) { e.stopImmediatePropagation(); e.preventDefault(); toast('Lihat sahaja: minta pentadbir untuk akses edit.'); }
+}, true);
+document.addEventListener('change', e => {
+  if (!lihatSahaja() || medanLihat(e.target)) return;
+  e.stopImmediatePropagation(); toast('Lihat sahaja: perubahan tidak disimpan.'); render();
+}, true);
+document.addEventListener('drop', e => { if (lihatSahaja()) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+// Portal: hantar perubahan yang belum dihantar jika modul ditutup, dan beri amaran jika tab ditutup sebelum disimpan.
+window.addEventListener('pagehide', () => { if (AWAN && awanTunda) { clearTimeout(awanTunda); hantarAwan(); } });
+window.addEventListener('beforeunload', e => { if (AWAN && AWAN_SEDIA && !lihatSahaja() && awanStatus !== 'disimpan') { e.preventDefault(); e.returnValue = ''; } });
 document.addEventListener('change', e => {
   const el = e.target;
+  if (el.dataset.akses != null) { const w = (SENARAI_AKSES ? SENARAI_AKSES.warga : []).find(x => x.id === el.dataset.akses), t = el.value || null; tukarAkses({ userId: el.dataset.akses, tahap: t }, `${w ? w.nama : 'Warga'}: ${t ? LBL_AKSES[t] : 'ikut lalai'}.`); return; }
+  if (el.dataset.akseslalai != null) { tukarAkses({ lalai: el.value }, `Akses lalai warga lain: ${LBL_AKSES[el.value]}.`); return; }
   if (el.dataset.f === 'pep') { [ST.f.tahun, ST.f.pep] = el.value.split('|'); render(); }
   else if (el.dataset.f === 'kelas') { ST.f.kelas = el.value; render(); }
   else if (el.dataset.set) {
@@ -3431,6 +3686,7 @@ document.addEventListener('change', e => {
 let tCari;
 document.addEventListener('input', e => {
   const el = e.target;
+  if (el.id === 'aksesCari') { aksesCari = el.value; lukisJadualAkses(); return; }
   if (el.dataset.k === 'cari') { clearTimeout(tCari); const v = el.value; tCari = setTimeout(() => { ST.cari = v; render(); }, 250); }
   else if (el.dataset.pk != null && ST.pending) ST.pending.sheets[+el.dataset.pk].kelas = el.value;
   else if (el.dataset.psh != null && ST.pending) { ST.pending.sheets[+el.dataset.psh].buang = !el.checked; el.closest('tr').classList.toggle('off', !el.checked); }
@@ -3463,7 +3719,7 @@ function terapkanPreset() {
     DB.lesen = { sekolah: norm(p.sekolah), kod: p.kod };
     if (p.logo) DB.settings.logo = p.logo;
     DB.presetId = p.id;
-    save();
+    if (!AWAN) save(); // AWAN: nama & logo tidak disimpan dalam portal; dikenakan semula setiap kali dibuka
     return;
   }
   if (!p || !p.id || DB.presetId === p.id) return;
@@ -3510,14 +3766,17 @@ if (DEMO) {
   document.title = 'Dashboard SPM · DEMO';
   document.body.insertAdjacentHTML('beforeend', '<div class="demo-ribbon">DEMO</div><div class="demo-wm">DEMO</div>');
 } else terapkanPreset();
-if (SALINAN) document.title = 'Dashboard SPM · Salinan ' + sekolahNama();
-else fotoContoh();
-if (PORTAL && !SALINAN) document.title = 'Dashboard SPM · ' + sekolahNama();
-applyTheme();
-render();
-if (!SALINAN) alualuan();
-muatWarga();
-muatFoto().then(() => { if (Object.keys(FOTO).length) render(); });
+if (AWAN) mulaAwan();
+else {
+  if (SALINAN) document.title = 'Dashboard SPM · Salinan ' + sekolahNama();
+  else fotoContoh();
+  if (PORTAL && !SALINAN) document.title = 'Dashboard SPM · ' + sekolahNama();
+  applyTheme();
+  render();
+  if (!SALINAN) alualuan();
+  muatWarga();
+  muatFoto().then(() => { if (Object.keys(FOTO).length) render(); });
+}
 
 /* ---------- Mod Bentang & muat turun PowerPoint ----------
    Slaid 16:9 (13.333 x 7.5 inci). Setiap slaid ialah senarai blok berkedudukan dalam inci.
