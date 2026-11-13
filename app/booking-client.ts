@@ -1,4 +1,4 @@
-export type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string; canDelete?: boolean; pending?: boolean };
+export type Booking = { id: string; room: string; applicantName: string; purpose: string; startDate: string; startTime: string; endDate: string; endTime: string; participants: number; status: string; usageMode?: "daily" | "continuous"; canDelete?: boolean; pending?: boolean };
 export type BookingResult={account:string;method:'POST'|'DELETE';success:boolean;message:string;booking?:Booking};
 type Query = { from: string; to: string; rows: Booking[]; checkedAt: string; refreshing: boolean; error: string; invalidated?: boolean };
 type Change = { id: string; row: Booking; deleting: boolean };

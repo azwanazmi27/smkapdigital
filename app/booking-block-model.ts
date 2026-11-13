@@ -4,9 +4,26 @@ export const bookingWeekdays=['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','
 const dayMs=86400000;
 export function validBookingDate(value:string){return /^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T00:00:00Z'))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;}
 export function validBookingTime(value:string){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);}
-// Booking intervals are continuous, including nights between multi-day dates.
+// Legacy rows without a mode retain their original continuous interpretation.
+export type BookingInterval=Pick<Booking,'startDate'|'endDate'|'startTime'|'endTime'|'usageMode'>;
+export function bookingWindowOnDate(row:BookingInterval,date:string){
+ if(date<row.startDate||date>row.endDate)return null;
+ return {startTime:row.usageMode==='daily'||date===row.startDate?row.startTime:'00:00',endTime:row.usageMode==='daily'||date===row.endDate?row.endTime:'24:00'};
+}
+export function bookingInUse(row:BookingInterval,now=Date.now()){
+ const local=new Date(now+8*3600000).toISOString(),date=local.slice(0,10),time=local.slice(11,16),slot=bookingWindowOnDate(row,date);
+ return !!slot&&time>=slot.startTime&&time<slot.endTime;
+}
+// Daily slots block only their selected hours; legacy/continuous slots include nights.
 // Find the next weekly occurrence in at most seven days, never expand years.
-export function blockConflict(block:BookingBlock,booking:Pick<Booking,'startDate'|'endDate'|'startTime'|'endTime'>){
+export function blockConflict(block:BookingBlock,booking:Pick<Booking,'startDate'|'endDate'|'startTime'|'endTime'|'usageMode'>){
+ if(booking.usageMode==='daily'){
+  if(booking.endDate<booking.startDate||booking.endTime<=booking.startTime)return null;
+  const first=booking.startDate>block.effectiveFrom?booking.startDate:block.effectiveFrom;
+  let day=Date.parse(first+'T00:00:00Z');day+=((block.weekday-new Date(day).getUTCDay()+7)%7)*dayMs;
+  const date=new Date(day).toISOString().slice(0,10);
+  return date<=booking.endDate&&booking.startTime<block.endTime&&booking.endTime>block.startTime?{date,startTime:block.startTime,endTime:block.endTime,reason:block.reason}:null;
+ }
  const start=Date.parse(`${booking.startDate}T${booking.startTime}:00+08:00`),end=Date.parse(`${booking.endDate}T${booking.endTime}:00+08:00`);
  if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return null;
  const first=booking.startDate>block.effectiveFrom?booking.startDate:block.effectiveFrom;

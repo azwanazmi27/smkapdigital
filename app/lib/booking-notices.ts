@@ -7,7 +7,7 @@ const display=(day:string,time:string)=>`${day.slice(8,10)}/${day.slice(5,7)}/${
 export async function queueBookingNotice(room:{id:string;name:string},booking:Booking){
  const coordinator=(await roomCoordinators()).find(c=>c.roomId===room.id);if(!coordinator)return;
  const taskId=`booking-coordinator:${booking.id}:${coordinator.userId}`,now=new Date().toISOString();
- const notice:TaskNotice={userId:coordinator.userId,taskId,title:`Tempahan baharu · ${room.name}`,body:`${booking.applicantName} menempah ${room.name}.\nMula: ${display(booking.startDate,booking.startTime)}\nTamat: ${display(booking.endDate,booking.endTime)}\nTujuan: ${booking.purpose}\nLihat tempahan bilik seliaan di Ruang Kerja Saya.`,url:TASKS_URL};
+ const notice:TaskNotice={userId:coordinator.userId,taskId,title:`Tempahan baharu · ${room.name}`,body:`${booking.applicantName} menempah ${room.name}.\nMula: ${display(booking.startDate,booking.startTime)}\nTamat: ${display(booking.endDate,booking.endTime)}\nPenggunaan: ${booking.usageMode==='daily'?'Waktu yang sama setiap hari':'Berterusan'}\nTujuan: ${booking.purpose}\nLihat tempahan bilik seliaan di Ruang Kerja Saya.`,url:TASKS_URL};
  await env.DB.prepare('INSERT OR IGNORE INTO booking_coordinator_notices(task_id,booking_id,room_id,user_id,notice_json,expires_at,next_attempt_at,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(taskId,booking.id,room.id,coordinator.userId,JSON.stringify(notice),new Date(`${booking.endDate}T${booking.endTime}:00+08:00`).toISOString(),now,now).run();
 }
 export async function currentBookingNotice(taskId:string,userId:string):Promise<TaskNotice|undefined>{

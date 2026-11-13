@@ -89,6 +89,8 @@ export async function POST(request: Request) {
     // Bilangan peserta tidak lagi diminta dalam borang. Nilai ini dikekalkan
     // untuk serasi dengan rekod dan automasi Google Sheet sedia ada.
     const participants = Number(body.participants) || 1;
+    if(body.usageMode!==undefined && body.usageMode!=="daily" && body.usageMode!=="continuous") return Response.json({error:"Cara penggunaan tidak sah."},{status:400});
+    const usageMode=body.usageMode==="daily"?"daily":"continuous";
     const catalog=await bookingRooms();
     const selected=catalog.find(item=>item.name===room);
     if (!selected) return Response.json({ error: "Sila pilih bilik atau ruang yang hendak ditempah." }, { status: 400 });
@@ -100,18 +102,20 @@ export async function POST(request: Request) {
     if (!Number.isInteger(participants) || participants < 1 || participants > 1000) return Response.json({ error: "Maklumat tempahan tidak sah." }, { status: 400 });
     const start = new Date(`${startDate}T${startTime}:00+08:00`), end = new Date(`${endDate}T${endTime}:00+08:00`);
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return Response.json({ error: "Tarikh dan waktu akhir mestilah selepas tarikh dan waktu mula." }, { status: 400 });
+    if(usageMode==="daily"&&endTime<=startTime)return Response.json({error:"Masa tamat setiap hari mesti selepas masa mula."},{status:400});
     if (bookingStartIsPast(startDate,startTime)) return Response.json({error:"Waktu mula telah berlalu. Sila pilih waktu selepas sekarang (waktu Malaysia)."},{status:400});
     // Keep the original fields and send the legacy date/time aliases too. This
     // avoids a false overlap when the connected Sheet script still reads `date`.
     const token=await lockBookingRoom(selected.id);
     if(!token)return Response.json({error:'Bilik ini sedang dikemas kini. Sila cuba semula.'},{status:409});
     roomLock={id:selected.id,token};
-    for(const block of await bookingBlocks(selected.id)){const conflict=blockConflict(block,{startDate,startTime,endDate,endTime});if(conflict)return Response.json({error:`Bilik disekat untuk ${conflict.reason} pada ${conflict.date}, ${conflict.startTime}–${conflict.endTime}. Sila pilih slot lain.`,conflict},{status:409});}
-    const result = await callGoogle({ action: "etempahan_create", room:selected.sourceName, applicantName:actor.name, email:actor.email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
+    for(const block of await bookingBlocks(selected.id)){const conflict=blockConflict(block,{startDate,startTime,endDate,endTime,usageMode});if(conflict)return Response.json({error:`Bilik disekat untuk ${conflict.reason} pada ${conflict.date}, ${conflict.startTime}–${conflict.endTime}. Sila pilih slot lain.`,conflict},{status:409});}
+    if(usageMode==="daily"){const capabilities=await callGoogle({action:"etempahan_capabilities"});if(capabilities.dailySlots!==true)return Response.json({error:"Tempahan setiap hari belum tersedia. Sila hubungi admin."},{status:503});}
+    const result = await callGoogle({ action: "etempahan_create", usageMode, room:selected.sourceName, applicantName:actor.name, email:actor.email, ownerEmail: actor?.email || email, createdByEmail: actor?.email || email, startDate, startTime, endDate, endTime, date: startDate, time: startTime, purpose, participants, sendConfirmation: true });
     await clearBookingStatus(new URL(request.url).origin, ["upcoming",...datesBetween(startDate, endDate).slice(0, 61)]);
     const count = Number(result.count) || Math.max(1, datesBetween(startDate, endDate).length);
     // Send the confirmed row so the client does not wait for another Sheet read.
-    const booking = normalizeBookings([result.booking || {id:result.id,room:selected.sourceName,applicantName:actor.name,purpose,startDate,startTime,endDate,endTime,participants,status:result.status || "Diluluskan",ownerEmail:actor.email}])[0];
+    const booking = normalizeBookings([result.booking || {id:result.id,room:selected.sourceName,applicantName:actor.name,purpose,startDate,startTime,endDate,endTime,usageMode,participants,status:result.status || "Diluluskan",ownerEmail:actor.email}])[0];
     if(booking){
       try{await queueBookingNotice(selected,{...booking,room:selected.name});waitUntil(flushBookingNotices({remaining:5},booking.id).catch(error=>console.error('Coordinator delivery',error)));}
       catch(error){console.error('Coordinator notice queue failed',error);}

@@ -27,19 +27,19 @@ test('weekly blocks respect Malaysia dates, boundaries, effective date and conti
 function fixture(){
  const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE portal_users(id TEXT,name TEXT,status TEXT,deleted_at TEXT); INSERT INTO portal_users VALUES('a','Guru A','active',NULL),('b','Guru B','active',NULL),('inactive','Inactive','inactive',NULL); CREATE TABLE push_subscriptions(id TEXT,user_id TEXT); INSERT INTO push_subscriptions VALUES('device-b','b'); CREATE TABLE staff_task_push_deliveries(task_id TEXT,subscription_id TEXT,user_id TEXT,status TEXT,PRIMARY KEY(task_id,subscription_id));");
  const DB={prepare(sql){let args=[];return{bind(...v){args=v;return this;},async run(){return {meta:{changes:Number(db.prepare(sql).run(...args).changes)}};},async all(){return{results:db.prepare(sql).all(...args)};},async first(){return db.prepare(sql).get(...args)||null;}}},async batch(ss){const result=[];db.exec('BEGIN');try{for(const s of ss)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};
- let actor={id:'admin',name:'Admin',email:'admin@school.my',role:'admin'},rows=[],writes=0,pushFails=false;const pending=[],pushes=[];
+ let actor={id:'admin',name:'Admin',email:'admin@school.my',role:'admin'},rows=[],writes=0,pushFails=false,dailySlots=true,lastCreate=null;const pending=[],pushes=[];
  const env={DB},cloud={'cloudflare:workers':{env,waitUntil:p=>pending.push(p)}},auth={'../../server-auth':{portalActor:async()=>actor}};
  const catalog=load('app/lib/booking-rooms.ts',cloud),controls=load('app/lib/booking-controls.ts',cloud);
  const push={sendTaskNotices:async(notices,budget)=>{for(const n of notices){pushes.push(n);budget.remaining--;db.prepare("INSERT OR REPLACE INTO staff_task_push_deliveries VALUES(?,?,?,?)").run(n.taskId,'device-b',n.userId,pushFails?'failed':'sent');}}};
  const notices=load('app/lib/booking-notices.ts',{...cloud,'./booking-controls':controls,'./task-push':push,'../daily-notice-model':{TASKS_URL:'/?module=warga&tasks=1'}});
  const shared={...cloud,...auth,'../../lib/booking-rooms':catalog,'../../lib/booking-controls':controls,'../../booking-model':bookingModel,'../../booking-block-model':blockModel,'../../lib/booking-notices':notices};
  process.env.ETEMPAHAN_APPS_SCRIPT_URL='https://sheet.test';process.env.ETEMPAHAN_APPS_SCRIPT_TOKEN='fixture';
- const source=load('app/lib/booking-source.ts',{},async(url,init)=>{const input=JSON.parse(init.body);if(input.action==='etempahan_create'){writes++;return Response.json({ok:true,id:'new-booking',status:'Diluluskan'});}if(input.action==='etempahan_delete'){rows=rows.filter(r=>r.id!==input.id);return Response.json({ok:true});}return Response.json({ok:true,bookings:rows});});
+ const source=load('app/lib/booking-source.ts',{},async(url,init)=>{const input=JSON.parse(init.body);if(input.action==='etempahan_capabilities')return Response.json({ok:true,dailySlots});if(input.action==='etempahan_create'){lastCreate=input;writes++;return Response.json({ok:true,id:'new-booking',status:'Diluluskan'});}if(input.action==='etempahan_delete'){rows=rows.filter(r=>r.id!==input.id);return Response.json({ok:true});}return Response.json({ok:true,bookings:rows});});
  const bookings=load('app/api/etempahan/route.ts',{...shared,'../../lib/booking-source':source,'../../booking-time':{bookingStartIsPast},'../../etempahan-cache':{readBookingStatus:async(o,d,fn)=>({value:await fn()}),clearBookingStatus:async()=>{}}});
  const deps={...shared,'../etempahan/route':bookings};
  const rooms=load('app/api/booking-rooms/route.ts',deps),blocks=load('app/api/booking-blocks/route.ts',deps);
  const request=(method,body={},query='')=>new Request('https://portal.test/api/test'+query,{method,headers:{'Content-Type':'application/json'},...(method==='GET'?{}:{body:JSON.stringify(body)})});
- return {db,rooms,blocks,bookings,controls,catalog,notices,request,pending,pushes,getWrites:()=>writes,setRows:v=>rows=v,setActor:v=>actor=v,setPushFails:v=>pushFails=v};
+ return {db,rooms,blocks,bookings,controls,catalog,notices,request,pending,pushes,getWrites:()=>writes,getLastCreate:()=>lastCreate,setDailySlots:v=>dailySlots=v,setRows:v=>rows=v,setActor:v=>actor=v,setPushFails:v=>pushFails=v};
 }
 const blockInput={roomId:'legacy-1',weekday:1,startTime:'08:00',endTime:'09:00',effectiveFrom:'2099-01-01',reason:'Kelas ASK'};
 test('only admins manage coordinators and weekly blocks; settings persist through renames',async()=>{
@@ -84,4 +84,23 @@ test('outbox retries failed sends, suppresses duplicate successes and cancels st
  f.db.exec("UPDATE booking_coordinator_notices SET next_attempt_at='2020-01-01'");f.setPushFails(false);await f.notices.flushBookingNotices();assert.equal(f.pushes.length,2);await f.notices.flushBookingNotices();assert.equal(f.pushes.length,2);
  await f.notices.queueBookingNotice(room,{...row,id:'cancel'});await f.notices.cancelBookingNotice('cancel');await f.notices.flushBookingNotices();assert.equal(f.pushes.length,2);
  await f.notices.queueBookingNotice(room,{...row,id:'reassigned'});await f.rooms.PUT(f.request('PUT',{id:'legacy-1',name:room.name,coordinatorId:'a'}));await f.notices.flushBookingNotices();assert.equal(f.pushes.length,2);f.db.close();
+});
+
+test('daily API checks backend capability, preserves mode, and respects daily admin blocks',async()=>{
+ const f=fixture();
+ try {
+  const draft={...booking('2099-01-05','09:00','10:00'),endDate:'2099-01-10',usageMode:'daily',email:'a@school.my'};
+  f.setDailySlots(false);
+  assert.equal((await f.bookings.POST(f.request('POST',draft))).status,503);
+  assert.equal(f.getWrites(),0);
+  f.setDailySlots(true);
+  await f.blocks.POST(f.request('POST',blockInput));
+  assert.equal((await f.bookings.POST(f.request('POST',{...draft,startTime:'08:30'}))).status,409);
+  assert.equal((await f.bookings.POST(f.request('POST',{...draft,startTime:'16:00',endTime:'08:00'}))).status,400);
+  const response=await f.bookings.POST(f.request('POST',draft));
+  assert.equal(response.status,200);
+  assert.equal(f.getLastCreate().usageMode,'daily');
+  assert.equal(f.getWrites(),1);
+  await Promise.all(f.pending);
+ } finally { f.db.close(); }
 });

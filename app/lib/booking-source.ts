@@ -31,7 +31,7 @@ export function normalizeBookings(value: unknown) {
     const required = ["id", "room", "applicantName", "purpose", "startDate", "startTime", "endDate", "endTime", "status"] as const;
     if (!required.every((key) => typeof row[key] === "string")) return [];
     const ownerEmail = clean(row.ownerEmail || row.createdByEmail || row.email || row.applicantEmail, 160).toLowerCase();
-    return [{ ...(Object.fromEntries(required.map((key) => [key, row[key]])) as Record<typeof required[number], string>), participants: Number(row.participants) || 0, ownerEmail }];
+    return [{ ...(Object.fromEntries(required.map((key) => [key, row[key]])) as Record<typeof required[number], string>), usageMode: row.usageMode === "daily" ? "daily" as const : "continuous" as const, participants: Number(row.participants) || 0, ownerEmail }];
   }) : [];
 }
 

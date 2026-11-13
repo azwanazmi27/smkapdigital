@@ -12,6 +12,6 @@ const short=(text:string,max:number)=>text.length>max?text.slice(0,max-1)+'…':
 const date=(d:string)=>`${d.slice(8,10)}/${d.slice(5,7)}/${d.slice(0,4)}`;
 export function morningBookingsBody(bookings:ReturnType<typeof personalMorningBookings>|null){
  if(!bookings)return 'Tempahan Saya : Status belum dapat disahkan\nBilik Seliaan Saya : Status belum dapat disahkan';
- const section=(title:string,rows:MorningBooking[],supervised=false)=>`${title} : ${rows.length} tempahan`+rows.slice(0,2).map(b=>`\n• ${short(b.room,60)}${supervised?` · ${short(b.applicantName,70)}`:''}\n  ${b.startDate===b.endDate?`${date(b.startDate)}, ${b.startTime}–${b.endTime}`:`${date(b.startDate)}, ${b.startTime} hingga ${date(b.endDate)}, ${b.endTime}`}`).join('')+(rows.length>2?`\n  +${rows.length-2} lagi — lihat Tugasan Saya`:'');
+ const section=(title:string,rows:MorningBooking[],supervised=false)=>`${title} : ${rows.length} tempahan`+rows.slice(0,2).map(b=>`\n• ${short(b.room,60)}${supervised?` · ${short(b.applicantName,70)}`:''}\n  ${b.startDate===b.endDate?`${date(b.startDate)}, ${b.startTime}–${b.endTime}`:b.usageMode==='daily'?`${date(b.startDate)}–${date(b.endDate)} · ${b.startTime}–${b.endTime} setiap hari`:`${date(b.startDate)}, ${b.startTime} hingga ${date(b.endDate)}, ${b.endTime}`}`).join('')+(rows.length>2?`\n  +${rows.length-2} lagi — lihat Tugasan Saya`:'');
  return section('Tempahan Saya',bookings.own)+'\n'+section('Bilik Seliaan Saya',bookings.supervised,true);
 }

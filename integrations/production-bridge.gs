@@ -18,6 +18,7 @@ function doPost(e) {
  if(body.action==='ekunjung_checkout') return checkoutEkunjung_(body);
  if(body.action==='etempahan_list') return listEtempahan_(body);
  if(body.action==='etempahan_list_range') return listEtempahanRange_(body);
+ if(body.action==='etempahan_capabilities') return json_({ok:true,dailySlots:true,version:2});
  if(body.action==='etempahan_create') return createEtempahan_(body);
  if(body.action==='etempahan_delete'||body.action==='etempahan_cancel') return deleteEtempahan_(body);
  return json_({ok:false,error:'Tindakan tidak sah'});
@@ -145,7 +146,7 @@ function getEtempahanSheet_() {
   const book = SpreadsheetApp.openById(ETEMPAHAN_SHEET_ID);
   let sheet = book.getSheetByName(ETEMPAHAN_SHEET_NAME);
   if (!sheet) throw new Error("Helaian tempahan tidak ditemui");
-  const headers = ["ID","Bilik","Nama Pemohon","E-mel","Tarikh Mula","Masa Mula","Tarikh Tamat","Masa Tamat","Tujuan","Jumlah Peserta","Status","Dicipta Pada"];
+  const headers = ["ID","Bilik","Nama Pemohon","E-mel","Tarikh Mula","Masa Mula","Tarikh Tamat","Masa Tamat","Tujuan","Jumlah Peserta","Status","Dicipta Pada","Cara Penggunaan"];
   if (sheet.getLastRow() === 0) sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   return sheet;
 }
@@ -193,6 +194,9 @@ function createEtempahan_(body) {
   if (!room || !applicantName || !email || !startDate || !startTime || !endDate || !endTime || !purpose || !participants) {
     return json_({ ok: false, error: "Maklumat tempahan tidak lengkap atau tidak sah" });
   }
+  const usageMode = body.usageMode === "daily" ? "daily" : "continuous";
+  if(body.usageMode && body.usageMode!=="daily" && body.usageMode!=="continuous") return json_({ok:false,error:"Cara penggunaan tidak sah"});
+  if(usageMode==="daily" && endTime<=startTime) return json_({ok:false,error:"Masa tamat setiap hari mesti selepas masa mula"});
   const requestedStart = new Date(startDate + "T" + startTime + ":00+08:00");
   const requestedEnd = new Date(endDate + "T" + endTime + ":00+08:00");
   if (!isFinite(requestedStart.getTime()) || !isFinite(requestedEnd.getTime()) || requestedEnd <= requestedStart) {
@@ -206,22 +210,22 @@ function createEtempahan_(body) {
     for (let i = 1; i < values.length; i++) {
       const row = values[i];
       if (!row[0] || clean_(row[1]) !== room || clean_(row[10]).toLowerCase() === "dibatalkan") continue;
-      const existingStart = new Date(normalizeDate_(row[4]) + "T" + normalizeTime_(row[5]) + ":00+08:00");
-      const existingEnd = new Date(normalizeDate_(row[6]) + "T" + normalizeTime_(row[7]) + ":00+08:00");
-      if (requestedStart < existingEnd && requestedEnd > existingStart) {
+      const requested={startDate:startDate,endDate:endDate,startTime:startTime,endTime:endTime,usageMode:usageMode};
+      if (bookingIntervalsOverlap_(requested,rowToBooking_(row))) {
         return json_({ ok: false, error: "Tempahan bertindih dengan tempahan sedia ada bagi bilik ini." });
       }
     }
     const now = new Date();
     const id = "ET-" + Utilities.formatDate(now, "Asia/Kuala_Lumpur", "yyyyMMdd-HHmmss") + "-" + Utilities.getUuid().slice(0,6).toUpperCase();
-    sheet.appendRow([id, room, applicantName, email, startDate, startTime, endDate, endTime, purpose, participants, "Diluluskan", Utilities.formatDate(now, "Asia/Kuala_Lumpur", "yyyy-MM-dd HH:mm:ss")]);
+    sheet.getRange(1, 13).setValue("Cara Penggunaan");
+    sheet.appendRow([id, room, applicantName, email, startDate, startTime, endDate, endTime, purpose, participants, "Diluluskan", Utilities.formatDate(now, "Asia/Kuala_Lumpur", "yyyy-MM-dd HH:mm:ss"), usageMode]);
     SpreadsheetApp.flush();
     let emailSent = false;
     try {
       MailApp.sendEmail({
         to: email,
         subject: "Tempahan berjaya - " + room,
-        htmlBody: "<p>Assalamualaikum dan salam sejahtera,</p><p>Tempahan anda telah berjaya.</p><p><b>" + escapeHtml_(room) + "</b><br>" + escapeHtml_(startDate) + " " + escapeHtml_(startTime) + " hingga " + escapeHtml_(endDate) + " " + escapeHtml_(endTime) + "<br>Tujuan: " + escapeHtml_(purpose) + "</p><p>Portal Rasmi SMK Agama Pahang</p>"
+        htmlBody: "<p>Assalamualaikum dan salam sejahtera,</p><p>Tempahan anda telah berjaya.</p><p><b>" + escapeHtml_(room) + "</b><br>" + escapeHtml_(startDate) + " " + escapeHtml_(startTime) + " hingga " + escapeHtml_(endDate) + " " + escapeHtml_(endTime) + (usageMode==="daily"?" (waktu yang sama setiap hari)":" (berterusan)") + "<br>Tujuan: " + escapeHtml_(purpose) + "</p><p>Portal Rasmi SMK Agama Pahang</p>"
       });
       emailSent = true;
     } catch (mailError) {}
@@ -254,8 +258,20 @@ function deleteEtempahan_(body) {
   }
 }
 
+// Check at most the shared first, last and one middle day. Continuous
+// windows only change at endpoints; daily windows are identical every day.
+function bookingIntervalsOverlap_(a,b) {
+ const first=a.startDate>b.startDate?a.startDate:b.startDate;
+ const last=a.endDate<b.endDate?a.endDate:b.endDate;
+ if(first>last)return false;
+ const dates=[first,last];
+ const next=new Date(Date.parse(first+'T00:00:00Z')+86400000).toISOString().slice(0,10);
+ if(next<last)dates.push(next);
+ function slot(row,date){return {start:row.usageMode==='daily'||date===row.startDate?row.startTime:'00:00',end:row.usageMode==='daily'||date===row.endDate?row.endTime:'24:00'};}
+ return dates.some(function(date){const x=slot(a,date),y=slot(b,date);return x.start<y.end&&x.end>y.start;});
+}
 function rowToBooking_(row) {
-  return { id: String(row[0]), room: String(row[1]), applicantName: String(row[2]), email: String(row[3]), ownerEmail: String(row[3]), startDate: normalizeDate_(row[4]), startTime: normalizeTime_(row[5]), endDate: normalizeDate_(row[6]), endTime: normalizeTime_(row[7]), purpose: String(row[8]), participants: Number(row[9]) || 0, status: String(row[10] || "Diluluskan") };
+  return { id: String(row[0]), room: String(row[1]), applicantName: String(row[2]), email: String(row[3]), ownerEmail: String(row[3]), startDate: normalizeDate_(row[4]), startTime: normalizeTime_(row[5]), endDate: normalizeDate_(row[6]), endTime: normalizeTime_(row[7]), purpose: String(row[8]), participants: Number(row[9]) || 0, status: String(row[10] || "Diluluskan"), usageMode:row[12]==="daily"?"daily":"continuous" };
 }
 function normalizeDate_(value) {
   const text = String(value || "").trim();

@@ -1950,3 +1950,12 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
   .folder-backdrop:has(.menu-centre-modal){align-items:center;padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom))}
   .folder-modal.menu-centre-modal{max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding-bottom:22px;border-radius:24px}
 }
+
+/* Booking daily slots: explicit choice, same room-booking visual language. */
+.booking-usage-mode{min-width:0;margin:16px 0;padding:16px;border:1px solid rgba(132,216,207,.22);border-radius:16px;background:rgba(99,201,192,.05)}
+.booking-usage-mode legend{padding:0 6px;color:#c9dfdf;font-size:13px;font-weight:750}
+.booking-usage-mode>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.booking-form .booking-usage-mode label{display:flex;align-items:center;gap:10px;min-height:48px;margin:0;padding:12px;border:1px solid rgba(151,205,211,.22);border-radius:12px;background:rgba(5,29,40,.5);cursor:pointer}
+.booking-usage-mode label:has(input:checked){border-color:#82dcd0;background:rgba(112,213,200,.13);color:#ddfff7}
+.booking-form .booking-usage-mode input{width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:#83ddd2;flex:none}
+.booking-usage-mode p{margin:12px 0 0;color:#b0c8ce;font-size:12px;line-height:1.6}
