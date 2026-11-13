@@ -14,6 +14,7 @@ function doPost(e) {
  if(body.action==='bundle') return bundleOprFiles_(body);
  if(body.category&&body.files) return uploadOprFiles_(body);
  if(body.action==='ekunjung_active') return listActiveEkunjung_();
+ if(body.action==='ekunjung_by_date') return listEkunjungDate_(body);
  if(body.action==='ekunjung_create') return createEkunjung_(body);
  if(body.action==='ekunjung_checkout') return checkoutEkunjung_(body);
  if(body.action==='etempahan_list') return listEtempahan_(body);
@@ -80,11 +81,15 @@ function createEkunjung_(body) {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date) || !/^\d{2}:\d{2}$/.test(body.timeIn)) return json_({ ok: false, error: 'Tarikh atau masa tidak sah' });
   var photo = body.photo || {};
-  if (['image/jpeg', 'image/png'].indexOf(photo.mimeType) === -1 || typeof photo.base64 !== 'string' || !photo.base64 || photo.base64.length > 7000000) return json_({ ok: false, error: 'Gambar tidak sah atau terlalu besar' });
+  var hasPhoto = !!(photo.mimeType || photo.base64);
+  if (hasPhoto && (['image/jpeg', 'image/png'].indexOf(photo.mimeType) === -1 || typeof photo.base64 !== 'string' || !photo.base64 || photo.base64.length > 7000000)) return json_({ ok: false, error: 'Gambar tidak sah atau terlalu besar' });
   var id = 'EK-' + Utilities.formatDate(new Date(), 'Asia/Kuala_Lumpur', 'yyyyMMdd-HHmmss') + '-' + Utilities.getUuid().slice(0, 6).toUpperCase();
-  var extension = photo.mimeType === 'image/png' ? 'png' : 'jpg';
-  var blob = Utilities.newBlob(Utilities.base64Decode(photo.base64), photo.mimeType, id + '.' + extension);
-  var imageFile = getEkunjungPhotoFolder_().createFile(blob);
+  var imageUrl = '';
+  if (hasPhoto) {
+    var extension = photo.mimeType === 'image/png' ? 'png' : 'jpg';
+    var blob = Utilities.newBlob(Utilities.base64Decode(photo.base64), photo.mimeType, id + '.' + extension);
+    imageUrl = getEkunjungPhotoFolder_().createFile(blob).getUrl();
+  }
   var sheet = SpreadsheetApp.openById(EKUNJUNG_SHEET_ID).getSheetByName(EKUNJUNG_SHEET_NAME);
   if (!sheet) throw new Error('Helaian rekod tidak ditemui');
   sheet.appendRow([
@@ -93,9 +98,9 @@ function createEkunjung_(body) {
     cleanVisitorText_(body.vehicleNo, 30).toUpperCase(), cleanVisitorText_(body.organisation, 120),
     cleanVisitorText_(body.purpose, 160), cleanVisitorText_(body.staff, 120),
     cleanVisitorText_(body.meetingPlace, 120), cleanVisitorText_(body.notes, 300),
-    imageFile.getUrl(), 'DALAM KAWASAN'
+    imageUrl, 'DALAM KAWASAN'
   ]);
-  return json_({ ok: true, id: id, status: 'DALAM KAWASAN', imageUrl: imageFile.getUrl() });
+  return json_({ ok: true, id: id, status: 'DALAM KAWASAN', imageUrl: imageUrl });
 }
 
 function listActiveEkunjung_() {
@@ -106,6 +111,21 @@ function listActiveEkunjung_() {
     if (values[row][13] === 'DALAM KAWASAN') records.push({ id: values[row][0], date: values[row][1], timeIn: values[row][2], name: values[row][4], vehicleNo: values[row][6] });
   }
   return json_({ ok: true, records: records });
+}
+
+function listEkunjungDate_(body) {
+  var date = String(body.date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json_({ok:false,error:'Tarikh tidak sah'});
+  var sheet = SpreadsheetApp.openById(EKUNJUNG_SHEET_ID).getSheetByName(EKUNJUNG_SHEET_NAME);
+  if (!sheet) throw new Error('Helaian rekod tidak ditemui');
+  var values = sheet.getDataRange().getDisplayValues(), records = [];
+  var otherDate = date.slice(8,10) + '/' + date.slice(5,7) + '/' + date.slice(0,4);
+  for (var row = values.length - 1; row >= 1 && records.length < 1000; row--) {
+    var cells = values[row];
+    if (cells[1] !== date && cells[1] !== otherDate) continue;
+    records.push({id:cells[0],date:date,timeIn:cells[2],timeOut:cells[3],name:cells[4],phone:cells[5],vehicleNo:cells[6],organisation:cells[7],purpose:cells[8],staff:cells[9],meetingPlace:cells[10],notes:cells[11],status:cells[13]});
+  }
+  return json_({ok:true,records:records});
 }
 
 function checkoutEkunjung_(body) {
