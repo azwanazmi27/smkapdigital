@@ -1945,3 +1945,8 @@ dialog.device-push-reminder{position:fixed;inset:0;margin:auto;width:min(440px,c
 @media(max-width:360px){.campus-header{padding:0 9px;gap:5px}.campus-brand{gap:4px}.campus-brand strong{font-size:11.5px}.campus-brand .campus-digital{width:30px}.campus-actions{gap:4px}}
 @media(prefers-reduced-transparency:reduce){.campus-header,.campus-search,.campus-tile,.campus-quick button{background:var(--ch-panel);backdrop-filter:none}}
 .campus-notifications>span{pointer-events:auto;cursor:pointer}.campus-notifications .portal-notification-bell{width:40px;height:40px;min-width:40px;margin:0;border-radius:50%}.campus-actions .identity-avatar{display:grid;place-items:center;background:#8ddbcc;color:#0c303b}.campus-actions .identity-avatar b{font-size:12px}.campus-header{-webkit-backdrop-filter:blur(30px) saturate(135%)}.campus-search{-webkit-backdrop-filter:blur(7px) saturate(145%)}
+/* Pentaksiran dan Peperiksaan / Arus Perdana: menu pendek, jadi di telefon ia terapung di tengah skrin, bukan melekat di bawah. */
+@media(max-width:700px){
+  .folder-backdrop:has(.menu-centre-modal){align-items:center;padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom))}
+  .folder-modal.menu-centre-modal{max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding-bottom:22px;border-radius:24px}
+}

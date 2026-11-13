@@ -61,6 +61,8 @@ var TERBENAM=(function(){try{return window.self!==window.top;}catch(e){return tr
 if(TERBENAM)document.documentElement.classList.add("terbenam");
 function penatal(){if(!TERBENAM)return null;var m=document.querySelector(".main");return m&&/(auto|scroll)/.test(getComputedStyle(m).overflowY)?m:null;}
 window.__PBD_PENATAL=penatal;
+["gesturestart","gesturechange","gestureend"].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault();},{passive:false});});
+document.addEventListener("touchmove",function(e){if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
 var asalSkrol=window.scrollTo;
 window.scrollTo=function(a,b){var m=penatal();if(m){if(a&&typeof a==="object")m.scrollTo(a);else m.scrollTop=b||0;return;}return asalSkrol.apply(window,arguments);};
 function ui(){if(pill||!document.body)return pill;pill=document.createElement("div");pill.id="pbdPill";pill.setAttribute("role","status");pill.setAttribute("aria-live","polite");pill.style.cssText="position:fixed;left:12px;bottom:12px;z-index:2147483000;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 24px);padding:8px 12px;border-radius:999px;background:rgba(6,27,37,.92);color:#edf7f5;font:500 12.5px/1.3 Outfit,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.3);transition:opacity .25s";document.body.appendChild(pill);return pill;}
@@ -83,6 +85,8 @@ const portalStyle = `<style id="pbd-portal">
 :root[data-theme="light"][data-palet="smkap"]{--bg:#e2f0ef;--bg-glow-1:rgba(40,150,150,.24);--bg-glow-2:rgba(212,170,50,.20);--bg-glow-3:rgba(120,200,205,.26);--rail:rgba(6,40,48,.92);--glass:rgba(255,255,255,.6);--glass-2:rgba(255,255,255,.75);--glass-border:rgba(255,255,255,.8);--text:#10272b;--muted:#4f6b6e;--accent:#0e7c80;--accent-ink:#fff}
 :root[data-palet="smkap"] .hero .ring{border-color:rgba(120,215,205,.3)}
 :root[data-palet="smkap"] .hero::after{background:radial-gradient(circle at 40% 40%,var(--hero-1),var(--hero-2) 45%,transparent 70%)}
+/* Tiada zum (cubit atau ketuk dua kali), sama seperti modul lain dalam portal. Skrol menegak dan mendatar kekal. */
+html,body,*{touch-action:pan-x pan-y}
 .swatch[data-tema="smkap"]{background:linear-gradient(135deg,#082c39 50%,#78d7cd 50%)!important}
 @media (max-width:860px){
   html.terbenam,html.terbenam body,html.terbenam #root{height:100%;overflow:hidden}
@@ -165,6 +169,7 @@ export async function GET(request: Request) {
     const boot = `<script>window.__PBD_PORTAL__=${inlineJson({ key: PBD_STORAGE_KEY, data: snapshot.data, version: snapshot.version, updatedAt: snapshot.updatedAt, updatedBy: snapshot.updatedBy, canEdit: access.canEdit, canManage: access.canManage, user: { name: actor.name, email: actor.email } })};</script><script>${bridge}</script>`;
     let html = dashboardHtml;
     for (const [from, to] of wording) html = html.split(from).join(to);
+    html = html.replace(/<meta name="viewport"[^>]*>/i, '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">');
     const marker = '<meta charset="utf-8">';
     html = html.includes(marker) ? html.replace(marker, `${marker}\n${boot}`) : html.replace(/<head[^>]*>/i, (head) => `${head}\n${boot}`);
     // Gaya portal selepas gaya asal (</head> pertama), skrip selepas skrip app (</body> terakhir).

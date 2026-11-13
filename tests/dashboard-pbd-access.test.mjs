@@ -61,3 +61,10 @@ test('PBD page route wires access, SPM palette, in-frame scrolling and the acces
  assert.match(akses,/Hanya pentadbir Dashboard PBD boleh menetapkan akses/);assert.match(akses,/origin/);
  assert.match(data,/request\.headers\.get\("origin"\)/);
 });
+
+test('PBD cannot be zoomed, and the assessment menu floats mid-screen on phones',()=>{
+ const route=readFileSync('app/api/dashboard-pbd/route.ts','utf8'),landing=readFileSync('app/landing.tsx','utf8'),css=readFileSync('app/globals.css','utf8');
+ assert.match(route,/html,body,\*\{touch-action:pan-x pan-y\}/);assert.match(route,/"gesturestart","gesturechange","gestureend"/);assert.match(route,/maximum-scale=1, user-scalable=no/);
+ assert.match(landing,/open === "assessment" \|\| open === "arusperdana" \? "menu-centre-modal"/);
+ assert.match(css,/\.folder-backdrop:has\(\.menu-centre-modal\)\{align-items:center/);
+});
