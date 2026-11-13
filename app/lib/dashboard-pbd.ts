@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import type { PortalActor } from "../server-auth";
+import { aksesWarga } from "../dashboard-pbd-access";
 
 // Dashboard PBD: satu salinan data dikongsi untuk seluruh sekolah, disimpan dalam R2.
 export const PBD_DATA_KEY = "dashboard-pbd/data.json";
@@ -8,18 +9,14 @@ export const PBD_HISTORY_KEEP = 20;
 export const PBD_MAX_BYTES = 25_000_000;
 export const PBD_STORAGE_KEY = "dashboardPBD_v1";
 
-export type PbdAccess = { canView: boolean; canEdit: boolean };
+export type PbdAccess = { canView: boolean; canEdit: boolean; canManage: boolean };
 
-// Semua warga aktif yang log masuk boleh melihat. Penyuntingan (import, padam, tetapan)
-// untuk super admin dan pengguna yang diberi kebenaran modul "dashboardpbd".
+// Sama seperti Dashboard SPM: setiap warga boleh edit, lihat sahaja atau tiada akses (lalai: lihat sahaja).
+// Super Admin, dan Admin yang diberi modul "Dashboard PBD" dalam tab Akses Admin, sentiasa boleh edit dan mengurus akses.
 export async function pbdAccess(actor: PortalActor | null): Promise<PbdAccess> {
-  if (!actor) return { canView: false, canEdit: false };
-  if (actor.role === "super_admin") return { canView: true, canEdit: true };
-  let permitted = false;
-  try {
-    permitted = !!await env.DB.prepare("SELECT user_id FROM admin_module_permissions WHERE user_id=? AND module_key='dashboardpbd' AND enabled=1").bind(actor.id).first();
-  } catch { permitted = false; }
-  return { canView: true, canEdit: permitted };
+  if (!actor) return { canView: false, canEdit: false, canManage: false };
+  const akses = await aksesWarga(env.DB, actor);
+  return { canView: akses.tahap !== "none", canEdit: akses.tahap === "edit", canManage: akses.urus };
 }
 
 export type PbdSnapshot = { data: string | null; version: string; updatedAt: string; updatedBy: string };
