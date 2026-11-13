@@ -14,6 +14,7 @@ const entries=[
 {id:'achievement',title:'Arkib Kejayaan',terms:'sijil pencapaian',icon:ShieldCheck},
 {id:'assessment',title:'Pentaksiran dan Peperiksaan',terms:'ujian',icon:BookOpen},
 {id:'dashboardspm',title:'Dashboard SPM',terms:'spm arus perdana peperiksaan analisis gps gpmp gred calon keputusan',icon:ChartColumnBig},
+{id:'dashboardpbd',title:'Dashboard PBD',terms:'pbd pentaksiran bilik darjah tp tahap penguasaan arus perdana analisis kelas murid',icon:BookOpen},
 {id:'pengurusan',title:'Pengurusan Sekolah',terms:'kurikulum hem kokurikulum',icon:School},
 {id:'epanitia',title:'e-Panitia',terms:'panitia ekonomi',icon:BookOpen},
 {id:'skas',title:'Pusat SK@S',terms:'evidens pematuhan',icon:ClipboardCheck},

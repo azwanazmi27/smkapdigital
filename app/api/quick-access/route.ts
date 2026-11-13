@@ -1,6 +1,6 @@
 import {env} from 'cloudflare:workers';
 import {portalActor} from '../../server-auth';
-const allowed=new Set(['etempahan','oprhub','ekeberadaan','epemantauan','pdp','achievement','assessment','pengurusan','epanitia','skas','uploads','dashboardspm']);
+const allowed=new Set(['etempahan','oprhub','ekeberadaan','epemantauan','pdp','achievement','assessment','pengurusan','epanitia','skas','uploads','dashboardspm','dashboardpbd']);
 let ready:Promise<unknown>|undefined;
 const prepare=()=>ready??=(env.DB.prepare('CREATE TABLE IF NOT EXISTS portal_module_usage(user_id TEXT NOT NULL,module TEXT NOT NULL,uses INTEGER NOT NULL DEFAULT 0,last_used TEXT NOT NULL,PRIMARY KEY(user_id,module))').run().catch(e=>{ready=undefined;throw e}));
 export async function GET(request:Request){const actor=await portalActor(request);if(!actor)return Response.json({error:'Sila log masuk'},{status:401});await prepare();const rows=await env.DB.prepare('SELECT module,uses FROM portal_module_usage WHERE user_id=? ORDER BY uses DESC,last_used DESC').bind(actor.id).all();return Response.json({items:rows.results},{headers:{'Cache-Control':'private, no-store'}})}
